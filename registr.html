@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="auth.css">
+    <title>Snapix</title>
+</head>
+<body>
+    <main class="auth-page">
+        <section class="auth-card">
+            <a href="index.html" class="back-link" aria-label="Вернуться на главную">
+                <span aria-hidden="true">←</span>
+            </a>
+
+            <h1>Создание аккаунта</h1>
+            <p class="subtitle">Зарегистрируйтесь, чтобы публиковать фото, находить друзей и собирать свою ленту.</p>
+
+            <form class="auth-form">
+                <label>
+                    <input type="text" name="name" placeholder="Логин" required>
+                </label>
+
+                <label>
+                    <input type="email" name="email" placeholder="Электронный адрес" required>
+                </label>
+
+                <label>
+                    <input type="date" name="birthdate" aria-label="Дата рождения" required>
+                </label>
+
+                <label>
+                    <input type="password" name="password" placeholder="Пароль" required>
+                </label>
+
+                <label class="checkbox consent-field">
+                    <input type="checkbox" name="agreement" required>
+                    <span>
+                        Я принимаю
+                        <a href="terms.html" class="inline-link">условия использования</a>
+                        и
+                        <a href="privacy.html" class="inline-link">политику конфиденциальности</a>.
+                    </span>
+                </label>
+
+                <button type="submit" class="submit-btn">Зарегистрироваться</button>
+            </form>
+
+            <div class="divider"><span>или</span></div>
+
+            <p class="switch-text">
+                Уже есть аккаунт?
+                <a href="login.html" class="link">Войти</a>
+            </p>
+        </section>
+    </main>
+</body>
+</html>

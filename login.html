@@ -1,31 +1,32 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="auth.css">
-    <title>Вход | Snapix</title>
+    <title>Snapix</title>
 </head>
 <body>
     <main class="auth-page">
         <section class="auth-card">
-            <a href="index.html" class="brand">Snapix</a>
+            <a href="index.html" class="back-link" aria-label="Вернуться на главную">
+                <span aria-hidden="true">←</span>
+            </a>
+
             <h1>Вход в аккаунт</h1>
-            <p class="subtitle">Продолжайте делиться моментами, смотреть Reels и общаться с друзьями.</p>
+            <p class="subtitle">Продолжайте делиться моментами, смотреть Reels и общаться с друзьями</p>
 
             <form class="auth-form">
                 <label>
-                    Email или логин
-                    <input type="text" name="login" placeholder="Введите email или логин" required>
+                    <input type="text" name="login" placeholder="Логин или адрес электронной почты" required>
                 </label>
 
                 <label>
-                    Пароль
-                    <input type="password" name="password" placeholder="Введите пароль" required>
+                    <input type="password" name="password" placeholder="Пароль" required>
                 </label>
 
                 <div class="auth-options">
-                    <label class="checkbox">
+                    <label class="checkbox remember-option">
                         <input type="checkbox" name="remember">
                         <span>Запомнить меня</span>
                     </label>
@@ -39,7 +40,7 @@
 
             <p class="switch-text">
                 Ещё нет аккаунта?
-                <a href="register.html" class="link">Создать профиль</a>
+                <a href="registr.html" class="link">Создать профиль</a>
             </p>
         </section>
     </main>
