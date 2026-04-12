@@ -56,7 +56,7 @@ $posts = $stmt->fetchAll();
     </header>
 
     <main class="profile-page">
-        <section class="profile-cover card-surface"></section>
+        <section class="profile-cover card-surface<?php echo !empty($user['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($user['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['background_image']); ?>');"<?php endif; ?>></section>
 
         <section class="profile-summary card-surface">
             <div class="profile-header">
@@ -91,7 +91,7 @@ $posts = $stmt->fetchAll();
                     <?php endif; ?>
                 </div>
 
-                <a href="logout.php" class="secondary-link profile-edit-btn">Изменить профиль</a>
+                <a href="edit-profile.php" class="secondary-link profile-edit-btn">Изменить профиль</a>
             </div>
         </section>
 

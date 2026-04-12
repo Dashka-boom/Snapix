@@ -106,6 +106,76 @@ body {
     justify-content: center;
 }
 
+.home-profile-menu {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.home-menu-toggle {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: #4b5563;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.home-menu-toggle svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+}
+
+.home-menu-toggle:hover,
+.home-menu-toggle:focus-visible,
+.home-menu-toggle[aria-expanded="true"] {
+    color: #0095f6;
+    background: #eef7ff;
+    outline: none;
+}
+
+.home-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 132px;
+    background: #fff;
+    border: 1px solid #e2ebf5;
+    border-radius: 12px;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
+    padding: 8px 10px;
+    z-index: 120;
+}
+
+.home-menu-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #1f2937;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.home-menu-link svg {
+    width: 15px;
+    height: 15px;
+    fill: currentColor;
+}
+
+.home-menu-link:hover,
+.home-menu-link:focus-visible {
+    color: #dc2626;
+    outline: none;
+}
+
 .user-avatar {
     width: 42px;
     height: 42px;
