@@ -22,8 +22,167 @@
     </header>
 
     <main>
-        <h1>Добро пожаловать в Snapix!</h1>
-        <p>Здесь будет основная лента с фотографиями.</p>
+        <section class="profile-card" aria-label="Профиль пользователя">
+            <div class="profile-cover" id="profileCover" role="button" tabindex="0" aria-label="Изменить задний фон профиля">
+                <input
+                    type="file"
+                    id="coverInput"
+                    class="file-input"
+                    accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                    aria-label="Загрузить фон профиля"
+                >
+                <div class="cover-overlay">Нажмите, чтобы изменить фон</div>
+            </div>
+
+            <div class="profile-info">
+                <div class="avatar-wrapper" id="avatarWrapper" role="button" tabindex="0" aria-label="Изменить аватар">
+                    <input
+                        type="file"
+                        id="avatarInput"
+                        class="file-input"
+                        accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                        aria-label="Загрузить аватар"
+                    >
+                    <img
+                        id="profileAvatar"
+                        class="profile-avatar"
+                        src="https://placehold.co/144x144/eceff3/8c95a3?text=SN"
+                        alt="Аватар пользователя"
+                    >
+                    <span class="avatar-edit-hint">Изменить</span>
+                </div>
+
+                <div class="profile-meta">
+                    <h1>@snapix_user</h1>
+                    <p>Делитесь моментами и обновляйте внешний вид профиля в один клик.</p>
+                    <button type="button" class="edit-profile-btn">Изменить профиль</button>
+                </div>
+            </div>
+
+            <p class="upload-error" id="uploadError" role="alert" aria-live="polite"></p>
+        </section>
     </main>
+
+    <script>
+        (function () {
+            const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+            const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg"];
+            const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg"];
+            const STORAGE_KEYS = {
+                avatar: "snapix.profile.avatar",
+                cover: "snapix.profile.cover"
+            };
+
+            const avatarWrapper = document.getElementById("avatarWrapper");
+            const avatarInput = document.getElementById("avatarInput");
+            const profileAvatar = document.getElementById("profileAvatar");
+            const profileCover = document.getElementById("profileCover");
+            const coverInput = document.getElementById("coverInput");
+            const uploadError = document.getElementById("uploadError");
+
+            const isAllowedExtension = (fileName) => {
+                const lowerName = fileName.toLowerCase();
+                return ALLOWED_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
+            };
+
+            const showError = (message) => {
+                uploadError.textContent = message;
+            };
+
+            const clearError = () => {
+                uploadError.textContent = "";
+            };
+
+            const validateFile = (file) => {
+                if (!file) {
+                    return "Файл не выбран.";
+                }
+
+                if (file.size > MAX_FILE_SIZE_BYTES) {
+                    return "Файл слишком большой. Максимальный размер: 5 МБ.";
+                }
+
+                const hasValidMimeType = ALLOWED_MIME_TYPES.includes(file.type);
+                const hasValidExtension = isAllowedExtension(file.name);
+                if (!hasValidMimeType || !hasValidExtension) {
+                    return "Неверный формат. Загрузите файл в формате .png или .jpg.";
+                }
+
+                return null;
+            };
+
+            const readFileAsDataURL = (file, onLoad) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    onLoad(reader.result);
+                };
+                reader.onerror = () => {
+                    showError("Не удалось прочитать файл. Попробуйте другой.");
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const applyStoredImages = () => {
+                const savedAvatar = localStorage.getItem(STORAGE_KEYS.avatar);
+                const savedCover = localStorage.getItem(STORAGE_KEYS.cover);
+
+                if (savedAvatar) {
+                    profileAvatar.src = savedAvatar;
+                }
+
+                if (savedCover) {
+                    profileCover.style.backgroundImage = `url("${savedCover}")`;
+                    profileCover.classList.add("has-image");
+                }
+            };
+
+            const setupFileHandler = (inputEl, storageKey, onFileLoaded) => {
+                inputEl.addEventListener("change", () => {
+                    const [file] = inputEl.files || [];
+                    const validationError = validateFile(file);
+                    if (validationError) {
+                        showError(validationError);
+                        inputEl.value = "";
+                        return;
+                    }
+
+                    clearError();
+                    readFileAsDataURL(file, (result) => {
+                        localStorage.setItem(storageKey, result);
+                        onFileLoaded(result);
+                    });
+
+                    inputEl.value = "";
+                });
+            };
+
+            avatarWrapper.addEventListener("click", () => avatarInput.click());
+            avatarWrapper.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    avatarInput.click();
+                }
+            });
+
+            profileCover.addEventListener("click", () => coverInput.click());
+            profileCover.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    coverInput.click();
+                }
+            });
+
+            setupFileHandler(avatarInput, STORAGE_KEYS.avatar, (result) => {
+                profileAvatar.src = result;
+            });
+
+            setupFileHandler(coverInput, STORAGE_KEYS.cover, (result) => {
+                profileCover.style.backgroundImage = `url("${result}")`;
+                profileCover.classList.add("has-image");
+            });
+
+            applyStoredImages();
+        })();
+    </script>
 </body>
 </html>

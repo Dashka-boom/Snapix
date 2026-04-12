@@ -82,13 +82,145 @@ body {
 }
 
 main {
-    padding: 20px;
+    padding: 24px 20px 40px;
     max-width: 975px;
     margin: 0 auto;
 }
 
 h1 {
     margin-bottom: 10px;
+}
+
+.profile-card {
+    border: 1px solid #e4e7ec;
+    border-radius: 24px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.profile-cover {
+    position: relative;
+    min-height: 240px;
+    background:
+        linear-gradient(120deg, rgba(0, 149, 246, 0.18), rgba(88, 86, 214, 0.2)),
+        linear-gradient(0deg, rgba(20, 20, 20, 0.2), rgba(20, 20, 20, 0.2)),
+        url("https://placehold.co/1400x500/d7e6ff/5773b8?text=Snapix+Profile+Cover") center/cover no-repeat;
+    cursor: pointer;
+}
+
+.profile-cover.has-image {
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.cover-overlay {
+    position: absolute;
+    inset: auto 0 0;
+    padding: 14px 18px;
+    background: linear-gradient(180deg, transparent 0%, rgba(5, 10, 18, 0.75) 100%);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.92;
+    transition: opacity 0.2s ease;
+}
+
+.profile-info {
+    display: flex;
+    gap: 24px;
+    align-items: flex-end;
+    padding: 0 28px 28px;
+    margin-top: -74px;
+}
+
+.avatar-wrapper {
+    position: relative;
+    width: 148px;
+    flex: 0 0 148px;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.profile-avatar {
+    width: 148px;
+    height: 148px;
+    display: block;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 6px solid #fff;
+    box-shadow: 0 14px 24px rgba(15, 23, 42, 0.2);
+    background: #eff2f7;
+}
+
+.avatar-edit-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(17, 24, 39, 0.8);
+    color: #fff;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.avatar-wrapper:hover .avatar-edit-hint,
+.avatar-wrapper:focus-visible .avatar-edit-hint,
+.profile-cover:hover .cover-overlay,
+.profile-cover:focus-visible .cover-overlay {
+    opacity: 1;
+}
+
+.profile-meta h1 {
+    margin-bottom: 10px;
+    font-size: 30px;
+}
+
+.profile-meta p {
+    color: #4b5563;
+    line-height: 1.55;
+    margin-bottom: 16px;
+}
+
+.edit-profile-btn {
+    border: 1px solid #d7dce3;
+    background: #fff;
+    color: #111827;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 11px 16px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.edit-profile-btn:hover,
+.edit-profile-btn:focus-visible {
+    border-color: #0095f6;
+    color: #0095f6;
+    background: rgba(0, 149, 246, 0.06);
+}
+
+.file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.upload-error {
+    min-height: 24px;
+    padding: 0 28px 24px;
+    color: #d92d20;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 .legal-page {
@@ -143,6 +275,32 @@ h1 {
 
     .menu {
         display: none;
+    }
+
+    .profile-cover {
+        min-height: 180px;
+    }
+
+    .profile-info {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-top: -58px;
+        padding: 0 18px 18px;
+        gap: 16px;
+    }
+
+    .avatar-wrapper,
+    .profile-avatar {
+        width: 116px;
+        height: 116px;
+    }
+
+    .profile-meta h1 {
+        font-size: 24px;
+    }
+
+    .upload-error {
+        padding: 0 18px 18px;
     }
 
     .legal-page {
