@@ -6,17 +6,16 @@
     <link rel="stylesheet" href="auth.css">
     <title>Snapix</title>
 </head>
-<body>
+<body data-page="login">
     <main class="auth-page">
         <section class="auth-card">
-            <a href="index.html" class="back-link" aria-label="Вернуться на главную">
+            <a href="index.php" class="back-link" aria-label="Вернуться на главную">
                 <span aria-hidden="true">←</span>
             </a>
-
             <h1>Вход в аккаунт</h1>
             <p class="subtitle">Продолжайте делиться моментами, смотреть Reels и общаться с друзьями</p>
 
-            <form class="auth-form">
+            <form class="auth-form" data-auth-form="login">
                 <label>
                     <input type="text" name="login" placeholder="Логин или адрес электронной почты" required>
                 </label>
@@ -33,6 +32,7 @@
                     <a href="#" class="link">Забыли пароль?</a>
                 </div>
 
+                <p class="form-status" data-form-status aria-live="polite"></p>
                 <button type="submit" class="submit-btn">Войти</button>
             </form>
 

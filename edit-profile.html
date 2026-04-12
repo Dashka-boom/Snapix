@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="index.css">
+    <title>Snapix</title>
+</head>
+<body data-page="edit-profile">
+    <header class="header">
+        <nav class="nav">
+            <a href="index.php" class="logo">Snapix</a>
+            <input type="text" class="search" placeholder="Поиск">
+            <div class="menu">
+                <a href="#">Reels</a>
+                <div class="auth-actions" data-guest-actions>
+                    <a href="login.php">Войти</a>
+                    <a href="register.php" class="auth">Регистрация</a>
+                </div>
+                <a href="profile.php" class="user-avatar-link is-hidden" data-user-avatar-link aria-label="Открыть профиль">
+                    <span class="user-avatar" data-user-avatar></span>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="edit-profile-page">
+        <section class="edit-profile-card card-surface">
+            <div class="page-heading">
+                <a href="profile.php" class="inline-back-link">← Вернуться в профиль</a>
+                <p class="page-eyebrow">Настройки профиля</p>
+                <h1>Изменить профиль</h1>
+                <p>Обновите публичные данные аккаунта, чтобы шапка профиля, фон и блок «О себе» выглядели аккуратно на всех экранах.</p>
+            </div>
+
+            <form class="edit-profile-form" data-profile-form>
+                <div class="field">
+                    <label for="edit-username">Логин</label>
+                    <input id="edit-username" type="text" name="username" required>
+                </div>
+
+                <div class="field">
+                    <label for="edit-email">Электронный адрес</label>
+                    <input id="edit-email" type="email" name="email" required>
+                </div>
+
+                <div class="field">
+                    <label for="edit-birth-date">Дата рождения</label>
+                    <input id="edit-birth-date" type="date" name="birthDate" required>
+                </div>
+
+                <div class="field">
+                    <label for="edit-avatar-url">Ссылка на аватарку</label>
+                    <input id="edit-avatar-url" type="url" name="avatarUrl" placeholder="https://example.com/avatar.jpg">
+                    <p class="field-help">Если поле пустое, в шапке и навигации останется аккуратная круглая аватарка-заполнитель.</p>
+                </div>
+
+                <div class="field">
+                    <label for="edit-background-url">Ссылка на фоновое изображение профиля</label>
+                    <input id="edit-background-url" type="url" name="backgroundImageUrl" placeholder="https://example.com/cover.jpg">
+                </div>
+
+                <div class="field">
+                    <label for="edit-bio">О себе</label>
+                    <textarea id="edit-bio" name="bio" rows="5" placeholder="Расскажите о себе"></textarea>
+                </div>
+
+                <p class="form-status" data-form-status aria-live="polite"></p>
+
+                <div class="form-actions">
+                    <button type="submit" class="primary-link">Сохранить изменения</button>
+                    <a href="profile.html" class="secondary-link">Отмена</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

@@ -120,6 +120,12 @@ body {
     outline: none;
 }
 
+.auth-form input.input-error,
+.auth-form input.input-error:focus {
+    border-color: #c54242;
+    box-shadow: 0 0 0 4px rgba(197, 66, 66, 0.12);
+}
+
 .auth-options {
     display: flex;
     justify-content: space-between;
@@ -296,4 +302,16 @@ body {
     .consent-field span {
         max-width: none;
     }
+}
+
+
+.form-status {
+    min-height: 20px;
+    color: #c54242;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.form-status.is-success {
+    color: #1d7f4e;
 }
