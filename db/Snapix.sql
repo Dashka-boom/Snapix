@@ -150,6 +150,7 @@ CREATE TABLE `users` (
   `birth_date` date NOT NULL,
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `avatar` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `profile_cover` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `bio` text COLLATE utf8mb4_general_ci,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
