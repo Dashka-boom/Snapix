@@ -70,7 +70,9 @@ $posts = $stmt->fetchAll();
 
                 <div class="profile-main">
                     <h1 class="profile-username"><?php echo htmlspecialchars($user['login']); ?></h1>
-
+                    <?php if (!empty($user['bio'])): ?>
+                        <p class="profile-bio"><?php echo nl2br(htmlspecialchars($user['bio'])); ?></p>
+                    <?php endif; ?>
                     <div class="profile-metrics">
                         <div class="profile-metric">
                             <strong><?php echo $followingCount; ?></strong>
@@ -85,10 +87,6 @@ $posts = $stmt->fetchAll();
                             <span>Публикации</span>
                         </div>
                     </div>
-
-                    <?php if (!empty($user['bio'])): ?>
-                        <p class="profile-bio"><?php echo nl2br(htmlspecialchars($user['bio'])); ?></p>
-                    <?php endif; ?>
                 </div>
 
                 <a href="edit-profile.php" class="secondary-link profile-edit-btn">Изменить профиль</a>
