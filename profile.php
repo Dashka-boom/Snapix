@@ -91,7 +91,7 @@ $posts = $stmt->fetchAll();
                     <?php endif; ?>
                 </div>
 
-                <a href="edit_profile.php" class="secondary-link profile-edit-btn">Изменить профиль</a>
+                <a href="logout.php" class="secondary-link profile-edit-btn">Изменить профиль</a>
             </div>
         </section>
 
