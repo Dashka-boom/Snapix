@@ -415,7 +415,6 @@ $coverStyle = !empty($user['background_image'])
                 </div>
                 <div class="summary-copy">
                     <h1>Редактирование профиля</h1>
-                    <p>Те же обложка и аватар, что и в профиле. Выберите новые изображения и сохраните изменения.</p>
                 </div>
             </div>
         </section>
