@@ -1,0 +1,154 @@
+:root {
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --accent: #2563eb;
+    --danger: #dc2626;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.admin-auth-page,
+.admin-panel-page {
+    max-width: 1080px;
+    margin: 32px auto;
+    padding: 0 16px;
+}
+
+.admin-card,
+.admin-section,
+.admin-header {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
+
+.admin-card {
+    max-width: 440px;
+    margin: 48px auto;
+    padding: 28px;
+}
+
+.subtitle {
+    margin-top: 0;
+    color: var(--muted);
+}
+
+.admin-form {
+    display: grid;
+    gap: 12px;
+}
+
+.admin-form input,
+.admin-form button,
+.danger-btn {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+}
+
+.admin-form button {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    cursor: pointer;
+}
+
+.form-status {
+    min-height: 20px;
+    margin: 0;
+    color: var(--danger);
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 12px;
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+}
+
+.admin-nav {
+    display: flex;
+    gap: 12px;
+}
+
+.admin-nav a {
+    text-decoration: none;
+    color: var(--accent);
+}
+
+.admin-section {
+    margin-top: 16px;
+    padding: 16px;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    padding: 10px 8px;
+    vertical-align: top;
+}
+
+.inline-form {
+    margin: 0;
+}
+
+.danger-btn {
+    background: var(--danger);
+    color: #fff;
+    border: 1px solid var(--danger);
+    cursor: pointer;
+    padding: 8px 10px;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.status-message {
+    margin: 16px 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+}
+
+.status-success {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.status-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}

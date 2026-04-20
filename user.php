@@ -28,6 +28,7 @@ function formatBlockedUntil(?string $value): string
 $currentUser = null;
 $pendingRequestsCount = 0;
 $pendingRequestsPreview = [];
+$reportReasons = [];
 
 if (isset($_SESSION['user_id'])) {
     $viewerStmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id');
@@ -52,6 +53,9 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 
+$reportReasonsStmt = $pdo->query('SELECT id, label FROM moderation_reasons ORDER BY id ASC');
+$reportReasons = $reportReasonsStmt->fetchAll();
+
 $targetUserId = (int) ($_GET['id'] ?? $_POST['target_user_id'] ?? 0);
 
 if ($targetUserId <= 0) {
@@ -72,6 +76,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
     $targetUser = $targetUserStmt->fetch();
 
     if ($targetUser) {
+        if ($action === 'report_user') {
+            $reasonId = (int) ($_POST['reason_id'] ?? 0);
+            $customReason = trim($_POST['custom_reason'] ?? '');
+
+            if ((int) $targetUser['id'] !== (int) $currentUser['id'] && ($reasonId > 0 || $customReason !== '')) {
+                $insertReportStmt = $pdo->prepare('
+                    INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_id, reason_text)
+                    VALUES (:reporter_user_id, :target_user_id, :reason_id, :reason_text)
+                ');
+                $insertReportStmt->execute([
+                    'reporter_user_id' => $currentUser['id'],
+                    'target_user_id' => $targetUserId,
+                    'reason_id' => $reasonId > 0 ? $reasonId : null,
+                    'reason_text' => mb_substr($customReason !== '' ? $customReason : 'Нарушение правил сообщества', 0, 1000),
+                ]);
+            }
+        }
+
         $relationStmt = $pdo->prepare('
             SELECT id, status, declined_until
             FROM followers
@@ -358,6 +380,21 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                             <?php endif; ?>
                         <?php else: ?>
                             <a href="login.php" class="secondary-link profile-edit-btn">Войти</a>
+                        <?php endif; ?>
+
+                        <?php if ($currentUser && (int) $currentUser['id'] !== (int) $profileUser['id']): ?>
+                            <form method="post" class="follow-action-form" style="display:grid; gap:8px; margin-top: 10px;">
+                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                <input type="hidden" name="action" value="report_user">
+                                <select name="reason_id">
+                                    <option value="">Причина жалобы</option>
+                                    <?php foreach ($reportReasons as $reason): ?>
+                                        <option value="<?php echo (int) $reason['id']; ?>"><?php echo htmlspecialchars($reason['label']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="text" name="custom_reason" maxlength="1000" placeholder="Или своя причина">
+                                <button type="submit" class="secondary-link">Пожаловаться на пользователя</button>
+                            </form>
                         <?php endif; ?>
                     </div>
                 </div>

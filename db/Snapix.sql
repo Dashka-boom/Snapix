@@ -448,3 +448,81 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+-- --------------------------------------------------------
+-- Дополнительные таблицы модерации
+-- --------------------------------------------------------
+
+ALTER TABLE `users`
+  ADD COLUMN `role` enum('user','admin') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'user' AFTER `password`;
+
+CREATE TABLE `moderation_reasons` (
+  `id` bigint UNSIGNED NOT NULL,
+  `code` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `label` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `moderation_reports` (
+  `id` bigint UNSIGNED NOT NULL,
+  `reporter_user_id` bigint UNSIGNED NOT NULL,
+  `target_user_id` bigint UNSIGNED DEFAULT NULL,
+  `target_comment_id` bigint UNSIGNED DEFAULT NULL,
+  `reason_id` bigint UNSIGNED DEFAULT NULL,
+  `reason_text` varchar(1000) COLLATE utf8mb4_general_ci NOT NULL,
+  `status` enum('open','reviewed','resolved') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'open',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `user_notifications` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `report_id` bigint UNSIGNED DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `message` text COLLATE utf8mb4_general_ci NOT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+ALTER TABLE `moderation_reasons`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_moderation_reasons_code` (`code`);
+
+ALTER TABLE `moderation_reports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_reports_reporter` (`reporter_user_id`),
+  ADD KEY `idx_reports_target_user` (`target_user_id`),
+  ADD KEY `idx_reports_target_comment` (`target_comment_id`),
+  ADD KEY `idx_reports_reason` (`reason_id`),
+  ADD KEY `idx_reports_status_created` (`status`,`created_at`);
+
+ALTER TABLE `user_notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_notifications_user_read` (`user_id`,`is_read`,`created_at`),
+  ADD KEY `idx_notifications_report` (`report_id`);
+
+ALTER TABLE `moderation_reasons`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `moderation_reports`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `user_notifications`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `moderation_reports`
+  ADD CONSTRAINT `fk_reports_reporter` FOREIGN KEY (`reporter_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_reports_target_user` FOREIGN KEY (`target_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_reports_target_comment` FOREIGN KEY (`target_comment_id`) REFERENCES `comments` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_reports_reason` FOREIGN KEY (`reason_id`) REFERENCES `moderation_reasons` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `user_notifications`
+  ADD CONSTRAINT `fk_notifications_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_notifications_report` FOREIGN KEY (`report_id`) REFERENCES `moderation_reports` (`id`) ON DELETE SET NULL;
+
+INSERT INTO `moderation_reasons` (`code`, `label`) VALUES
+('spam', 'Спам'),
+('abuse', 'Оскорбления'),
+('hate', 'Разжигание ненависти'),
+('fraud', 'Мошенничество'),
+('other', 'Другое');

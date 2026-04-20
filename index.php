@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 require './config/config.php';
 
@@ -13,6 +13,7 @@ function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
 
 $user = null;
 $pendingRequestsCount = 0;
+$notifications = [];
 
 if (isset($_SESSION['user_id'])) {
     $stmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id');
@@ -23,11 +24,54 @@ if (isset($_SESSION['user_id'])) {
         $pendingStmt = $pdo->prepare("SELECT COUNT(*) FROM followers WHERE following_id = :id AND status = 'pending'");
         $pendingStmt->execute(['id' => $user['id']]);
         $pendingRequestsCount = (int) $pendingStmt->fetchColumn();
+
+        $notificationsStmt = $pdo->prepare('SELECT id, title, message, created_at FROM user_notifications WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 5');
+        $notificationsStmt->execute(['user_id' => $user['id']]);
+        $notifications = $notificationsStmt->fetchAll();
     }
 }
 
+$reportReasonsStmt = $pdo->query('SELECT id, label FROM moderation_reasons ORDER BY id ASC');
+$reportReasons = $reportReasonsStmt->fetchAll();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     $action = $_POST['action'] ?? '';
+
+    if ($action === 'mark_notifications_read') {
+        $markReadStmt = $pdo->prepare('UPDATE user_notifications SET is_read = 1 WHERE user_id = :user_id AND is_read = 0');
+        $markReadStmt->execute(['user_id' => $user['id']]);
+
+        header('Location: index.php');
+        exit;
+    }
+
+    if ($action === 'report_comment') {
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        $reasonId = (int) ($_POST['reason_id'] ?? 0);
+        $customReason = trim($_POST['custom_reason'] ?? '');
+
+        $commentStmt = $pdo->prepare('SELECT id, user_id FROM comments WHERE id = :id AND is_deleted = 0 LIMIT 1');
+        $commentStmt->execute(['id' => $commentId]);
+        $comment = $commentStmt->fetch();
+
+        if ($comment && (int) $comment['user_id'] !== (int) $user['id'] && ($reasonId > 0 || $customReason !== '')) {
+            $insertReportStmt = $pdo->prepare('
+                INSERT INTO moderation_reports (reporter_user_id, target_user_id, target_comment_id, reason_id, reason_text)
+                VALUES (:reporter_user_id, :target_user_id, :target_comment_id, :reason_id, :reason_text)
+            ');
+            $insertReportStmt->execute([
+                'reporter_user_id' => $user['id'],
+                'target_user_id' => (int) $comment['user_id'],
+                'target_comment_id' => $commentId,
+                'reason_id' => $reasonId > 0 ? $reasonId : null,
+                'reason_text' => mb_substr($customReason !== '' ? $customReason : 'Нарушение правил сообщества', 0, 1000),
+            ]);
+        }
+
+        header('Location: index.php');
+        exit;
+    }
+
     $postId = (int) ($_POST['post_id'] ?? 0);
 
     if ($postId > 0) {
@@ -79,10 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
             $commentText = trim($_POST['comment_text'] ?? '');
 
             if ($commentText !== '') {
-                $insertCommentStmt = $pdo->prepare('
-                    INSERT INTO comments (post_id, user_id, comment_text)
-                    VALUES (:post_id, :user_id, :comment_text)
-                ');
+                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text) VALUES (:post_id, :user_id, :comment_text)');
                 $insertCommentStmt->execute([
                     'post_id' => $postId,
                     'user_id' => $user['id'],
@@ -140,10 +181,10 @@ $feedPosts = $feedStmt->fetchAll();
 $commentMap = [];
 
 if ($feedPosts) {
-    $postIds = array_map(static fn ($post): int => (int) $post['id'], $feedPosts);
+    $postIds = array_map(static fn($post): int => (int) $post['id'], $feedPosts);
     $placeholders = implode(',', array_fill(0, count($postIds), '?'));
 
-    $commentsStmt = $pdo->prepare("
+    $commentsStmt = $pdo->prepare(" 
         SELECT
             comments.id,
             comments.post_id,
@@ -216,6 +257,26 @@ if ($feedPosts) {
     </header>
     <main>
         <section class="feed-wrap">
+            <?php if ($user && $notifications): ?>
+                <section class="card-surface" style="padding: 16px; margin-bottom: 16px;">
+                    <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px;">
+                        <h2 style="margin: 0;">Уведомления</h2>
+                        <form method="post">
+                            <input type="hidden" name="action" value="mark_notifications_read">
+                            <button type="submit" class="secondary-link">Отметить как прочитанные</button>
+                        </form>
+                    </div>
+                    <div style="display:grid; gap: 10px; margin-top: 12px;">
+                        <?php foreach ($notifications as $notification): ?>
+                            <article style="background: #f8fafc; border:1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
+                                <strong><?php echo htmlspecialchars($notification['title']); ?></strong>
+                                <p style="margin: 8px 0 0;"><?php echo nl2br(htmlspecialchars($notification['message'])); ?></p>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
             <div class="section-heading">
                 <h1>Лента публикаций</h1>
             </div>
@@ -227,7 +288,7 @@ if ($feedPosts) {
                         <?php $authorProfileUrl = buildProfileUrl((int) $post['user_id'], $user ? (int) $user['id'] : null); ?>
                         <article class="feed-card card-surface">
                             <header class="feed-card-header">
-                                <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-avatar-link" aria-label="РћС‚РєСЂС‹С‚СЊ РїСЂРѕС„РёР»СЊ <?php echo htmlspecialchars($post['login']); ?>">
+                                <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-avatar-link" aria-label="Открыть профиль <?php echo htmlspecialchars($post['login']); ?>">
                                     <div class="feed-author-avatar"<?php if (!empty($post['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($post['avatar']); ?>');"<?php endif; ?>>
                                         <?php if (empty($post['avatar'])): ?>
                                             <?php echo htmlspecialchars(mb_substr($post['login'], 0, 1)); ?>
@@ -294,6 +355,20 @@ if ($feedPosts) {
                                                     <strong><?php echo htmlspecialchars($comment['login']); ?></strong>
                                                 </a>
                                                 <p><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p>
+                                                <?php if ($user && (int) $comment['user_id'] !== (int) $user['id']): ?>
+                                                    <form method="post" style="display: grid; gap: 6px; margin-top: 8px;">
+                                                        <input type="hidden" name="action" value="report_comment">
+                                                        <input type="hidden" name="comment_id" value="<?php echo (int) $comment['id']; ?>">
+                                                        <select name="reason_id">
+                                                            <option value="">Причина жалобы</option>
+                                                            <?php foreach ($reportReasons as $reason): ?>
+                                                                <option value="<?php echo (int) $reason['id']; ?>"><?php echo htmlspecialchars($reason['label']); ?></option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                        <input type="text" name="custom_reason" maxlength="1000" placeholder="Или своя причина">
+                                                        <button type="submit" class="secondary-link">Пожаловаться на комментарий</button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endforeach; ?>
                                     <?php else: ?>
@@ -322,4 +397,3 @@ if ($feedPosts) {
     </main>
 </body>
 </html>
-
