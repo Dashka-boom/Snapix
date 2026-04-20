@@ -30,7 +30,7 @@ $stmt->execute(['id' => $user['id']]);
 $postsCount = $stmt->fetchColumn();
 
 $stmt = $pdo->prepare('
-    SELECT posts.*, post_media.media_url
+    SELECT posts.*, post_media.media_url, post_media.media_type
     FROM posts
     LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
     WHERE posts.user_id = :id AND posts.is_deleted = 0
@@ -38,21 +38,32 @@ $stmt = $pdo->prepare('
 ');
 $stmt->execute(['id' => $user['id']]);
 $posts = $stmt->fetchAll();
+$postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
 ?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="css/index.css">
     <title>Snapix</title>
 </head>
 <body data-page="profile">
-    <header class="profile-sticky-nav">
-        <div class="profile-nav-inner">
-            <a href="index.php" class="profile-nav-back" aria-label="На главную">←</a>
-            <div class="profile-nav-title">Профиль</div>
-        </div>
+  <header class="header">
+        <nav class="nav">
+            <a href="index.php" class="logo">Snapix</a>
+            <input type="text" class="search" placeholder="Поиск">
+            <div class="menu">
+                <a href="#">Reels</a>
+                <a href="profile.php" class="user-avatar-link" aria-label="Открыть профиль">
+                    <?php if (!empty($user['avatar'])): ?>
+                        <span class="user-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></span>
+                    <?php else: ?>
+                        <span class="user-avatar"><?php echo htmlspecialchars(mb_substr($user['login'], 0, 1)); ?></span>
+                    <?php endif; ?>
+                </a>
+            </div>
+        </nav>
     </header>
 
     <main class="profile-page">
@@ -69,7 +80,10 @@ $posts = $stmt->fetchAll();
                 </div>
 
                 <div class="profile-main">
-                    <h1 class="profile-username"><?php echo htmlspecialchars($user['login']); ?></h1>
+                    < <div class="profile-name-row">
+                        <h1 class="profile-username"><?php echo htmlspecialchars($user['login']); ?></h1>
+                        <a href="create-post.php" class="profile-create-btn" aria-label="Создать публикацию">+</a>
+                    </div>
                     <?php if (!empty($user['bio'])): ?>
                         <p class="profile-bio"><?php echo nl2br(htmlspecialchars($user['bio'])); ?></p>
                     <?php endif; ?>
@@ -98,11 +112,17 @@ $posts = $stmt->fetchAll();
                 <h2>Публикации</h2>
             </div>
 
+  <?php if ($postCreated): ?>
+                <p class="form-status is-success">Публикация успешно добавлена.</p>
+            <?php endif; ?>
+
             <?php if ($posts): ?>
                 <div class="posts-grid">
                     <?php foreach ($posts as $post): ?>
                         <article class="post-card">
-                            <?php if (!empty($post['media_url'])): ?>
+                             <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
+                                <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
+                            <?php elseif (!empty($post['media_url'])): ?>
                                 <div class="post-card-media" style="background-image: url('<?php echo htmlspecialchars($post['media_url']); ?>');"></div>
                             <?php else: ?>
                                 <div class="post-card-media"></div>

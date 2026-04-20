@@ -15,7 +15,7 @@ try {
     }
 }
 
-$stmt = $pdo->prepare('SELECT id, login, email, bio, avatar, background_image FROM users WHERE id = :id');
+$stmt = $pdo->prepare('SELECT id, login, email, birth_date, gender, city, avatar, bio, background_image, website, gender, city, is_private FROM users WHERE id = :id');
 $stmt->execute(['id' => $_SESSION['user_id']]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -76,49 +76,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nextLogin = trim($_POST['login'] ?? '');
     $nextEmail = trim($_POST['email'] ?? '');
     $nextBio = trim($_POST['bio'] ?? '');
+    $nextWebsite = trim($_POST['website'] ?? '');
+    $nextBirthDate = trim($_POST['birth_date'] ?? '');
+    $nextGender = trim($_POST['gender'] ?? '');
+    $nextCity = trim($_POST['city'] ?? '');
+    $nextIsPrivate = isset($_POST['is_private']) ? 1 : 0;
 
     $nextLogin = $nextLogin !== '' ? $nextLogin : $user['login'];
     $nextEmail = $nextEmail !== '' ? $nextEmail : $user['email'];
 
-    try {
-        $newAvatar = $user['avatar'];
-        $newBackground = $user['background_image'];
+    if ($nextBirthDate !== '') {
+        $birthDateObj = DateTime::createFromFormat('Y-m-d', $nextBirthDate);
+        $today = new DateTime();
 
-        $uploadedAvatar = saveUploadedImage($_FILES['avatar'] ?? [], 'avatar');
-        if ($uploadedAvatar !== null) {
-            $newAvatar = $uploadedAvatar;
-        }
-
-        $uploadedBackground = saveUploadedImage($_FILES['background'] ?? [], 'background');
-        if ($uploadedBackground !== null) {
-            $newBackground = $uploadedBackground;
-        }
-
-        $update = $pdo->prepare('UPDATE users SET login = :login, email = :email, bio = :bio, avatar = :avatar, background_image = :background WHERE id = :id');
-        $update->execute([
-            'login' => $nextLogin,
-            'email' => $nextEmail,
-            'bio' => $nextBio,
-            'avatar' => $newAvatar,
-            'background' => $newBackground,
-            'id' => $user['id'],
-        ]);
-
-        $stmt->execute(['id' => $_SESSION['user_id']]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        $statusMessage = 'Профиль обновлён.';
-        $statusType = 'is-success';
-    } catch (PDOException $e) {
-        if (($e->errorInfo[1] ?? null) === 1062) {
-            $statusMessage = 'Логин или электронная почта уже заняты.';
+        if (!$birthDateObj || $birthDateObj->format('Y-m-d') !== $nextBirthDate) {
+            $statusMessage = 'Введите корректную дату рождения.';
+            $statusType = 'is-error';
+        } elseif ($birthDateObj > $today) {
+            $statusMessage = 'Дата рождения не может быть в будущем.';
+            $statusType = 'is-error';
         } else {
-            $statusMessage = 'Не удалось сохранить профиль. Попробуйте позже.';
+            $age = $today->diff($birthDateObj)->y;
+
+            if ($age < 13) {
+                $statusMessage = 'Пользователю должно быть не меньше 13 лет.';
+                $statusType = 'is-error';
+            }
         }
-        $statusType = 'is-error';
-    } catch (Throwable $e) {
-        $statusMessage = $e->getMessage();
-        $statusType = 'is-error';
+    }
+
+    if ($statusType !== 'is-error') {
+        try {
+            $newAvatar = $user['avatar'];
+            $newBackground = $user['background_image'];
+
+            $uploadedAvatar = saveUploadedImage($_FILES['avatar'] ?? [], 'avatar');
+            if ($uploadedAvatar !== null) {
+                $newAvatar = $uploadedAvatar;
+            }
+
+            $uploadedBackground = saveUploadedImage($_FILES['background'] ?? [], 'background');
+            if ($uploadedBackground !== null) {
+                $newBackground = $uploadedBackground;
+            }
+
+            $update = $pdo->prepare('
+                UPDATE users 
+                SET 
+                    login = :login,
+                    email = :email,
+                    bio = :bio,
+                    avatar = :avatar,
+                    background_image = :background,
+                    website = :website,
+                    birth_date = :birth_date,
+                    gender = :gender,
+                    city = :city,
+                    is_private = :is_private
+                WHERE id = :id
+            ');
+
+            $update->execute([
+                'login' => $nextLogin,
+                'email' => $nextEmail,
+                'bio' => $nextBio,
+                'avatar' => $newAvatar,
+                'background' => $newBackground,
+                'website' => $nextWebsite !== '' ? $nextWebsite : null,
+                'birth_date' => $nextBirthDate !== '' ? $nextBirthDate : null,
+                'gender' => $nextGender !== '' ? $nextGender : null,
+                'city' => $nextCity !== '' ? $nextCity : null,
+                'is_private' => $nextIsPrivate,
+                'id' => $user['id'],
+            ]);
+
+            $stmt->execute(['id' => $_SESSION['user_id']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $statusMessage = 'Профиль обновлён.';
+            $statusType = 'is-success';
+        } catch (PDOException $e) {
+            if (($e->errorInfo[1] ?? null) === 1062) {
+                $statusMessage = 'Логин или электронная почта уже заняты.';
+            } else {
+                $statusMessage = 'Не удалось сохранить профиль. Попробуйте позже.';
+            }
+            $statusType = 'is-error';
+        } catch (Throwable $e) {
+            $statusMessage = $e->getMessage();
+            $statusType = 'is-error';
+        }
     }
 }
 
@@ -135,249 +182,9 @@ $coverStyle = !empty($user['background_image'])
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/edit-profile.css">
     <title>Snapix</title>
-    <style>
-        .edit-profile-page {
-            max-width: 980px;
-            margin: 1.25rem auto 2.5rem;
-            padding: 0 1rem;
-            display: grid;
-            gap: 1rem;
-        }
-
-        .edit-preview-shell {
-            overflow: hidden;
-            border: 1px solid #d7e4f2;
-            border-radius: 22px;
-            background: #fff;
-            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-        }
-
-        .edit-profile-cover {
-            position: relative;
-            min-height: 230px;
-            background: linear-gradient(135deg, #f7fbff 0%, #fdf7ef 100%);
-            background-size: cover;
-            background-position: center;
-        }
-
-        .edit-profile-cover::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.2));
-        }
-
-        .upload-trigger {
-            position: absolute;
-            z-index: 2;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 46px;
-            height: 46px;
-            border-radius: 999px;
-            border: 0;
-            background: rgba(15, 23, 42, 0.72);
-            color: #fff;
-            cursor: pointer;
-            transition: transform .2s ease, background-color .2s ease;
-        }
-
-        .upload-trigger:hover,
-        .upload-trigger:focus-visible {
-            transform: translateY(-1px);
-            background: rgba(15, 23, 42, 0.86);
-            outline: none;
-        }
-
-        .upload-trigger.cover {
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .upload-trigger.cover:hover,
-        .upload-trigger.cover:focus-visible {
-            transform: translate(-50%, -53%);
-        }
-
-        .upload-trigger svg {
-            width: 22px;
-            height: 22px;
-            fill: currentColor;
-            pointer-events: none;
-        }
-
-        .edit-preview-summary {
-            margin-top: -60px;
-            margin-inline: 1rem;
-            margin-bottom: 1rem;
-            position: relative;
-            z-index: 3;
-            background: #fff;
-            border-radius: 18px;
-            border: 1px solid #e2ebf5;
-            padding: 1rem;
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .edit-avatar-shell {
-            position: relative;
-            width: 112px;
-            height: 112px;
-            border-radius: 50%;
-            border: 4px solid #fff;
-            background: #fff;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
-        }
-
-        .edit-avatar {
-            width: 100%;
-            height: 100%;
-            border-radius: inherit;
-            background: linear-gradient(135deg, #d9efff 0%, #f3f4f6 100%);
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #334155;
-            font-size: 1.9rem;
-            font-weight: 700;
-        }
-
-        .upload-trigger.avatar {
-            right: -2px;
-            bottom: -2px;
-            width: 40px;
-            height: 40px;
-            border: 2px solid #fff;
-        }
-
-        .summary-copy h1 {
-            margin: 0;
-            color: #0f172a;
-            font-size: clamp(1.3rem, 2.5vw, 1.9rem);
-        }
-
-        .summary-copy p {
-            margin: 0.35rem 0 0;
-            color: #64748b;
-        }
-
-        .form-card {
-            background: #fff;
-            border-radius: 20px;
-            border: 1px solid #e2ebf5;
-            padding: 1.15rem;
-            display: grid;
-            gap: 1rem;
-        }
-
-        .field-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 0.8rem;
-        }
-
-        .field {
-            display: grid;
-            gap: 0.35rem;
-        }
-
-        .field.full {
-            grid-column: span 2;
-        }
-
-        .field label {
-            color: #334155;
-            font-size: .92rem;
-            font-weight: 600;
-        }
-
-        .field input,
-        .field textarea {
-            width: 100%;
-            border-radius: 10px;
-            border: 1px solid #d7e4f2;
-            background: #fff;
-            padding: 0.72rem 0.85rem;
-            font: inherit;
-            color: #0f172a;
-        }
-
-        .field textarea {
-            min-height: 110px;
-            resize: vertical;
-        }
-
-        .field input:focus,
-        .field textarea:focus {
-            outline: none;
-            border-color: #0095f6;
-            box-shadow: 0 0 0 3px rgba(0, 149, 246, .13);
-        }
-
-        .status {
-            margin: 0;
-            font-size: .95rem;
-            color: #475569;
-        }
-
-        .status.is-success {
-            color: #0284c7;
-        }
-
-        .status.is-error {
-            color: #dc2626;
-        }
-
-        .actions {
-            display: flex;
-            gap: .7rem;
-            justify-content: flex-end;
-        }
-
-        .file-input-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        @media (max-width: 760px) {
-            .edit-preview-summary {
-                grid-template-columns: 1fr;
-                justify-items: center;
-                text-align: center;
-            }
-
-            .field-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .field.full {
-                grid-column: auto;
-            }
-
-            .actions {
-                flex-direction: column;
-            }
-
-            .actions .secondary-link,
-            .actions .primary-link {
-                width: 100%;
-                text-align: center;
-                justify-content: center;
-            }
-        }
-    </style>
 </head>
 <body data-page="edit-profile">
     <header class="header">
@@ -433,6 +240,44 @@ $coverStyle = !empty($user['background_image'])
                     <label for="bio">О себе</label>
                     <textarea id="bio" name="bio" placeholder="Расскажите о себе"><?php echo htmlspecialchars((string) ($user['bio'] ?? '')); ?></textarea>
                 </div>
+
+                <div class="field">
+    <label for="city">Город</label>
+    <input id="city" type="text" name="city"
+        value="<?php echo htmlspecialchars((string)($user['city'] ?? '')); ?>"
+        placeholder="Введите город">
+</div>
+
+<div class="field">
+    <label for="birth_date">Дата рождения</label>
+    <input id="birth_date" type="date" name="birth_date"
+        value="<?php echo htmlspecialchars((string)($user['birth_date'] ?? '')); ?>">
+</div>
+
+<div class="field">
+    <label for="gender">Пол</label>
+    <select id="gender" name="gender">
+        <option value="">Не выбрано</option>
+        <option value="Женский" <?php echo (($user['gender'] ?? '') === 'Женский') ? 'selected' : ''; ?>>Женский</option>
+        <option value="Мужской" <?php echo (($user['gender'] ?? '') === 'Мужской') ? 'selected' : ''; ?>>Мужской</option>
+        <option value="Другой" <?php echo (($user['gender'] ?? '') === 'Другой') ? 'selected' : ''; ?>>Другой</option>
+    </select>
+</div>
+
+<div class="field full">
+    <label for="website">Сайт</label>
+    <input id="website" type="url" name="website"
+        value="<?php echo htmlspecialchars((string)($user['website'] ?? '')); ?>"
+        placeholder="https://example.com">
+</div>
+
+<div class="field full">
+    <label class="checkbox-field">
+        <input type="checkbox" name="is_private"
+            <?php echo !empty($user['is_private']) ? 'checked' : ''; ?>>
+        Закрытый аккаунт
+    </label>
+</div>
             </div>
 
             <p class="status <?php echo $statusType; ?>"><?php echo htmlspecialchars($statusMessage); ?></p>
