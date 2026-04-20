@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 require './config/config.php';
 
@@ -12,11 +12,18 @@ function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
 }
 
 $user = null;
+$pendingRequestsCount = 0;
 
 if (isset($_SESSION['user_id'])) {
     $stmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id');
     $stmt->execute(['id' => $_SESSION['user_id']]);
     $user = $stmt->fetch();
+
+    if ($user) {
+        $pendingStmt = $pdo->prepare("SELECT COUNT(*) FROM followers WHERE following_id = :id AND status = 'pending'");
+        $pendingStmt->execute(['id' => $user['id']]);
+        $pendingRequestsCount = (int) $pendingStmt->fetchColumn();
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
@@ -184,6 +191,12 @@ if ($feedPosts) {
             <div class="menu">
                 <a href="#">Reels</a>
                 <?php if ($user): ?>
+                    <a href="connections.php?view=requests" class="notification-bell" aria-label="Открыть заявки">
+                        <span class="notification-bell-icon">&#128276;</span>
+                        <?php if ($pendingRequestsCount > 0): ?>
+                            <span class="notification-badge"><?php echo $pendingRequestsCount; ?></span>
+                        <?php endif; ?>
+                    </a>
                     <a href="create-post.php" class="header-plus-btn" aria-label="Добавить публикацию">+</a>
                     <a href="profile.php" class="user-avatar-link" aria-label="Открыть профиль">
                         <?php if (!empty($user['avatar'])): ?>
@@ -214,7 +227,7 @@ if ($feedPosts) {
                         <?php $authorProfileUrl = buildProfileUrl((int) $post['user_id'], $user ? (int) $user['id'] : null); ?>
                         <article class="feed-card card-surface">
                             <header class="feed-card-header">
-                                <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-avatar-link" aria-label="Открыть профиль <?php echo htmlspecialchars($post['login']); ?>">
+                                <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-avatar-link" aria-label="РћС‚РєСЂС‹С‚СЊ РїСЂРѕС„РёР»СЊ <?php echo htmlspecialchars($post['login']); ?>">
                                     <div class="feed-author-avatar"<?php if (!empty($post['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($post['avatar']); ?>');"<?php endif; ?>>
                                         <?php if (empty($post['avatar'])): ?>
                                             <?php echo htmlspecialchars(mb_substr($post['login'], 0, 1)); ?>
@@ -234,7 +247,7 @@ if ($feedPosts) {
                                 <?php elseif (!empty($post['media_url'])): ?>
                                     <img src="<?php echo htmlspecialchars($post['media_url']); ?>" alt="Публикация пользователя <?php echo htmlspecialchars($post['login']); ?>">
                                 <?php else: ?>
-                                    <div class="feed-card-media-placeholder">Медиа недоступно</div>
+                                    <div class="feed-card-media-placeholder">Медиа не доступно</div>
                                 <?php endif; ?>
                             </div>
 
@@ -303,9 +316,10 @@ if ($feedPosts) {
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>
-                <p class="empty-state">Лента пока пустая. Добавьте первую публикацию.</p>
+                <p class="empty-state">Лента публикаций пустая. Добавьте первую публикацию.</p>
             <?php endif; ?>
         </section>
     </main>
 </body>
 </html>
+

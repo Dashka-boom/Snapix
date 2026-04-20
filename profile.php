@@ -11,6 +11,20 @@ function buildProfileUrl(int $profileUserId, int $currentUserId): string
     return 'user.php?id=' . $profileUserId;
 }
 
+function formatBlockedUntil(?string $value): string
+{
+    if (!$value) {
+        return '';
+    }
+
+    $timestamp = strtotime($value);
+    if (!$timestamp) {
+        return '';
+    }
+
+    return date('d.m.Y H:i', $timestamp);
+}
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -26,21 +40,84 @@ if (!$user) {
     exit;
 }
 
-$stmt = $pdo->prepare('SELECT COUNT(*) FROM followers WHERE follower_id = :id');
-$stmt->execute(['id' => $user['id']]);
-$followingCount = $stmt->fetchColumn();
+$panel = $_GET['panel'] ?? '';
+$allowedPanels = ['followers', 'following', 'requests'];
+if (!in_array($panel, $allowedPanels, true)) {
+    $panel = '';
+}
 
-$stmt = $pdo->prepare('SELECT COUNT(*) FROM followers WHERE following_id = :id');
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $postId = (int) ($_POST['post_id'] ?? 0);
+    $requestId = (int) ($_POST['request_id'] ?? 0);
+    $redirectPanel = $_POST['redirect_panel'] ?? $panel;
+
+    if ($action === 'delete_post' && $postId > 0) {
+        $deleteStmt = $pdo->prepare('UPDATE posts SET is_deleted = 1 WHERE id = :id AND user_id = :user_id');
+        $deleteStmt->execute([
+            'id' => $postId,
+            'user_id' => $user['id'],
+        ]);
+
+        header('Location: profile.php?post_deleted=1');
+        exit;
+    }
+
+    if ($action === 'accept_follow_request' && $requestId > 0) {
+        $acceptStmt = $pdo->prepare("
+            UPDATE followers
+            SET status = 'accepted', declined_until = NULL
+            WHERE id = :id AND following_id = :following_id AND status = 'pending'
+        ");
+        $acceptStmt->execute([
+            'id' => $requestId,
+            'following_id' => $user['id'],
+        ]);
+
+        header('Location: profile.php?panel=requests&request_accepted=1#requests-panel');
+        exit;
+    }
+
+    if ($action === 'decline_follow_request' && $requestId > 0) {
+        $declineStmt = $pdo->prepare("
+            UPDATE followers
+            SET status = 'declined', declined_until = DATE_ADD(NOW(), INTERVAL 3 DAY)
+            WHERE id = :id AND following_id = :following_id AND status = 'pending'
+        ");
+        $declineStmt->execute([
+            'id' => $requestId,
+            'following_id' => $user['id'],
+        ]);
+
+        header('Location: profile.php?panel=requests&request_declined=1#requests-panel');
+        exit;
+    }
+
+    if ($action === 'show_panel' && in_array($redirectPanel, $allowedPanels, true)) {
+        header('Location: profile.php?panel=' . $redirectPanel . '#connections-panel');
+        exit;
+    }
+}
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM followers WHERE follower_id = :id AND status = 'accepted'");
 $stmt->execute(['id' => $user['id']]);
-$followersCount = $stmt->fetchColumn();
+$followingCount = (int) $stmt->fetchColumn();
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM followers WHERE following_id = :id AND status = 'accepted'");
+$stmt->execute(['id' => $user['id']]);
+$followersCount = (int) $stmt->fetchColumn();
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM followers WHERE following_id = :id AND status = 'pending'");
+$stmt->execute(['id' => $user['id']]);
+$pendingRequestsCount = (int) $stmt->fetchColumn();
 
 $stmt = $pdo->prepare('SELECT COUNT(*) FROM posts WHERE user_id = :id AND is_deleted = 0');
 $stmt->execute(['id' => $user['id']]);
-$postsCount = $stmt->fetchColumn();
+$postsCount = (int) $stmt->fetchColumn();
 
 $stmt = $pdo->prepare('SELECT COUNT(*) FROM saved_posts WHERE user_id = :id');
 $stmt->execute(['id' => $user['id']]);
-$savedPostsCount = $stmt->fetchColumn();
+$savedPostsCount = (int) $stmt->fetchColumn();
 
 $stmt = $pdo->prepare('
     SELECT posts.*, post_media.media_url, post_media.media_type
@@ -64,7 +141,44 @@ $stmt = $pdo->prepare('
 $stmt->execute(['id' => $user['id']]);
 $savedPosts = $stmt->fetchAll();
 
+$stmt = $pdo->prepare("
+    SELECT followers.id, followers.created_at, users.id AS user_id, users.login, users.avatar
+    FROM followers
+    INNER JOIN users ON users.id = followers.follower_id
+    WHERE followers.following_id = :id AND followers.status = 'pending'
+    ORDER BY followers.created_at DESC
+");
+$stmt->execute(['id' => $user['id']]);
+$pendingRequests = $stmt->fetchAll();
+
+$stmt = $pdo->prepare("
+    SELECT users.id, users.login, users.avatar
+    FROM followers
+    INNER JOIN users ON users.id = followers.follower_id
+    WHERE followers.following_id = :id AND followers.status = 'accepted'
+    ORDER BY users.login ASC
+");
+$stmt->execute(['id' => $user['id']]);
+$followersList = $stmt->fetchAll();
+
+$stmt = $pdo->prepare("
+    SELECT users.id, users.login, users.avatar
+    FROM followers
+    INNER JOIN users ON users.id = followers.following_id
+    WHERE followers.follower_id = :id AND followers.status = 'accepted'
+    ORDER BY users.login ASC
+");
+$stmt->execute(['id' => $user['id']]);
+$followingList = $stmt->fetchAll();
+
 $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
+$postUpdated = isset($_GET['post_updated']) && $_GET['post_updated'] === '1';
+$postDeleted = isset($_GET['post_deleted']) && $_GET['post_deleted'] === '1';
+$requestAccepted = isset($_GET['request_accepted']) && $_GET['request_accepted'] === '1';
+$requestDeclined = isset($_GET['request_declined']) && $_GET['request_declined'] === '1';
+$showRequestsBlock = $panel === 'requests' || !empty($pendingRequests) || $requestAccepted || $requestDeclined;
+$showFollowersPanel = $panel === 'followers';
+$showFollowingPanel = $panel === 'following';
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -81,6 +195,12 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
             <input type="text" class="search" placeholder="Поиск">
             <div class="menu">
                 <a href="#">Reels</a>
+                <a href="connections.php?view=requests" class="notification-bell" data-notification-toggle aria-label="Открыть заявки">
+                    <span class="notification-bell-icon">&#128276;</span>
+                    <?php if ($pendingRequestsCount > 0): ?>
+                        <span class="notification-badge"><?php echo $pendingRequestsCount; ?></span>
+                    <?php endif; ?>
+                </a>
                 <a href="profile.php" class="user-avatar-link" aria-label="Открыть профиль">
                     <?php if (!empty($user['avatar'])): ?>
                         <span class="user-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></span>
@@ -116,20 +236,20 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
                     <?php endif; ?>
 
                     <div class="profile-metrics">
-                        <div class="profile-metric">
-                            <strong><?php echo (int) $followingCount; ?></strong>
+                        <a href="connections.php?view=following" class="profile-metric profile-metric-link">
+                            <strong><?php echo $followingCount; ?></strong>
                             <span>Подписки</span>
-                        </div>
-                        <div class="profile-metric">
-                            <strong><?php echo (int) $followersCount; ?></strong>
+                        </a>
+                        <a href="connections.php?view=followers" class="profile-metric profile-metric-link">
+                            <strong><?php echo $followersCount; ?></strong>
                             <span>Подписчики</span>
-                        </div>
+                        </a>
                         <div class="profile-metric">
-                            <strong><?php echo (int) $postsCount; ?></strong>
+                            <strong><?php echo $postsCount; ?></strong>
                             <span>Публикации</span>
                         </div>
                         <div class="profile-metric">
-                            <strong><?php echo (int) $savedPostsCount; ?></strong>
+                            <strong><?php echo $savedPostsCount; ?></strong>
                             <span>Избранное</span>
                         </div>
                     </div>
@@ -142,6 +262,129 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
             </div>
         </section>
 
+        <div class="notification-popover" id="notificationPopover">
+            <div class="notification-popover-header">
+                <strong>Заявки</strong>
+                <a href="connections.php?view=requests">Открыть все</a>
+            </div>
+
+            <?php if ($pendingRequests): ?>
+                <div class="notification-popover-list">
+                    <?php foreach (array_slice($pendingRequests, 0, 5) as $request): ?>
+                        <article class="notification-popover-item">
+                            <a href="<?php echo htmlspecialchars(buildProfileUrl((int) $request['user_id'], (int) $user['id'])); ?>" class="request-user">
+                                <span class="request-avatar"<?php if (!empty($request['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($request['avatar']); ?>');"<?php endif; ?>>
+                                    <?php if (empty($request['avatar'])): ?>
+                                        <?php echo htmlspecialchars(mb_substr($request['login'], 0, 1)); ?>
+                                    <?php endif; ?>
+                                </span>
+                                <span class="request-copy">
+                                    <strong><?php echo htmlspecialchars($request['login']); ?></strong>
+                                    <span>Хочет подружиться с вами</span>
+                                </span>
+                            </a>
+                            <div class="notification-popover-actions">
+                                <form method="post">
+                                    <input type="hidden" name="action" value="accept_follow_request">
+                                    <input type="hidden" name="request_id" value="<?php echo (int) $request['id']; ?>">
+                                    <button type="submit" class="primary-link">Принять</button>
+                                </form>
+                                <form method="post">
+                                    <input type="hidden" name="action" value="decline_follow_request">
+                                    <input type="hidden" name="request_id" value="<?php echo (int) $request['id']; ?>">
+                                    <button type="submit" class="secondary-link">Отклонить</button>
+                                </form>
+                            </div>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p class="notification-popover-empty">Новых заявок нет.</p>
+            <?php endif; ?>
+        </div>
+
+        <?php if ($showRequestsBlock): ?>
+            <section id="requests-panel" class="profile-posts card-surface">
+                <div class="section-heading">
+                    <h2>Заявки в подписчики</h2>
+                </div>
+
+                <?php if ($requestAccepted): ?>
+                    <p class="form-status is-success">Заявка принята. Пользователь добавлен в подписчики.</p>
+                <?php endif; ?>
+
+                <?php if ($requestDeclined): ?>
+                    <p class="form-status is-success">Заявка отклонена. Повторная заявка временно заблокирована.</p>
+                <?php endif; ?>
+
+                <?php if ($pendingRequests): ?>
+                    <div class="request-list">
+                        <?php foreach ($pendingRequests as $request): ?>
+                            <article class="request-card">
+                                <a href="<?php echo htmlspecialchars(buildProfileUrl((int) $request['user_id'], (int) $user['id'])); ?>" class="request-user">
+                                    <span class="request-avatar"<?php if (!empty($request['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($request['avatar']); ?>');"<?php endif; ?>>
+                                        <?php if (empty($request['avatar'])): ?>
+                                            <?php echo htmlspecialchars(mb_substr($request['login'], 0, 1)); ?>
+                                        <?php endif; ?>
+                                    </span>
+                                    <span class="request-copy">
+                                        <strong><?php echo htmlspecialchars($request['login']); ?></strong>
+                                        <span>Этот пользователь хочет подружиться с вами</span>
+                                    </span>
+                                </a>
+
+                                <div class="request-actions">
+                                    <form method="post">
+                                        <input type="hidden" name="action" value="accept_follow_request">
+                                        <input type="hidden" name="request_id" value="<?php echo (int) $request['id']; ?>">
+                                        <button type="submit" class="primary-link">Принять</button>
+                                    </form>
+                                    <form method="post">
+                                        <input type="hidden" name="action" value="decline_follow_request">
+                                        <input type="hidden" name="request_id" value="<?php echo (int) $request['id']; ?>">
+                                        <button type="submit" class="secondary-link">Отклонить</button>
+                                    </form>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <p class="empty-state">Новых заявок пока нет.</p>
+                <?php endif; ?>
+            </section>
+        <?php endif; ?>
+
+        <?php if ($showFollowersPanel || $showFollowingPanel): ?>
+            <section id="connections-panel" class="profile-posts card-surface">
+                <div class="section-heading">
+                    <h2><?php echo $showFollowersPanel ? 'Подписчики' : 'Подписки'; ?></h2>
+                </div>
+
+                <?php $connectionList = $showFollowersPanel ? $followersList : $followingList; ?>
+                <?php if ($connectionList): ?>
+                    <div class="request-list">
+                        <?php foreach ($connectionList as $connectionUser): ?>
+                            <a href="<?php echo htmlspecialchars(buildProfileUrl((int) $connectionUser['id'], (int) $user['id'])); ?>" class="request-card request-card-link">
+                                <span class="request-user">
+                                    <span class="request-avatar"<?php if (!empty($connectionUser['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($connectionUser['avatar']); ?>');"<?php endif; ?>>
+                                        <?php if (empty($connectionUser['avatar'])): ?>
+                                            <?php echo htmlspecialchars(mb_substr($connectionUser['login'], 0, 1)); ?>
+                                        <?php endif; ?>
+                                    </span>
+                                    <span class="request-copy">
+                                        <strong><?php echo htmlspecialchars($connectionUser['login']); ?></strong>
+                                        <span><?php echo $showFollowersPanel ? 'Подписан на вас' : 'Вы подписаны'; ?></span>
+                                    </span>
+                                </span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <p class="empty-state"><?php echo $showFollowersPanel ? 'Подписчиков пока нет.' : 'Подписок пока нет.'; ?></p>
+                <?php endif; ?>
+            </section>
+        <?php endif; ?>
+
         <section class="profile-posts card-surface">
             <div class="section-heading">
                 <h2>Публикации</h2>
@@ -149,6 +392,14 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
 
             <?php if ($postCreated): ?>
                 <p class="form-status is-success">Публикация успешно добавлена.</p>
+            <?php endif; ?>
+
+            <?php if ($postUpdated): ?>
+                <p class="form-status is-success">Публикация успешно обновлена.</p>
+            <?php endif; ?>
+
+            <?php if ($postDeleted): ?>
+                <p class="form-status is-success">Публикация удалена.</p>
             <?php endif; ?>
 
             <?php if ($posts): ?>
@@ -162,8 +413,17 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
                             <?php else: ?>
                                 <div class="post-card-media"></div>
                             <?php endif; ?>
+
                             <div class="post-card-copy">
                                 <p><?php echo htmlspecialchars($post['caption'] ?: 'Без подписи'); ?></p>
+                                <div class="post-card-actions">
+                                    <a href="edit-post.php?id=<?php echo (int) $post['id']; ?>" class="secondary-link post-card-btn">Редактировать</a>
+                                    <form method="post" class="post-card-delete-form" onsubmit="return confirm('Удалить эту публикацию?');">
+                                        <input type="hidden" name="action" value="delete_post">
+                                        <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                        <button type="submit" class="post-card-btn post-card-btn-delete">Удалить</button>
+                                    </form>
+                                </div>
                             </div>
                         </article>
                     <?php endforeach; ?>
@@ -203,5 +463,25 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
             <?php endif; ?>
         </section>
     </main>
+    <script>
+        (() => {
+            const bell = document.querySelector('[data-notification-toggle]');
+            const popover = document.getElementById('notificationPopover');
+
+            if (!bell || !popover) return;
+
+            bell.addEventListener('click', (event) => {
+                event.preventDefault();
+                popover.classList.toggle('is-open');
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!popover.classList.contains('is-open')) return;
+                if (popover.contains(event.target) || bell.contains(event.target)) return;
+                popover.classList.remove('is-open');
+            });
+        })();
+    </script>
 </body>
 </html>
+

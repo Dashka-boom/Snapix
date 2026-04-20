@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Апр 11 2026 г., 21:42
+-- Время создания: Апр 20 2026 г., 19:16
 -- Версия сервера: 8.0.30
--- Версия PHP: 7.2.34
+-- Версия PHP: 8.1.9
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -37,6 +37,15 @@ CREATE TABLE `comments` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Дамп данных таблицы `comments`
+--
+
+INSERT INTO `comments` (`id`, `post_id`, `user_id`, `comment_text`, `is_deleted`, `created_at`, `updated_at`) VALUES
+(1, 6, 6, 'омгд', 0, '2026-04-20 13:36:45', '2026-04-20 13:36:45'),
+(2, 6, 5, 'пиздючки', 0, '2026-04-20 13:38:13', '2026-04-20 13:38:13'),
+(3, 7, 6, 'сука', 0, '2026-04-20 13:40:05', '2026-04-20 13:40:05');
+
 -- --------------------------------------------------------
 
 --
@@ -47,7 +56,24 @@ CREATE TABLE `followers` (
   `id` bigint UNSIGNED NOT NULL,
   `follower_id` bigint UNSIGNED NOT NULL,
   `following_id` bigint UNSIGNED NOT NULL,
+  `status` enum('pending','accepted','declined') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'accepted',
+  `declined_until` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `follow_requests`
+--
+
+CREATE TABLE `follow_requests` (
+  `id` bigint UNSIGNED NOT NULL,
+  `sender_id` bigint UNSIGNED NOT NULL,
+  `receiver_id` bigint UNSIGNED NOT NULL,
+  `status` enum('pending','accepted','rejected') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ;
 
 -- --------------------------------------------------------
@@ -62,6 +88,15 @@ CREATE TABLE `likes` (
   `post_id` bigint UNSIGNED NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `likes`
+--
+
+INSERT INTO `likes` (`id`, `user_id`, `post_id`, `created_at`) VALUES
+(2, 6, 6, '2026-04-20 13:37:19'),
+(3, 6, 7, '2026-04-20 13:39:56'),
+(4, 5, 7, '2026-04-20 13:44:49');
 
 -- --------------------------------------------------------
 
@@ -93,6 +128,15 @@ CREATE TABLE `posts` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Дамп данных таблицы `posts`
+--
+
+INSERT INTO `posts` (`id`, `user_id`, `caption`, `is_deleted`, `created_at`, `updated_at`) VALUES
+(6, 5, 'это я и федя', 1, '2026-04-16 18:57:40', '2026-04-20 15:02:12'),
+(7, 6, 'Это я и кто', 1, '2026-04-20 13:39:02', '2026-04-20 16:12:44'),
+(8, 6, NULL, 0, '2026-04-20 16:13:06', '2026-04-20 16:13:06');
+
 -- --------------------------------------------------------
 
 --
@@ -108,6 +152,15 @@ CREATE TABLE `post_media` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Дамп данных таблицы `post_media`
+--
+
+INSERT INTO `post_media` (`id`, `post_id`, `media_type`, `media_url`, `position`, `created_at`) VALUES
+(1, 6, 'image', 'uploads/posts/6854720ca7d93b2c7b06c4804a5e64b7.png', 1, '2026-04-16 18:57:40'),
+(2, 7, 'image', 'uploads/posts/ee4acbf8934fcdd6a6003368c5bed612.jpg', 1, '2026-04-20 13:39:02'),
+(3, 8, 'video', 'uploads/posts/c509476f351de5ec46483472444fdda4.mp4', 1, '2026-04-20 16:13:06');
+
 -- --------------------------------------------------------
 
 --
@@ -120,6 +173,15 @@ CREATE TABLE `saved_posts` (
   `post_id` bigint UNSIGNED NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `saved_posts`
+--
+
+INSERT INTO `saved_posts` (`id`, `user_id`, `post_id`, `created_at`) VALUES
+(2, 6, 7, '2026-04-20 13:42:45'),
+(3, 5, 6, '2026-04-20 14:18:22'),
+(4, 5, 7, '2026-04-20 14:18:24');
 
 -- --------------------------------------------------------
 
@@ -148,14 +210,26 @@ CREATE TABLE `users` (
   `login` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `email` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
   `birth_date` date NOT NULL,
+  `gender` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `city` varchar(120) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `is_private` tinyint(1) NOT NULL DEFAULT '0',
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `avatar` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `background_image` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `bio` text COLLATE utf8mb4_general_ci,
+  `background_image` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `website` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `users`
+--
+
+INSERT INTO `users` (`id`, `login`, `email`, `birth_date`, `gender`, `city`, `is_private`, `password`, `avatar`, `bio`, `background_image`, `website`, `is_active`, `created_at`, `updated_at`) VALUES
+(5, 'omg', 'OMG@gmail.com', '2010-02-02', 'Другой', 'мяукутс', 1, '$2y$10$Je6rl0HiLCPnXZnvJYysP.9A1BvEtpgH1uy6si37h8ZfljAQFZm8a', 'uploads/profile/avatar_05f5800e5597b058fc3f022f.jpg', 'меов', 'uploads/profile/background_50197b8107e20fc947565994.jpg', 'http://snapix/profile.php', 1, '2026-04-11 19:22:51', '2026-04-20 13:44:41'),
+(6, 's', 's@gmail.com', '1007-02-02', NULL, NULL, 0, '$2y$10$o1pbbSnLB1.Hzm0OTA.U4.GyVnr6Tij9KfpvVYbZnh3xq5YtVZE36', 'uploads/profile/avatar_7bcf2dca5bd7a412b0eafb04.jpg', '', 'uploads/profile/background_c45bc0daaacb7a034ce2d7f4.png', NULL, 1, '2026-04-20 13:36:26', '2026-04-20 13:37:11');
 
 --
 -- Индексы сохранённых таблиц
@@ -177,6 +251,15 @@ ALTER TABLE `followers`
   ADD UNIQUE KEY `uq_follow` (`follower_id`,`following_id`),
   ADD KEY `idx_followers_follower_id` (`follower_id`),
   ADD KEY `idx_followers_following_id` (`following_id`);
+
+--
+-- Индексы таблицы `follow_requests`
+--
+ALTER TABLE `follow_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_follow_request` (`sender_id`,`receiver_id`),
+  ADD KEY `idx_follow_requests_sender` (`sender_id`),
+  ADD KEY `idx_follow_requests_receiver` (`receiver_id`);
 
 --
 -- Индексы таблицы `likes`
@@ -242,7 +325,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT для таблицы `comments`
 --
 ALTER TABLE `comments`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT для таблицы `followers`
@@ -251,10 +334,16 @@ ALTER TABLE `followers`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT для таблицы `follow_requests`
+--
+ALTER TABLE `follow_requests`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT для таблицы `likes`
 --
 ALTER TABLE `likes`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT для таблицы `password_reset_tokens`
@@ -266,19 +355,19 @@ ALTER TABLE `password_reset_tokens`
 -- AUTO_INCREMENT для таблицы `posts`
 --
 ALTER TABLE `posts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT для таблицы `post_media`
 --
 ALTER TABLE `post_media`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT для таблицы `saved_posts`
 --
 ALTER TABLE `saved_posts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT для таблицы `sessions`
@@ -290,7 +379,7 @@ ALTER TABLE `sessions`
 -- AUTO_INCREMENT для таблицы `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- Ограничения внешнего ключа сохраненных таблиц
@@ -300,8 +389,8 @@ ALTER TABLE `users`
 -- Ограничения внешнего ключа таблицы `comments`
 --
 ALTER TABLE `comments`
-  ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_comments_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `followers`
@@ -309,6 +398,13 @@ ALTER TABLE `comments`
 ALTER TABLE `followers`
   ADD CONSTRAINT `fk_followers_follower` FOREIGN KEY (`follower_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_followers_following` FOREIGN KEY (`following_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `follow_requests`
+--
+ALTER TABLE `follow_requests`
+  ADD CONSTRAINT `fk_follow_requests_receiver` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_follow_requests_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `likes`
