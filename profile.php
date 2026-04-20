@@ -2,6 +2,15 @@
 session_start();
 require './config/config.php';
 
+function buildProfileUrl(int $profileUserId, int $currentUserId): string
+{
+    if ($profileUserId === $currentUserId) {
+        return 'profile.php';
+    }
+
+    return 'user.php?id=' . $profileUserId;
+}
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -29,6 +38,10 @@ $stmt = $pdo->prepare('SELECT COUNT(*) FROM posts WHERE user_id = :id AND is_del
 $stmt->execute(['id' => $user['id']]);
 $postsCount = $stmt->fetchColumn();
 
+$stmt = $pdo->prepare('SELECT COUNT(*) FROM saved_posts WHERE user_id = :id');
+$stmt->execute(['id' => $user['id']]);
+$savedPostsCount = $stmt->fetchColumn();
+
 $stmt = $pdo->prepare('
     SELECT posts.*, post_media.media_url, post_media.media_type
     FROM posts
@@ -38,6 +51,19 @@ $stmt = $pdo->prepare('
 ');
 $stmt->execute(['id' => $user['id']]);
 $posts = $stmt->fetchAll();
+
+$stmt = $pdo->prepare('
+    SELECT posts.*, post_media.media_url, post_media.media_type, users.id AS user_id, users.login
+    FROM saved_posts
+    INNER JOIN posts ON posts.id = saved_posts.post_id AND posts.is_deleted = 0
+    INNER JOIN users ON users.id = posts.user_id
+    LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
+    WHERE saved_posts.user_id = :id
+    ORDER BY saved_posts.created_at DESC
+');
+$stmt->execute(['id' => $user['id']]);
+$savedPosts = $stmt->fetchAll();
+
 $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
 ?>
 <!DOCTYPE html>
@@ -49,7 +75,7 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
     <title>Snapix</title>
 </head>
 <body data-page="profile">
-  <header class="header">
+    <header class="header">
         <nav class="nav">
             <a href="index.php" class="logo">Snapix</a>
             <input type="text" class="search" placeholder="Поиск">
@@ -80,30 +106,39 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
                 </div>
 
                 <div class="profile-main">
-                    < <div class="profile-name-row">
+                    <div class="profile-name-row">
                         <h1 class="profile-username"><?php echo htmlspecialchars($user['login']); ?></h1>
                         <a href="create-post.php" class="profile-create-btn" aria-label="Создать публикацию">+</a>
                     </div>
+
                     <?php if (!empty($user['bio'])): ?>
                         <p class="profile-bio"><?php echo nl2br(htmlspecialchars($user['bio'])); ?></p>
                     <?php endif; ?>
+
                     <div class="profile-metrics">
                         <div class="profile-metric">
-                            <strong><?php echo $followingCount; ?></strong>
+                            <strong><?php echo (int) $followingCount; ?></strong>
                             <span>Подписки</span>
                         </div>
                         <div class="profile-metric">
-                            <strong><?php echo $followersCount; ?></strong>
+                            <strong><?php echo (int) $followersCount; ?></strong>
                             <span>Подписчики</span>
                         </div>
                         <div class="profile-metric">
-                            <strong><?php echo $postsCount; ?></strong>
+                            <strong><?php echo (int) $postsCount; ?></strong>
                             <span>Публикации</span>
+                        </div>
+                        <div class="profile-metric">
+                            <strong><?php echo (int) $savedPostsCount; ?></strong>
+                            <span>Избранное</span>
                         </div>
                     </div>
                 </div>
 
-                <a href="edit-profile.php" class="secondary-link profile-edit-btn">Изменить профиль</a>
+                <div class="profile-actions">
+                    <a href="edit-profile.php" class="secondary-link profile-edit-btn">Изменить профиль</a>
+                    <a href="logout.php" class="secondary-link profile-logout-btn">Выйти</a>
+                </div>
             </div>
         </section>
 
@@ -112,7 +147,7 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
                 <h2>Публикации</h2>
             </div>
 
-  <?php if ($postCreated): ?>
+            <?php if ($postCreated): ?>
                 <p class="form-status is-success">Публикация успешно добавлена.</p>
             <?php endif; ?>
 
@@ -120,7 +155,7 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
                 <div class="posts-grid">
                     <?php foreach ($posts as $post): ?>
                         <article class="post-card">
-                             <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
+                            <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                 <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                             <?php elseif (!empty($post['media_url'])): ?>
                                 <div class="post-card-media" style="background-image: url('<?php echo htmlspecialchars($post['media_url']); ?>');"></div>
@@ -134,7 +169,37 @@ $postCreated = isset($_GET['post_created']) && $_GET['post_created'] === '1';
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>
-                <p class="empty-state">Пока нет публикаций. Добавьте первую публикацию</p>
+                <p class="empty-state">Пока нет публикаций. Добавьте первую публикацию.</p>
+            <?php endif; ?>
+        </section>
+
+        <section class="profile-posts card-surface">
+            <div class="section-heading">
+                <h2>Избранное</h2>
+            </div>
+
+            <?php if ($savedPosts): ?>
+                <div class="posts-grid">
+                    <?php foreach ($savedPosts as $post): ?>
+                        <article class="post-card">
+                            <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
+                                <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
+                            <?php elseif (!empty($post['media_url'])): ?>
+                                <div class="post-card-media" style="background-image: url('<?php echo htmlspecialchars($post['media_url']); ?>');"></div>
+                            <?php else: ?>
+                                <div class="post-card-media"></div>
+                            <?php endif; ?>
+                            <div class="post-card-copy">
+                                <a href="<?php echo htmlspecialchars(buildProfileUrl((int) $post['user_id'], (int) $user['id'])); ?>" class="saved-post-author">
+                                    <?php echo htmlspecialchars($post['login']); ?>
+                                </a>
+                                <p><?php echo htmlspecialchars($post['caption'] ?: 'Без подписи'); ?></p>
+                            </div>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p class="empty-state">Здесь будут публикации, которые вы добавите в избранное.</p>
             <?php endif; ?>
         </section>
     </main>
