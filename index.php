@@ -374,9 +374,6 @@ if ($feedPosts) {
 
                             <div class="feed-card-body">
                                 <div class="feed-card-actions">
-                                    <div class="feed-card-stats">
-                                        <span>Действия с публикацией</span>
-                                    </div>
 
                                     <?php if ($user): ?>
                                         <div class="feed-card-buttons">
@@ -390,7 +387,7 @@ if ($feedPosts) {
                                             </div>
 
                                             <div class="feed-action-item">
-                                                <button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button>
+                                                <button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"></button>
                                                 <span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span>
                                             </div>
 
@@ -415,7 +412,7 @@ if ($feedPosts) {
                                     <?php else: ?>
                                         <div class="feed-card-buttons">
                                             <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><span aria-hidden="true">&#9829;</span></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
                                             <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><span aria-hidden="true">&#128278;</span></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
                                             <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><span aria-hidden="true">&#128257;</span></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
                                         </div>
@@ -426,10 +423,6 @@ if ($feedPosts) {
                                     <div class="feed-card-caption">
                                         <?php echo nl2br(htmlspecialchars($post['caption'])); ?>
                                     </div>
-                                <?php endif; ?>
-
-                                <?php if ($postReposters): ?>
-                                    <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
                                 <?php endif; ?>
 
                                 <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-<?php echo (int) $post['id']; ?>">

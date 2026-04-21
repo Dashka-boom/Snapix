@@ -565,16 +565,12 @@ $showFollowingPanel = $panel === 'following';
                             <?php endif; ?>
 
                             <div class="post-card-copy">
-                                <div class="feed-card-stats"><span>Действия с публикацией</span></div>
                                 <div class="feed-card-buttons" style="margin-top: 10px;">
                                     <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><span aria-hidden="true">&#9829;</span></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
                                     <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-profile-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
                                     <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
                                     <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
                                 </div>
-                                <?php if ($postReposters): ?>
-                                    <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
-                                <?php endif; ?>
                                 <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-profile-<?php echo (int) $post['id']; ?>">
                                     <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-profile-<?php echo (int) $post['id']; ?>"></div>
                                     <div class="comments-modal-dialog">
@@ -601,14 +597,6 @@ $showFollowingPanel = $panel === 'following';
                                             <button type="submit" class="primary-link">Отправить</button>
                                         </form>
                                     </div>
-                                </div>
-                                <div class="post-card-actions">
-                                    <a href="edit-post.php?id=<?php echo (int) $post['id']; ?>" class="secondary-link post-card-btn">Редактировать</a>
-                                    <form method="post" class="post-card-delete-form" onsubmit="return confirm('Удалить эту публикацию?');">
-                                        <input type="hidden" name="action" value="delete_post">
-                                        <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                        <button type="submit" class="post-card-btn post-card-btn-delete">Удалить</button>
-                                    </form>
                                 </div>
                             </div>
                         </article>
@@ -641,17 +629,12 @@ $showFollowingPanel = $panel === 'following';
                                 <a href="<?php echo htmlspecialchars(buildProfileUrl((int) $post['author_user_id'], (int) $user['id'])); ?>" class="saved-post-author">
                                     <?php echo htmlspecialchars($post['author_login']); ?>
                                 </a>
-                                <p><?php echo htmlspecialchars($post['caption'] ?: 'Без подписи'); ?></p>
-                                <div class="feed-card-stats"><span>Действия с публикацией</span></div>
                                 <div class="feed-card-buttons" style="margin-top: 10px;">
                                     <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><span aria-hidden="true">&#9829;</span></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
                                     <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-saved-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
                                     <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
                                     <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
                                 </div>
-                                <?php if ($postReposters): ?>
-                                    <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
-                                <?php endif; ?>
                                 <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-saved-<?php echo (int) $post['id']; ?>">
                                     <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-saved-<?php echo (int) $post['id']; ?>"></div>
                                     <div class="comments-modal-dialog">
