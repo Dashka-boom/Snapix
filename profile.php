@@ -645,14 +645,6 @@ $showFollowingPanel = $panel === 'following';
                                         </form>
                                     </div>
                                 </div>
-                                <div class="post-card-actions">
-                                    <a href="edit-post.php?id=<?php echo (int) $post['id']; ?>" class="secondary-link post-card-btn">Редактировать</a>
-                                    <form method="post" class="post-card-delete-form" onsubmit="return confirm('Удалить эту публикацию?');">
-                                        <input type="hidden" name="action" value="delete_post">
-                                        <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                        <button type="submit" class="post-card-btn post-card-btn-delete">Удалить</button>
-                                    </form>
-                                </div>
                             </div>
                         </article>
                     <?php endforeach; ?>
