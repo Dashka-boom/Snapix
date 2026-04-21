@@ -71,6 +71,7 @@ if ($currentUser && $targetUserId === (int) $currentUser['id']) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
+    $commentsPostId = 0;
 
     $targetUserStmt = $pdo->prepare('SELECT id, is_private FROM users WHERE id = :id');
     $targetUserStmt->execute(['id' => $targetUserId]);
@@ -123,6 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                     'user_id' => $currentUser['id'],
                     'comment_text' => mb_substr($commentText, 0, 1000),
                 ]);
+                $commentsPostId = $postId;
             }
         }
 
@@ -138,6 +140,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                     'post_id' => $postId,
                 ]);
             }
+        }
+
+        if ($commentsPostId > 0) {
+            header('Location: user.php?id=' . $targetUserId . '&comments_post=' . $commentsPostId);
+            exit;
         }
 
         header('Location: user.php?id=' . $targetUserId);
@@ -290,6 +297,7 @@ if ($profileUser) {
                    (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0) AS comments_count,
                    (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
                    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
+                   (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id) AS saves_count,
                    (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
                    (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted
             FROM posts
@@ -326,9 +334,7 @@ if ($posts) {
         if (!isset($commentMap[$currentPostId])) {
             $commentMap[$currentPostId] = [];
         }
-        if (count($commentMap[$currentPostId]) < 3) {
-            array_unshift($commentMap[$currentPostId], $comment);
-        }
+        $commentMap[$currentPostId][] = $comment;
     }
 
     $repostsStmt = $pdo->prepare("
@@ -549,40 +555,21 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                 <?php endif; ?>
                                 <div class="post-card-copy">
                                     <p><?php echo htmlspecialchars($post['caption'] ?: 'Без подписи'); ?></p>
-                                    <div class="feed-card-stats">
-                                        <span><?php echo (int) $post['likes_count']; ?> лайков</span>
-                                        <span><?php echo (int) $post['comments_count']; ?> комментариев</span>
-                                        <span><?php echo (int) $post['reposts_count']; ?> репостов</span>
-                                    </div>
+                                    <div class="feed-card-stats"><span>Действия с публикацией</span></div>
 
                                     <?php if ($currentUser): ?>
                                         <div class="feed-card-buttons" style="margin-top: 10px;">
-                                            <form method="post" class="inline-action-form">
-                                                <input type="hidden" name="action" value="toggle_like">
-                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
-                                                <button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><span aria-hidden="true">&#9829;</span></button>
-                                            </form>
-                                            <button type="button" class="feed-action-btn feed-icon-btn js-toggle-comments" data-target="comments-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button>
-                                            <form method="post" class="inline-action-form">
-                                                <input type="hidden" name="action" value="toggle_save">
-                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
-                                                <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button>
-                                            </form>
-                                            <form method="post" class="inline-action-form">
-                                                <input type="hidden" name="action" value="add_repost">
-                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
-                                                <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button>
-                                            </form>
+                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><span aria-hidden="true">&#9829;</span></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
                                         </div>
                                     <?php else: ?>
                                         <div class="feed-card-buttons" style="margin-top: 10px;">
-                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><span aria-hidden="true">&#9829;</span></a>
-                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для комментариев"><span aria-hidden="true">&#128172;</span></a>
-                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><span aria-hidden="true">&#128278;</span></a>
-                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><span aria-hidden="true">&#128257;</span></a>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><span aria-hidden="true">&#9829;</span></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><span aria-hidden="true">&#128278;</span></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><span aria-hidden="true">&#128257;</span></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
                                         </div>
                                     <?php endif; ?>
 
@@ -590,7 +577,14 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                         <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
                                     <?php endif; ?>
 
-                                    <div class="feed-card-comments is-hidden" id="comments-user-<?php echo (int) $post['id']; ?>">
+                                    <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-user-<?php echo (int) $post['id']; ?>">
+                                        <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>"></div>
+                                        <div class="comments-modal-dialog">
+                                            <div class="comments-modal-header">
+                                                <h3>Комментарии</h3>
+                                                <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Закрыть">&times;</button>
+                                            </div>
+                                            <div class="comments-modal-body">
                                         <?php if ($postComments): ?>
                                             <?php foreach ($postComments as $comment): ?>
                                                 <div class="comment-item">
@@ -601,17 +595,18 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                         <?php else: ?>
                                             <p class="comments-empty">Пока нет комментариев.</p>
                                         <?php endif; ?>
+                                            </div>
+                                            <?php if ($currentUser): ?>
+                                                <form method="post" class="comment-form comments-modal-form">
+                                                    <input type="hidden" name="action" value="add_comment">
+                                                    <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                    <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                                    <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea>
+                                                    <button type="submit" class="primary-link">Отправить</button>
+                                                </form>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
-
-                                    <?php if ($currentUser): ?>
-                                        <form method="post" class="comment-form">
-                                            <input type="hidden" name="action" value="add_comment">
-                                            <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                            <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
-                                            <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea>
-                                            <button type="submit" class="primary-link">Комментировать</button>
-                                        </form>
-                                    <?php endif; ?>
                                 </div>
                             </article>
                         <?php endforeach; ?>
@@ -642,12 +637,22 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             });
         })();
 
-        document.querySelectorAll('.js-toggle-comments').forEach((button) => {
+        document.querySelectorAll('.js-open-comments-modal').forEach((button) => {
             button.addEventListener('click', () => {
-                const targetId = button.getAttribute('data-target');
-                const commentsBlock = targetId ? document.getElementById(targetId) : null;
-                if (commentsBlock) {
-                    commentsBlock.classList.toggle('is-hidden');
+                const modalId = button.getAttribute('data-modal');
+                const modal = modalId ? document.getElementById(modalId) : null;
+                if (modal) {
+                    modal.classList.add('is-open');
+                }
+            });
+        });
+
+        document.querySelectorAll('.js-close-comments-modal').forEach((button) => {
+            button.addEventListener('click', () => {
+                const modalId = button.getAttribute('data-modal');
+                const modal = modalId ? document.getElementById(modalId) : null;
+                if (modal) {
+                    modal.classList.remove('is-open');
                 }
             });
         });

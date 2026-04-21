@@ -36,6 +36,7 @@ $reportReasons = $reportReasonsStmt->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     $action = $_POST['action'] ?? '';
+    $commentsPostId = 0;
 
     if ($action === 'mark_notifications_read') {
         $markReadStmt = $pdo->prepare('UPDATE user_notifications SET is_read = 1 WHERE user_id = :user_id AND is_read = 0');
@@ -129,6 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                     'user_id' => $user['id'],
                     'comment_text' => mb_substr($commentText, 0, 1000),
                 ]);
+                $commentsPostId = $postId;
             }
         }
 
@@ -148,6 +150,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 ]);
             }
         }
+    }
+
+    if ($commentsPostId > 0) {
+        header('Location: index.php?comments_post=' . $commentsPostId);
+        exit;
     }
 
     header('Location: index.php');
@@ -180,6 +187,11 @@ $feedStmt = $pdo->query('
             WHERE likes.post_id = posts.id
               AND likes.user_id = ' . (int) ($user['id'] ?? 0) . '
         ) AS is_liked,
+        (
+            SELECT COUNT(*)
+            FROM saved_posts
+            WHERE saved_posts.post_id = posts.id
+        ) AS saves_count,
         (
             SELECT COUNT(*)
             FROM saved_posts
@@ -237,9 +249,7 @@ if ($feedPosts) {
             $commentMap[$currentPostId] = [];
         }
 
-        if (count($commentMap[$currentPostId]) < 3) {
-            array_unshift($commentMap[$currentPostId], $comment);
-        }
+        $commentMap[$currentPostId][] = $comment;
     }
 
     $repostsStmt = $pdo->prepare("
@@ -365,47 +375,49 @@ if ($feedPosts) {
                             <div class="feed-card-body">
                                 <div class="feed-card-actions">
                                     <div class="feed-card-stats">
-                                        <span><?php echo (int) $post['likes_count']; ?> лайков</span>
-                                        <span><?php echo (int) $post['comments_count']; ?> комментариев</span>
-                                        <span><?php echo (int) $post['reposts_count']; ?> репостов</span>
+                                        <span>Действия с публикацией</span>
                                     </div>
 
                                     <?php if ($user): ?>
                                         <div class="feed-card-buttons">
-                                            <form method="post" class="inline-action-form">
-                                                <input type="hidden" name="action" value="toggle_like">
-                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                <button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк">
-                                                    <span aria-hidden="true">&#9829;</span>
-                                                </button>
-                                            </form>
+                                            <div class="feed-action-item">
+                                                <form method="post" class="inline-action-form">
+                                                    <input type="hidden" name="action" value="toggle_like">
+                                                    <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                    <button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><span aria-hidden="true">&#9829;</span></button>
+                                                </form>
+                                                <span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span>
+                                            </div>
 
-                                            <button type="button" class="feed-action-btn feed-icon-btn js-toggle-comments" data-target="comments-<?php echo (int) $post['id']; ?>" aria-label="Комментарии">
-                                                <span aria-hidden="true">&#128172;</span>
-                                            </button>
+                                            <div class="feed-action-item">
+                                                <button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button>
+                                                <span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span>
+                                            </div>
 
-                                            <form method="post" class="inline-action-form">
-                                                <input type="hidden" name="action" value="toggle_save">
-                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное">
-                                                    <span aria-hidden="true">&#128278;</span>
-                                                </button>
-                                            </form>
+                                            <div class="feed-action-item">
+                                                <form method="post" class="inline-action-form">
+                                                    <input type="hidden" name="action" value="toggle_save">
+                                                    <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                    <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button>
+                                                </form>
+                                                <span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span>
+                                            </div>
 
-                                            <form method="post" class="inline-action-form">
-                                                <input type="hidden" name="action" value="add_repost">
-                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост">
-                                                    <span aria-hidden="true">&#128257;</span>
-                                                </button>
-                                            </form>
+                                            <div class="feed-action-item">
+                                                <form method="post" class="inline-action-form">
+                                                    <input type="hidden" name="action" value="add_repost">
+                                                    <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                    <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button>
+                                                </form>
+                                                <span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span>
+                                            </div>
                                         </div>
                                     <?php else: ?>
                                         <div class="feed-card-buttons">
-                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><span aria-hidden="true">&#9829;</span></a>
-                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для комментариев"><span aria-hidden="true">&#128172;</span></a>
-                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><span aria-hidden="true">&#128278;</span></a>
-                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><span aria-hidden="true">&#128257;</span></a>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><span aria-hidden="true">&#9829;</span></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><span aria-hidden="true">&#128278;</span></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><span aria-hidden="true">&#128257;</span></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -420,46 +432,36 @@ if ($feedPosts) {
                                     <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
                                 <?php endif; ?>
 
-                                <div class="feed-card-comments is-hidden" id="comments-<?php echo (int) $post['id']; ?>">
-                                    <?php if ($postComments): ?>
-                                        <?php foreach ($postComments as $comment): ?>
-                                            <?php $commentProfileUrl = buildProfileUrl((int) $comment['user_id'], $user ? (int) $user['id'] : null); ?>
-                                            <div class="comment-item">
-                                                <a href="<?php echo htmlspecialchars($commentProfileUrl); ?>" class="comment-author">
-                                                    <strong><?php echo htmlspecialchars($comment['login']); ?></strong>
-                                                </a>
-                                                <p><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p>
-                                                <?php if ($user && (int) $comment['user_id'] !== (int) $user['id']): ?>
-                                                    <form method="post" style="display: grid; gap: 6px; margin-top: 8px;">
-                                                        <input type="hidden" name="action" value="report_comment">
-                                                        <input type="hidden" name="comment_id" value="<?php echo (int) $comment['id']; ?>">
-                                                        <select name="reason_id">
-                                                            <option value="">Причина жалобы</option>
-                                                            <?php foreach ($reportReasons as $reason): ?>
-                                                                <option value="<?php echo (int) $reason['id']; ?>"><?php echo htmlspecialchars($reason['label']); ?></option>
-                                                            <?php endforeach; ?>
-                                                        </select>
-                                                        <input type="text" name="custom_reason" maxlength="1000" placeholder="Или своя причина">
-                                                        <button type="submit" class="secondary-link">Пожаловаться на комментарий</button>
-                                                    </form>
-                                                <?php endif; ?>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <p class="comments-empty">Пока нет комментариев.</p>
-                                    <?php endif; ?>
+                                <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-<?php echo (int) $post['id']; ?>">
+                                    <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>"></div>
+                                    <div class="comments-modal-dialog">
+                                        <div class="comments-modal-header">
+                                            <h3>Комментарии</h3>
+                                            <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Закрыть">&times;</button>
+                                        </div>
+                                        <div class="comments-modal-body">
+                                            <?php if ($postComments): ?>
+                                                <?php foreach ($postComments as $comment): ?>
+                                                    <?php $commentProfileUrl = buildProfileUrl((int) $comment['user_id'], $user ? (int) $user['id'] : null); ?>
+                                                    <div class="comment-item">
+                                                        <a href="<?php echo htmlspecialchars($commentProfileUrl); ?>" class="comment-author"><strong><?php echo htmlspecialchars($comment['login']); ?></strong></a>
+                                                        <p><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <p class="comments-empty">Пока нет комментариев.</p>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if ($user): ?>
+                                            <form method="post" class="comment-form comments-modal-form">
+                                                <input type="hidden" name="action" value="add_comment">
+                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea>
+                                                <button type="submit" class="primary-link">Отправить</button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
-
-                                <?php if ($user): ?>
-                                    <form method="post" class="comment-form">
-                                        <input type="hidden" name="action" value="add_comment">
-                                        <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                        <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea>
-                                        <button type="submit" class="primary-link">Комментировать</button>
-                                    </form>
-                                <?php else: ?>
-                                    <p class="comments-login-hint">Чтобы лайкать и комментировать, войдите в аккаунт.</p>
-                                <?php endif; ?>
                             </div>
                         </article>
                     <?php endforeach; ?>
@@ -470,12 +472,22 @@ if ($feedPosts) {
         </section>
     </main>
 <script>
-document.querySelectorAll('.js-toggle-comments').forEach(function (button) {
+document.querySelectorAll('.js-open-comments-modal').forEach(function (button) {
     button.addEventListener('click', function () {
-        var targetId = button.getAttribute('data-target');
-        var commentsBlock = targetId ? document.getElementById(targetId) : null;
-        if (commentsBlock) {
-            commentsBlock.classList.toggle('is-hidden');
+        var modalId = button.getAttribute('data-modal');
+        var modal = modalId ? document.getElementById(modalId) : null;
+        if (modal) {
+            modal.classList.add('is-open');
+        }
+    });
+});
+
+document.querySelectorAll('.js-close-comments-modal').forEach(function (button) {
+    button.addEventListener('click', function () {
+        var modalId = button.getAttribute('data-modal');
+        var modal = modalId ? document.getElementById(modalId) : null;
+        if (modal) {
+            modal.classList.remove('is-open');
         }
     });
 });
