@@ -70,10 +70,79 @@ if ($currentUser && $targetUserId === (int) $currentUser['id']) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
     $action = $_POST['action'] ?? '';
+    $postId = (int) ($_POST['post_id'] ?? 0);
 
     $targetUserStmt = $pdo->prepare('SELECT id, is_private FROM users WHERE id = :id');
     $targetUserStmt->execute(['id' => $targetUserId]);
     $targetUser = $targetUserStmt->fetch();
+
+    if ($postId > 0) {
+        $postExistsStmt = $pdo->prepare('SELECT id FROM posts WHERE id = :id AND is_deleted = 0');
+        $postExistsStmt->execute(['id' => $postId]);
+        $postExists = (bool) $postExistsStmt->fetchColumn();
+
+        if ($postExists && $action === 'toggle_like') {
+            $likeExistsStmt = $pdo->prepare('SELECT id FROM likes WHERE user_id = :user_id AND post_id = :post_id');
+            $likeExistsStmt->execute([
+                'user_id' => $currentUser['id'],
+                'post_id' => $postId,
+            ]);
+            $likeId = $likeExistsStmt->fetchColumn();
+            if ($likeId) {
+                $pdo->prepare('DELETE FROM likes WHERE id = :id')->execute(['id' => $likeId]);
+            } else {
+                $pdo->prepare('INSERT INTO likes (user_id, post_id) VALUES (:user_id, :post_id)')->execute([
+                    'user_id' => $currentUser['id'],
+                    'post_id' => $postId,
+                ]);
+            }
+        }
+
+        if ($postExists && $action === 'toggle_save') {
+            $saveExistsStmt = $pdo->prepare('SELECT id FROM saved_posts WHERE user_id = :user_id AND post_id = :post_id');
+            $saveExistsStmt->execute([
+                'user_id' => $currentUser['id'],
+                'post_id' => $postId,
+            ]);
+            $saveId = $saveExistsStmt->fetchColumn();
+            if ($saveId) {
+                $pdo->prepare('DELETE FROM saved_posts WHERE id = :id')->execute(['id' => $saveId]);
+            } else {
+                $pdo->prepare('INSERT INTO saved_posts (user_id, post_id) VALUES (:user_id, :post_id)')->execute([
+                    'user_id' => $currentUser['id'],
+                    'post_id' => $postId,
+                ]);
+            }
+        }
+
+        if ($postExists && $action === 'add_comment') {
+            $commentText = trim($_POST['comment_text'] ?? '');
+            if ($commentText !== '') {
+                $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text) VALUES (:post_id, :user_id, :comment_text)')->execute([
+                    'post_id' => $postId,
+                    'user_id' => $currentUser['id'],
+                    'comment_text' => mb_substr($commentText, 0, 1000),
+                ]);
+            }
+        }
+
+        if ($postExists && $action === 'add_repost') {
+            $repostExistsStmt = $pdo->prepare('SELECT id FROM reposts WHERE user_id = :user_id AND post_id = :post_id');
+            $repostExistsStmt->execute([
+                'user_id' => $currentUser['id'],
+                'post_id' => $postId,
+            ]);
+            if (!$repostExistsStmt->fetchColumn()) {
+                $pdo->prepare('INSERT INTO reposts (user_id, post_id) VALUES (:user_id, :post_id)')->execute([
+                    'user_id' => $currentUser['id'],
+                    'post_id' => $postId,
+                ]);
+            }
+        }
+
+        header('Location: user.php?id=' . $targetUserId);
+        exit;
+    }
 
     if ($targetUser) {
         if ($action === 'report_user') {
@@ -215,14 +284,69 @@ if ($profileUser) {
 
     if ($canViewPrivateProfile) {
         $stmt = $pdo->prepare('
-            SELECT posts.*, post_media.media_url, post_media.media_type
+            SELECT posts.*, post_media.media_url, post_media.media_type,
+                   users.id AS author_user_id, users.login AS author_login,
+                   (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
+                   (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0) AS comments_count,
+                   (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
+                   (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
+                   (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
+                   (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted
             FROM posts
+            INNER JOIN users ON users.id = posts.user_id
             LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
             WHERE posts.user_id = :id AND posts.is_deleted = 0
             ORDER BY posts.created_at DESC
         ');
-        $stmt->execute(['id' => $profileUser['id']]);
+        $stmt->execute([
+            'id' => $profileUser['id'],
+            'viewer_id' => (int) ($currentUser['id'] ?? 0),
+        ]);
         $posts = $stmt->fetchAll();
+    }
+}
+
+$commentMap = [];
+$repostMap = [];
+if ($posts) {
+    $postIds = array_values(array_unique(array_map(static fn($post): int => (int) $post['id'], $posts)));
+    $placeholders = implode(',', array_fill(0, count($postIds), '?'));
+
+    $commentsStmt = $pdo->prepare("
+        SELECT comments.id, comments.post_id, comments.comment_text, users.id AS user_id, users.login
+        FROM comments
+        INNER JOIN users ON users.id = comments.user_id
+        WHERE comments.is_deleted = 0
+          AND comments.post_id IN ($placeholders)
+        ORDER BY comments.post_id ASC, comments.created_at DESC, comments.id DESC
+    ");
+    $commentsStmt->execute($postIds);
+    foreach ($commentsStmt->fetchAll() as $comment) {
+        $currentPostId = (int) $comment['post_id'];
+        if (!isset($commentMap[$currentPostId])) {
+            $commentMap[$currentPostId] = [];
+        }
+        if (count($commentMap[$currentPostId]) < 3) {
+            array_unshift($commentMap[$currentPostId], $comment);
+        }
+    }
+
+    $repostsStmt = $pdo->prepare("
+        SELECT reposts.post_id, users.login
+        FROM reposts
+        INNER JOIN users ON users.id = reposts.user_id
+        WHERE reposts.post_id IN ($placeholders)
+        ORDER BY reposts.created_at DESC, reposts.id DESC
+    ");
+    $repostsStmt->execute($postIds);
+    foreach ($repostsStmt->fetchAll() as $repost) {
+        $currentPostId = (int) $repost['post_id'];
+        if (!isset($repostMap[$currentPostId])) {
+            $repostMap[$currentPostId] = [];
+        }
+        if (count($repostMap[$currentPostId]) < 3) {
+            $repostMap[$currentPostId][] = $repost['login'];
+        }
     }
 }
 
@@ -413,6 +537,8 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 <?php elseif ($posts): ?>
                     <div class="posts-grid">
                         <?php foreach ($posts as $post): ?>
+                            <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
+                            <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                             <article class="post-card">
                                 <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                     <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
@@ -423,6 +549,69 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                 <?php endif; ?>
                                 <div class="post-card-copy">
                                     <p><?php echo htmlspecialchars($post['caption'] ?: 'Без подписи'); ?></p>
+                                    <div class="feed-card-stats">
+                                        <span><?php echo (int) $post['likes_count']; ?> лайков</span>
+                                        <span><?php echo (int) $post['comments_count']; ?> комментариев</span>
+                                        <span><?php echo (int) $post['reposts_count']; ?> репостов</span>
+                                    </div>
+
+                                    <?php if ($currentUser): ?>
+                                        <div class="feed-card-buttons" style="margin-top: 10px;">
+                                            <form method="post" class="inline-action-form">
+                                                <input type="hidden" name="action" value="toggle_like">
+                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                                <button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><span aria-hidden="true">&#9829;</span></button>
+                                            </form>
+                                            <button type="button" class="feed-action-btn feed-icon-btn js-toggle-comments" data-target="comments-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button>
+                                            <form method="post" class="inline-action-form">
+                                                <input type="hidden" name="action" value="toggle_save">
+                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                                <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button>
+                                            </form>
+                                            <form method="post" class="inline-action-form">
+                                                <input type="hidden" name="action" value="add_repost">
+                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                                <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button>
+                                            </form>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="feed-card-buttons" style="margin-top: 10px;">
+                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><span aria-hidden="true">&#9829;</span></a>
+                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для комментариев"><span aria-hidden="true">&#128172;</span></a>
+                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><span aria-hidden="true">&#128278;</span></a>
+                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><span aria-hidden="true">&#128257;</span></a>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php if ($postReposters): ?>
+                                        <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
+                                    <?php endif; ?>
+
+                                    <div class="feed-card-comments is-hidden" id="comments-user-<?php echo (int) $post['id']; ?>">
+                                        <?php if ($postComments): ?>
+                                            <?php foreach ($postComments as $comment): ?>
+                                                <div class="comment-item">
+                                                    <strong><?php echo htmlspecialchars($comment['login']); ?></strong>
+                                                    <p><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <p class="comments-empty">Пока нет комментариев.</p>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <?php if ($currentUser): ?>
+                                        <form method="post" class="comment-form">
+                                            <input type="hidden" name="action" value="add_comment">
+                                            <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                            <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                            <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea>
+                                            <button type="submit" class="primary-link">Комментировать</button>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
                             </article>
                         <?php endforeach; ?>
@@ -452,6 +641,16 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 popover.classList.remove('is-open');
             });
         })();
+
+        document.querySelectorAll('.js-toggle-comments').forEach((button) => {
+            button.addEventListener('click', () => {
+                const targetId = button.getAttribute('data-target');
+                const commentsBlock = targetId ? document.getElementById(targetId) : null;
+                if (commentsBlock) {
+                    commentsBlock.classList.toggle('is-hidden');
+                }
+            });
+        });
     </script>
 </body>
 </html>
