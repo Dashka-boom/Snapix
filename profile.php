@@ -415,7 +415,6 @@ $showFollowingPanel = $panel === 'following';
                             <?php endif; ?>
 
                             <div class="post-card-copy">
-                                <p><?php echo htmlspecialchars($post['caption'] ?: 'Без подписи'); ?></p>
                                 <div class="post-card-actions">
                                     <a href="edit-post.php?id=<?php echo (int) $post['id']; ?>" class="secondary-link post-card-btn">Редактировать</a>
                                     <form method="post" class="post-card-delete-form" onsubmit="return confirm('Удалить эту публикацию?');">
