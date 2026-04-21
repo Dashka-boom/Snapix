@@ -131,6 +131,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 ]);
             }
         }
+
+        if ($postExists && $action === 'add_repost') {
+            $repostExistsStmt = $pdo->prepare('SELECT id FROM reposts WHERE user_id = :user_id AND post_id = :post_id');
+            $repostExistsStmt->execute([
+                'user_id' => $user['id'],
+                'post_id' => $postId,
+            ]);
+            $repostId = $repostExistsStmt->fetchColumn();
+
+            if (!$repostId) {
+                $insertRepostStmt = $pdo->prepare('INSERT INTO reposts (user_id, post_id) VALUES (:user_id, :post_id)');
+                $insertRepostStmt->execute([
+                    'user_id' => $user['id'],
+                    'post_id' => $postId,
+                ]);
+            }
+        }
     }
 
     header('Location: index.php');
@@ -168,7 +185,18 @@ $feedStmt = $pdo->query('
             FROM saved_posts
             WHERE saved_posts.post_id = posts.id
               AND saved_posts.user_id = ' . (int) ($user['id'] ?? 0) . '
-        ) AS is_saved
+        ) AS is_saved,
+        (
+            SELECT COUNT(*)
+            FROM reposts
+            WHERE reposts.post_id = posts.id
+        ) AS reposts_count,
+        (
+            SELECT COUNT(*)
+            FROM reposts
+            WHERE reposts.post_id = posts.id
+              AND reposts.user_id = ' . (int) ($user['id'] ?? 0) . '
+        ) AS is_reposted
     FROM posts
     INNER JOIN users ON users.id = posts.user_id
     LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
@@ -179,6 +207,7 @@ $feedStmt = $pdo->query('
 $feedPosts = $feedStmt->fetchAll();
 
 $commentMap = [];
+$repostMap = [];
 
 if ($feedPosts) {
     $postIds = array_map(static fn($post): int => (int) $post['id'], $feedPosts);
@@ -210,6 +239,26 @@ if ($feedPosts) {
 
         if (count($commentMap[$currentPostId]) < 3) {
             array_unshift($commentMap[$currentPostId], $comment);
+        }
+    }
+
+    $repostsStmt = $pdo->prepare("
+        SELECT reposts.post_id, users.login
+        FROM reposts
+        INNER JOIN users ON users.id = reposts.user_id
+        WHERE reposts.post_id IN ($placeholders)
+        ORDER BY reposts.created_at DESC, reposts.id DESC
+    ");
+    $repostsStmt->execute($postIds);
+
+    foreach ($repostsStmt->fetchAll() as $repost) {
+        $currentPostId = (int) $repost['post_id'];
+        if (!isset($repostMap[$currentPostId])) {
+            $repostMap[$currentPostId] = [];
+        }
+
+        if (count($repostMap[$currentPostId]) < 3) {
+            $repostMap[$currentPostId][] = $repost['login'];
         }
     }
 }
@@ -285,6 +334,7 @@ if ($feedPosts) {
                 <div class="feed-list">
                     <?php foreach ($feedPosts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
+                        <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                         <?php $authorProfileUrl = buildProfileUrl((int) $post['user_id'], $user ? (int) $user['id'] : null); ?>
                         <article class="feed-card card-surface">
                             <header class="feed-card-header">
@@ -317,6 +367,7 @@ if ($feedPosts) {
                                     <div class="feed-card-stats">
                                         <span><?php echo (int) $post['likes_count']; ?> лайков</span>
                                         <span><?php echo (int) $post['comments_count']; ?> комментариев</span>
+                                        <span><?php echo (int) $post['reposts_count']; ?> репостов</span>
                                     </div>
 
                                     <?php if ($user): ?>
@@ -324,18 +375,37 @@ if ($feedPosts) {
                                             <form method="post" class="inline-action-form">
                                                 <input type="hidden" name="action" value="toggle_like">
                                                 <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                <button type="submit" class="feed-action-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>">
-                                                    <?php echo (int) $post['is_liked'] > 0 ? 'Убрать лайк' : 'Лайк'; ?>
+                                                <button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк">
+                                                    <span aria-hidden="true">&#9829;</span>
                                                 </button>
                                             </form>
+
+                                            <button type="button" class="feed-action-btn feed-icon-btn js-toggle-comments" data-target="comments-<?php echo (int) $post['id']; ?>" aria-label="Комментарии">
+                                                <span aria-hidden="true">&#128172;</span>
+                                            </button>
 
                                             <form method="post" class="inline-action-form">
                                                 <input type="hidden" name="action" value="toggle_save">
                                                 <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                <button type="submit" class="feed-action-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>">
-                                                    <?php echo (int) $post['is_saved'] > 0 ? 'В избранном' : 'В избранное'; ?>
+                                                <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное">
+                                                    <span aria-hidden="true">&#128278;</span>
                                                 </button>
                                             </form>
+
+                                            <form method="post" class="inline-action-form">
+                                                <input type="hidden" name="action" value="add_repost">
+                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост">
+                                                    <span aria-hidden="true">&#128257;</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="feed-card-buttons">
+                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><span aria-hidden="true">&#9829;</span></a>
+                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для комментариев"><span aria-hidden="true">&#128172;</span></a>
+                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><span aria-hidden="true">&#128278;</span></a>
+                                            <a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><span aria-hidden="true">&#128257;</span></a>
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -346,7 +416,11 @@ if ($feedPosts) {
                                     </div>
                                 <?php endif; ?>
 
-                                <div class="feed-card-comments">
+                                <?php if ($postReposters): ?>
+                                    <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
+                                <?php endif; ?>
+
+                                <div class="feed-card-comments is-hidden" id="comments-<?php echo (int) $post['id']; ?>">
                                     <?php if ($postComments): ?>
                                         <?php foreach ($postComments as $comment): ?>
                                             <?php $commentProfileUrl = buildProfileUrl((int) $comment['user_id'], $user ? (int) $user['id'] : null); ?>
@@ -395,5 +469,16 @@ if ($feedPosts) {
             <?php endif; ?>
         </section>
     </main>
+<script>
+document.querySelectorAll('.js-toggle-comments').forEach(function (button) {
+    button.addEventListener('click', function () {
+        var targetId = button.getAttribute('data-target');
+        var commentsBlock = targetId ? document.getElementById(targetId) : null;
+        if (commentsBlock) {
+            commentsBlock.classList.toggle('is-hidden');
+        }
+    });
+});
+</script>
 </body>
 </html>

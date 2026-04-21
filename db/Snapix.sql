@@ -175,6 +175,17 @@ CREATE TABLE `saved_posts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Структура таблицы `reposts`
+--
+
+CREATE TABLE `reposts` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `post_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
 -- Дамп данных таблицы `saved_posts`
 --
 
@@ -302,6 +313,15 @@ ALTER TABLE `saved_posts`
   ADD KEY `idx_saved_posts_post_id` (`post_id`);
 
 --
+-- Индексы таблицы `reposts`
+--
+ALTER TABLE `reposts`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_repost` (`user_id`,`post_id`),
+  ADD KEY `idx_reposts_user_id` (`user_id`),
+  ADD KEY `idx_reposts_post_id` (`post_id`);
+
+--
 -- Индексы таблицы `sessions`
 --
 ALTER TABLE `sessions`
@@ -368,6 +388,12 @@ ALTER TABLE `post_media`
 --
 ALTER TABLE `saved_posts`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT для таблицы `reposts`
+--
+ALTER TABLE `reposts`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT для таблицы `sessions`
@@ -437,6 +463,13 @@ ALTER TABLE `post_media`
 ALTER TABLE `saved_posts`
   ADD CONSTRAINT `fk_saved_posts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_saved_posts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `reposts`
+--
+ALTER TABLE `reposts`
+  ADD CONSTRAINT `fk_reposts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_reposts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `sessions`
