@@ -62,15 +62,71 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
     ');
     $messagesStmt->execute(['chat_id' => $chatId]);
 
+    $rawMessages = $messagesStmt->fetchAll();
+    $sharedPostIds = [];
+
+    foreach ($rawMessages as $message) {
+        $text = (string) ($message['message_text'] ?? '');
+        if (str_starts_with($text, '[post_share]|')) {
+            $parts = explode('|', $text);
+            $sharedPostId = (int) ($parts[1] ?? 0);
+            if ($sharedPostId > 0) {
+                $sharedPostIds[$sharedPostId] = $sharedPostId;
+            }
+        }
+    }
+
+    $sharedPosts = [];
+    if ($sharedPostIds) {
+        $placeholders = implode(',', array_fill(0, count($sharedPostIds), '?'));
+        $sharedPostsStmt = $pdo->prepare("
+            SELECT
+                posts.id,
+                posts.caption,
+                users.id AS author_id,
+                users.login AS author_login,
+                post_media.media_type,
+                post_media.media_url
+            FROM posts
+            INNER JOIN users ON users.id = posts.user_id
+            LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
+            WHERE posts.id IN ($placeholders) AND posts.is_deleted = 0
+        ");
+        $sharedPostsStmt->execute(array_values($sharedPostIds));
+        foreach ($sharedPostsStmt->fetchAll() as $sharedPost) {
+            $sharedPosts[(int) $sharedPost['id']] = $sharedPost;
+        }
+    }
+
     $messages = [];
-    foreach ($messagesStmt->fetchAll() as $message) {
+    foreach ($rawMessages as $message) {
+        $text = (string) ($message['message_text'] ?? '');
+        $sharedPost = null;
+        if (str_starts_with($text, '[post_share]|')) {
+            $parts = explode('|', $text);
+            $sharedPostId = (int) ($parts[1] ?? 0);
+            if ($sharedPostId > 0 && isset($sharedPosts[$sharedPostId])) {
+                $post = $sharedPosts[$sharedPostId];
+                $sharedPost = [
+                    'id' => (int) $post['id'],
+                    'author_id' => (int) $post['author_id'],
+                    'author_login' => (string) $post['author_login'],
+                    'caption' => (string) ($post['caption'] ?? ''),
+                    'media_type' => (string) ($post['media_type'] ?? ''),
+                    'media_url' => (string) ($post['media_url'] ?? ''),
+                    'post_url' => 'user.php?id=' . (int) $post['author_id'] . '#post-' . (int) $post['id'],
+                ];
+            }
+        }
+
         $messages[] = [
             'id' => (int) $message['id'],
             'sender_id' => (int) $message['sender_id'],
-            'message_text' => $message['message_text'],
+            'message_text' => $text,
             'created_at' => $message['created_at'],
             'created_at_human' => date('d.m.Y H:i', strtotime((string) $message['created_at'])),
             'is_mine' => (int) $message['sender_id'] === $userId,
+            'shared_post' => $sharedPost,
         ];
     }
 

@@ -231,14 +231,23 @@ if (!$activeDialog && !empty($dialogs)) {
         messageList.innerHTML = items.map(function (item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
             var messageBody = escapeHtml(item.message_text);
-            if (item.message_text.indexOf('[post_share]|') === 0) {
-                var parts = item.message_text.split('|');
-                var postId = Number(parts[1] || 0);
-                var authorId = Number(parts[2] || 0);
-                var authorLogin = parts[3] || '';
-                if (postId > 0 && authorId > 0) {
-                    messageBody = '<a class=\"chat-shared-post\" href=\"user.php?id=' + authorId + '#post-' + postId + '\">Публикация @' + escapeHtml(authorLogin) + ' #' + postId + '</a>';
+            if (item.shared_post) {
+                var post = item.shared_post;
+                var mediaHtml = '';
+                if (post.media_url) {
+                    if (post.media_type === 'video') {
+                        mediaHtml = '<video class=\"chat-shared-media\" src=\"' + escapeHtml(post.media_url) + '\" muted playsinline></video>';
+                    } else {
+                        mediaHtml = '<img class=\"chat-shared-media\" src=\"' + escapeHtml(post.media_url) + '\" alt=\"Публикация\">';
+                    }
                 }
+                var caption = post.caption ? '<p class=\"chat-shared-caption\">' + escapeHtml(post.caption) + '</p>' : '';
+                messageBody = '' +
+                    '<a class=\"chat-shared-card\" href=\"' + escapeHtml(post.post_url) + '\">' +
+                        '<strong class=\"chat-shared-author\">@' + escapeHtml(post.author_login) + '</strong>' +
+                        mediaHtml +
+                        caption +
+                    '</a>';
             }
             return '<div class="chat-message ' + sideClass + '">' +
                 '<p>' + messageBody + '</p>' +
