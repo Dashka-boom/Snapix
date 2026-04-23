@@ -85,6 +85,7 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
                 posts.caption,
                 users.id AS author_id,
                 users.login AS author_login,
+                users.avatar AS author_avatar,
                 post_media.media_type,
                 post_media.media_url
             FROM posts
@@ -111,10 +112,11 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
                     'id' => (int) $post['id'],
                     'author_id' => (int) $post['author_id'],
                     'author_login' => (string) $post['author_login'],
+                    'author_avatar' => (string) ($post['author_avatar'] ?? ''),
                     'caption' => (string) ($post['caption'] ?? ''),
                     'media_type' => (string) ($post['media_type'] ?? ''),
                     'media_url' => (string) ($post['media_url'] ?? ''),
-                    'post_url' => 'user.php?id=' . (int) $post['author_id'] . '#post-' . (int) $post['id'],
+                    'post_url' => 'post.php?id=' . (int) $post['id'],
                 ];
             }
         }
