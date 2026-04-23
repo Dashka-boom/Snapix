@@ -30,6 +30,7 @@ $pendingRequestsCount = 0;
 $pendingRequestsPreview = [];
 $reportReasons = [];
 $unreadMessagesCount = 0;
+$shareRecipients = [];
 
 if (isset($_SESSION['user_id'])) {
     $viewerStmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id');
@@ -62,6 +63,27 @@ if (isset($_SESSION['user_id'])) {
         ');
         $unreadMessagesStmt->execute(['user_id' => $currentUser['id']]);
         $unreadMessagesCount = (int) $unreadMessagesStmt->fetchColumn();
+
+        $shareRecipientsStmt = $pdo->prepare("
+            SELECT
+                users.id,
+                users.login,
+                users.avatar,
+                EXISTS(
+                    SELECT 1
+                    FROM followers reverse_follow
+                    WHERE reverse_follow.follower_id = users.id
+                      AND reverse_follow.following_id = :user_id
+                      AND reverse_follow.status = 'accepted'
+                ) AS is_mutual
+            FROM followers
+            INNER JOIN users ON users.id = followers.following_id
+            WHERE followers.follower_id = :user_id
+              AND followers.status = 'accepted'
+            ORDER BY is_mutual DESC, users.login ASC
+        ");
+        $shareRecipientsStmt->execute(['user_id' => $currentUser['id']]);
+        $shareRecipients = $shareRecipientsStmt->fetchAll();
     }
 }
 
@@ -588,7 +610,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                         <?php foreach ($posts as $post): ?>
                             <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                             <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                            <article class="post-card">
+                            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>">
                                 <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                     <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                                 <?php elseif (!empty($post['media_url'])): ?>
@@ -619,6 +641,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                             <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
                                             <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
                                             <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><span aria-hidden="true">&#9993;</span></button></div>
                                         </div>
                                     <?php else: ?>
                                         <div class="feed-card-buttons" style="margin-top: 10px;">
@@ -626,6 +649,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                             <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
                                             <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><span aria-hidden="true">&#128278;</span></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
                                             <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><span aria-hidden="true">&#128257;</span></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для отправки в сообщения"><span aria-hidden="true">&#9993;</span></a></div>
                                         </div>
                                     <?php endif; ?>
 
@@ -669,6 +693,37 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             </section>
         <?php endif; ?>
     </main>
+    <?php if ($currentUser): ?>
+        <div class="share-modal" id="share-post-modal">
+            <div class="share-modal-overlay js-close-share-modal"></div>
+            <div class="share-modal-dialog">
+                <div class="share-modal-header">
+                    <h3>Отправить публикацию</h3>
+                    <button type="button" class="feed-action-btn feed-icon-btn js-close-share-modal" aria-label="Закрыть">&times;</button>
+                </div>
+                <div class="share-modal-body">
+                    <?php if ($shareRecipients): ?>
+                        <?php foreach ($shareRecipients as $recipient): ?>
+                            <div class="share-recipient-row">
+                                <span class="share-recipient-user">
+                                    <span class="share-recipient-avatar"<?php if (!empty($recipient['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($recipient['avatar']); ?>');"<?php endif; ?>>
+                                        <?php if (empty($recipient['avatar'])): ?><?php echo htmlspecialchars(mb_substr($recipient['login'], 0, 1)); ?><?php endif; ?>
+                                    </span>
+                                    <span>
+                                        <?php echo htmlspecialchars($recipient['login']); ?>
+                                        <?php if ((int) $recipient['is_mutual'] === 1): ?><small class="share-relation-note">взаимно</small><?php endif; ?>
+                                    </span>
+                                </span>
+                                <button type="button" class="share-send-btn js-share-send-btn" data-recipient-id="<?php echo (int) $recipient['id']; ?>">Отправить</button>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="comments-empty">Нет подходящих получателей. Подпишитесь на пользователей.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <script>
         (() => {
@@ -727,6 +782,54 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 }
             });
         });
+
+        (() => {
+            const modal = document.getElementById('share-post-modal');
+            if (!modal) return;
+            let activePostId = 0;
+
+            document.querySelectorAll('.js-open-share-modal').forEach((button) => {
+                button.addEventListener('click', () => {
+                    activePostId = Number(button.getAttribute('data-post-id') || 0);
+                    modal.classList.add('is-open');
+                });
+            });
+
+            modal.querySelectorAll('.js-close-share-modal').forEach((button) => {
+                button.addEventListener('click', () => {
+                    modal.classList.remove('is-open');
+                });
+            });
+
+            modal.querySelectorAll('.js-share-send-btn').forEach((button) => {
+                button.addEventListener('click', () => {
+                    if (!activePostId) return;
+
+                    const params = new URLSearchParams();
+                    params.set('post_id', String(activePostId));
+                    params.set('receiver_id', String(button.getAttribute('data-recipient-id')));
+
+                    fetch('share-post.php', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: params.toString()
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            if (!data.ok) return;
+                            button.textContent = 'Отправлено';
+                            button.disabled = true;
+                            setTimeout(() => {
+                                button.textContent = 'Отправить';
+                                button.disabled = false;
+                                modal.classList.remove('is-open');
+                            }, 700);
+                        })
+                        .catch(() => {});
+                });
+            });
+        })();
     </script>
 </body>
 </html>

@@ -230,8 +230,18 @@ if (!$activeDialog && !empty($dialogs)) {
 
         messageList.innerHTML = items.map(function (item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
+            var messageBody = escapeHtml(item.message_text);
+            if (item.message_text.indexOf('[post_share]|') === 0) {
+                var parts = item.message_text.split('|');
+                var postId = Number(parts[1] || 0);
+                var authorId = Number(parts[2] || 0);
+                var authorLogin = parts[3] || '';
+                if (postId > 0 && authorId > 0) {
+                    messageBody = '<a class=\"chat-shared-post\" href=\"user.php?id=' + authorId + '#post-' + postId + '\">Публикация @' + escapeHtml(authorLogin) + ' #' + postId + '</a>';
+                }
+            }
             return '<div class="chat-message ' + sideClass + '">' +
-                '<p>' + escapeHtml(item.message_text) + '</p>' +
+                '<p>' + messageBody + '</p>' +
                 '<time>' + escapeHtml(item.created_at_human) + '</time>' +
                 '</div>';
         }).join('');
