@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Апр 20 2026 г., 19:16
+-- Время создания: Апр 23 2026 г., 13:29
 -- Версия сервера: 8.0.30
 -- Версия PHP: 8.1.9
 
@@ -44,7 +44,16 @@ CREATE TABLE `comments` (
 INSERT INTO `comments` (`id`, `post_id`, `user_id`, `comment_text`, `is_deleted`, `created_at`, `updated_at`) VALUES
 (1, 6, 6, 'омгд', 0, '2026-04-20 13:36:45', '2026-04-20 13:36:45'),
 (2, 6, 5, 'пиздючки', 0, '2026-04-20 13:38:13', '2026-04-20 13:38:13'),
-(3, 7, 6, 'сука', 0, '2026-04-20 13:40:05', '2026-04-20 13:40:05');
+(3, 7, 6, 'сука', 1, '2026-04-20 13:40:05', '2026-04-20 19:18:41'),
+(4, 9, 6, 'ф', 0, '2026-04-21 17:08:06', '2026-04-21 17:08:06'),
+(5, 8, 6, 'ы', 0, '2026-04-21 17:08:15', '2026-04-21 17:08:15'),
+(6, 8, 6, 'ы', 0, '2026-04-21 17:08:17', '2026-04-21 17:08:17'),
+(7, 8, 6, 'в', 0, '2026-04-21 17:08:18', '2026-04-21 17:08:18'),
+(8, 8, 6, 'ы', 0, '2026-04-21 17:08:22', '2026-04-21 17:08:22'),
+(9, 8, 6, 'ы', 0, '2026-04-21 17:08:24', '2026-04-21 17:08:24'),
+(10, 8, 6, 'ы', 0, '2026-04-21 17:08:25', '2026-04-21 17:08:25'),
+(11, 8, 6, 'ы', 0, '2026-04-21 17:08:25', '2026-04-21 17:08:25'),
+(12, 8, 7, 's', 0, '2026-04-23 09:25:25', '2026-04-23 09:25:25');
 
 -- --------------------------------------------------------
 
@@ -61,6 +70,14 @@ CREATE TABLE `followers` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ;
 
+--
+-- Дамп данных таблицы `followers`
+--
+
+INSERT INTO `followers` (`id`, `follower_id`, `following_id`, `status`, `declined_until`, `created_at`) VALUES
+(1, 5, 6, 'accepted', NULL, '2026-04-20 16:30:43'),
+(4, 6, 5, 'accepted', NULL, '2026-04-21 16:48:53');
+
 -- --------------------------------------------------------
 
 --
@@ -75,6 +92,26 @@ CREATE TABLE `follow_requests` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `hidden_posts`
+--
+
+CREATE TABLE `hidden_posts` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `post_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `hidden_posts`
+--
+
+INSERT INTO `hidden_posts` (`id`, `user_id`, `post_id`, `created_at`) VALUES
+(1, 7, 9, '2026-04-21 17:37:46');
 
 -- --------------------------------------------------------
 
@@ -96,7 +133,61 @@ CREATE TABLE `likes` (
 INSERT INTO `likes` (`id`, `user_id`, `post_id`, `created_at`) VALUES
 (2, 6, 6, '2026-04-20 13:37:19'),
 (3, 6, 7, '2026-04-20 13:39:56'),
-(4, 5, 7, '2026-04-20 13:44:49');
+(4, 5, 7, '2026-04-20 13:44:49'),
+(6, 5, 8, '2026-04-21 13:48:44'),
+(8, 7, 9, '2026-04-21 17:35:07'),
+(10, 7, 11, '2026-04-23 09:51:14');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `moderation_reasons`
+--
+
+CREATE TABLE `moderation_reasons` (
+  `id` bigint UNSIGNED NOT NULL,
+  `code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `label` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `moderation_reasons`
+--
+
+INSERT INTO `moderation_reasons` (`id`, `code`, `label`, `created_at`) VALUES
+(1, 'spam', 'Спам', '2026-04-20 19:06:28'),
+(2, 'abuse', 'Оскорбления', '2026-04-20 19:06:28'),
+(3, 'hate', 'Разжигание ненависти', '2026-04-20 19:06:28'),
+(4, 'fraud', 'Мошенничество', '2026-04-20 19:06:28'),
+(5, 'other', 'Другое', '2026-04-20 19:06:28');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `moderation_reports`
+--
+
+CREATE TABLE `moderation_reports` (
+  `id` bigint UNSIGNED NOT NULL,
+  `reporter_user_id` bigint UNSIGNED NOT NULL,
+  `target_user_id` bigint UNSIGNED DEFAULT NULL,
+  `target_comment_id` bigint UNSIGNED DEFAULT NULL,
+  `reason_id` bigint UNSIGNED DEFAULT NULL,
+  `reason_text` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `status` enum('open','reviewed','resolved') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'open',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `moderation_reports`
+--
+
+INSERT INTO `moderation_reports` (`id`, `reporter_user_id`, `target_user_id`, `target_comment_id`, `reason_id`, `reason_text`, `status`, `created_at`) VALUES
+(1, 7, 5, NULL, NULL, 'Жалоба на пользователя через пост #9', 'open', '2026-04-21 17:37:42'),
+(2, 7, 5, NULL, NULL, 'Жалоба на пользователя через пост #9', 'open', '2026-04-21 17:37:44'),
+(3, 7, 5, NULL, NULL, 'Жалоба на пост #9', 'open', '2026-04-21 17:37:45'),
+(4, 7, 6, NULL, NULL, 'Жалоба на пользователя через пост #8', 'open', '2026-04-21 17:40:11');
 
 -- --------------------------------------------------------
 
@@ -112,6 +203,26 @@ CREATE TABLE `password_reset_tokens` (
   `used_at` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `pinned_posts`
+--
+
+CREATE TABLE `pinned_posts` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `post_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `pinned_posts`
+--
+
+INSERT INTO `pinned_posts` (`id`, `user_id`, `post_id`, `created_at`) VALUES
+(1, 7, 11, '2026-04-21 17:42:23');
 
 -- --------------------------------------------------------
 
@@ -135,7 +246,10 @@ CREATE TABLE `posts` (
 INSERT INTO `posts` (`id`, `user_id`, `caption`, `is_deleted`, `created_at`, `updated_at`) VALUES
 (6, 5, 'это я и федя', 1, '2026-04-16 18:57:40', '2026-04-20 15:02:12'),
 (7, 6, 'Это я и кто', 1, '2026-04-20 13:39:02', '2026-04-20 16:12:44'),
-(8, 6, NULL, 0, '2026-04-20 16:13:06', '2026-04-20 16:13:06');
+(8, 6, NULL, 0, '2026-04-20 16:13:06', '2026-04-20 16:13:06'),
+(9, 5, NULL, 0, '2026-04-20 16:37:48', '2026-04-20 16:37:48'),
+(10, 7, NULL, 1, '2026-04-21 17:36:51', '2026-04-21 17:37:35'),
+(11, 7, NULL, 0, '2026-04-21 17:42:16', '2026-04-21 17:42:16');
 
 -- --------------------------------------------------------
 
@@ -159,7 +273,36 @@ CREATE TABLE `post_media` (
 INSERT INTO `post_media` (`id`, `post_id`, `media_type`, `media_url`, `position`, `created_at`) VALUES
 (1, 6, 'image', 'uploads/posts/6854720ca7d93b2c7b06c4804a5e64b7.png', 1, '2026-04-16 18:57:40'),
 (2, 7, 'image', 'uploads/posts/ee4acbf8934fcdd6a6003368c5bed612.jpg', 1, '2026-04-20 13:39:02'),
-(3, 8, 'video', 'uploads/posts/c509476f351de5ec46483472444fdda4.mp4', 1, '2026-04-20 16:13:06');
+(3, 8, 'video', 'uploads/posts/c509476f351de5ec46483472444fdda4.mp4', 1, '2026-04-20 16:13:06'),
+(4, 9, 'image', 'uploads/posts/9a6abc74244d25d0202f96dd60770475.png', 1, '2026-04-20 16:37:48'),
+(5, 10, 'image', 'uploads/posts/e83db0b20fa22adac6c04632c8edc012.png', 1, '2026-04-21 17:36:51'),
+(6, 11, 'image', 'uploads/posts/3b2f914bcc72e0e15625f7125c6c181f.png', 1, '2026-04-21 17:42:16');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `reposts`
+--
+
+CREATE TABLE `reposts` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `post_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `reposts`
+--
+
+INSERT INTO `reposts` (`id`, `user_id`, `post_id`, `created_at`) VALUES
+(1, 5, 9, '2026-04-21 15:07:17'),
+(2, 5, 8, '2026-04-21 15:07:34'),
+(3, 6, 9, '2026-04-21 16:48:57'),
+(4, 6, 8, '2026-04-21 16:49:00'),
+(5, 7, 9, '2026-04-21 17:35:13'),
+(6, 7, 8, '2026-04-23 09:25:31'),
+(7, 7, 11, '2026-04-23 09:25:42');
 
 -- --------------------------------------------------------
 
@@ -175,38 +318,15 @@ CREATE TABLE `saved_posts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Структура таблицы `reposts`
---
-
-CREATE TABLE `reposts` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `post_id` bigint UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `hidden_posts` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `post_id` bigint UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `pinned_posts` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `post_id` bigint UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
 -- Дамп данных таблицы `saved_posts`
 --
 
 INSERT INTO `saved_posts` (`id`, `user_id`, `post_id`, `created_at`) VALUES
 (2, 6, 7, '2026-04-20 13:42:45'),
 (3, 5, 6, '2026-04-20 14:18:22'),
-(4, 5, 7, '2026-04-20 14:18:24');
+(4, 5, 7, '2026-04-20 14:18:24'),
+(7, 5, 9, '2026-04-21 16:43:46'),
+(10, 7, 8, '2026-04-23 10:11:16');
 
 -- --------------------------------------------------------
 
@@ -245,16 +365,41 @@ CREATE TABLE `users` (
   `website` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `role` enum('user','admin') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'user'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Дамп данных таблицы `users`
 --
 
-INSERT INTO `users` (`id`, `login`, `email`, `birth_date`, `gender`, `city`, `is_private`, `password`, `avatar`, `bio`, `background_image`, `website`, `is_active`, `created_at`, `updated_at`) VALUES
-(5, 'omg', 'OMG@gmail.com', '2010-02-02', 'Другой', 'мяукутс', 1, '$2y$10$Je6rl0HiLCPnXZnvJYysP.9A1BvEtpgH1uy6si37h8ZfljAQFZm8a', 'uploads/profile/avatar_05f5800e5597b058fc3f022f.jpg', 'меов', 'uploads/profile/background_50197b8107e20fc947565994.jpg', 'http://snapix/profile.php', 1, '2026-04-11 19:22:51', '2026-04-20 13:44:41'),
-(6, 's', 's@gmail.com', '1007-02-02', NULL, NULL, 0, '$2y$10$o1pbbSnLB1.Hzm0OTA.U4.GyVnr6Tij9KfpvVYbZnh3xq5YtVZE36', 'uploads/profile/avatar_7bcf2dca5bd7a412b0eafb04.jpg', '', 'uploads/profile/background_c45bc0daaacb7a034ce2d7f4.png', NULL, 1, '2026-04-20 13:36:26', '2026-04-20 13:37:11');
+INSERT INTO `users` (`id`, `login`, `email`, `birth_date`, `gender`, `city`, `is_private`, `password`, `avatar`, `bio`, `background_image`, `website`, `is_active`, `created_at`, `updated_at`, `role`) VALUES
+(5, 'omg', 'OMG@gmail.com', '2010-02-02', 'Другой', 'мяукутс', 0, '$2y$10$Je6rl0HiLCPnXZnvJYysP.9A1BvEtpgH1uy6si37h8ZfljAQFZm8a', 'uploads/profile/avatar_05f5800e5597b058fc3f022f.jpg', 'меов', 'uploads/profile/background_50197b8107e20fc947565994.jpg', 'http://snapix/profile.php', 1, '2026-04-11 19:22:51', '2026-04-20 19:18:05', 'admin'),
+(6, 's', 's@gmail.com', '1007-02-02', NULL, NULL, 0, '$2y$10$o1pbbSnLB1.Hzm0OTA.U4.GyVnr6Tij9KfpvVYbZnh3xq5YtVZE36', 'uploads/profile/avatar_7bcf2dca5bd7a412b0eafb04.jpg', '', 'uploads/profile/background_c45bc0daaacb7a034ce2d7f4.png', NULL, 1, '2026-04-20 13:36:26', '2026-04-20 13:37:11', 'user'),
+(7, 'pashka-durashka', 'pashka@gmail.com', '2008-02-02', NULL, NULL, 0, '$2y$10$IILTqw/kiYP1HV2LYMpp0ub9qlsT3I423y59ojnTrZJRrs37m2zaC', NULL, NULL, NULL, NULL, 1, '2026-04-21 17:33:54', '2026-04-21 17:33:54', 'user');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `user_notifications`
+--
+
+CREATE TABLE `user_notifications` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `report_id` bigint UNSIGNED DEFAULT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `user_notifications`
+--
+
+INSERT INTO `user_notifications` (`id`, `user_id`, `report_id`, `title`, `message`, `is_read`, `created_at`) VALUES
+(1, 6, NULL, 'Комментарий удалён', 'Комментарий удалён администратором за нарушение правил.\nПричина: Разжигание ненависти.\nПредупреждение: при следующем нарушении аккаунт будет удалён.', 1, '2026-04-20 19:18:41');
 
 --
 -- Индексы сохранённых таблиц
@@ -287,6 +432,15 @@ ALTER TABLE `follow_requests`
   ADD KEY `idx_follow_requests_receiver` (`receiver_id`);
 
 --
+-- Индексы таблицы `hidden_posts`
+--
+ALTER TABLE `hidden_posts`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_hidden_post` (`user_id`,`post_id`),
+  ADD KEY `idx_hidden_posts_user_id` (`user_id`),
+  ADD KEY `idx_hidden_posts_post_id` (`post_id`);
+
+--
 -- Индексы таблицы `likes`
 --
 ALTER TABLE `likes`
@@ -296,12 +450,39 @@ ALTER TABLE `likes`
   ADD KEY `idx_likes_post_id` (`post_id`);
 
 --
+-- Индексы таблицы `moderation_reasons`
+--
+ALTER TABLE `moderation_reasons`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_moderation_reasons_code` (`code`);
+
+--
+-- Индексы таблицы `moderation_reports`
+--
+ALTER TABLE `moderation_reports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_reports_reporter` (`reporter_user_id`),
+  ADD KEY `idx_reports_target_user` (`target_user_id`),
+  ADD KEY `idx_reports_target_comment` (`target_comment_id`),
+  ADD KEY `idx_reports_reason` (`reason_id`),
+  ADD KEY `idx_reports_status_created` (`status`,`created_at`);
+
+--
 -- Индексы таблицы `password_reset_tokens`
 --
 ALTER TABLE `password_reset_tokens`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `token` (`token`),
   ADD KEY `idx_password_reset_user_id` (`user_id`);
+
+--
+-- Индексы таблицы `pinned_posts`
+--
+ALTER TABLE `pinned_posts`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_pinned_post` (`user_id`,`post_id`),
+  ADD KEY `idx_pinned_posts_user_id` (`user_id`),
+  ADD KEY `idx_pinned_posts_post_id` (`post_id`);
 
 --
 -- Индексы таблицы `posts`
@@ -318,6 +499,14 @@ ALTER TABLE `post_media`
   ADD KEY `idx_post_media_post_id` (`post_id`);
 
 --
+-- Индексы таблицы `reposts`
+--
+ALTER TABLE `reposts`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_reposts_post` (`post_id`),
+  ADD KEY `fk_reposts_user` (`user_id`);
+
+--
 -- Индексы таблицы `saved_posts`
 --
 ALTER TABLE `saved_posts`
@@ -325,27 +514,6 @@ ALTER TABLE `saved_posts`
   ADD UNIQUE KEY `uq_saved_post` (`user_id`,`post_id`),
   ADD KEY `idx_saved_posts_user_id` (`user_id`),
   ADD KEY `idx_saved_posts_post_id` (`post_id`);
-
---
--- Индексы таблицы `reposts`
---
-ALTER TABLE `reposts`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_repost` (`user_id`,`post_id`),
-  ADD KEY `idx_reposts_user_id` (`user_id`),
-  ADD KEY `idx_reposts_post_id` (`post_id`);
-
-ALTER TABLE `hidden_posts`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_hidden_post` (`user_id`,`post_id`),
-  ADD KEY `idx_hidden_posts_user_id` (`user_id`),
-  ADD KEY `idx_hidden_posts_post_id` (`post_id`);
-
-ALTER TABLE `pinned_posts`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_pinned_post` (`user_id`,`post_id`),
-  ADD KEY `idx_pinned_posts_user_id` (`user_id`),
-  ADD KEY `idx_pinned_posts_post_id` (`post_id`);
 
 --
 -- Индексы таблицы `sessions`
@@ -364,6 +532,14 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- Индексы таблицы `user_notifications`
+--
+ALTER TABLE `user_notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_notifications_user_read` (`user_id`,`is_read`,`created_at`),
+  ADD KEY `idx_notifications_report` (`report_id`);
+
+--
 -- AUTO_INCREMENT для сохранённых таблиц
 --
 
@@ -371,7 +547,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT для таблицы `comments`
 --
 ALTER TABLE `comments`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT для таблицы `followers`
@@ -386,9 +562,27 @@ ALTER TABLE `follow_requests`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT для таблицы `hidden_posts`
+--
+ALTER TABLE `hidden_posts`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT для таблицы `likes`
 --
 ALTER TABLE `likes`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT для таблицы `moderation_reasons`
+--
+ALTER TABLE `moderation_reasons`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2048;
+
+--
+-- AUTO_INCREMENT для таблицы `moderation_reports`
+--
+ALTER TABLE `moderation_reports`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
@@ -398,34 +592,34 @@ ALTER TABLE `password_reset_tokens`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT для таблицы `pinned_posts`
+--
+ALTER TABLE `pinned_posts`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
 -- AUTO_INCREMENT для таблицы `posts`
 --
 ALTER TABLE `posts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT для таблицы `post_media`
 --
 ALTER TABLE `post_media`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT для таблицы `saved_posts`
---
-ALTER TABLE `saved_posts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT для таблицы `reposts`
 --
 ALTER TABLE `reposts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
-ALTER TABLE `hidden_posts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
-ALTER TABLE `pinned_posts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT для таблицы `saved_posts`
+--
+ALTER TABLE `saved_posts`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT для таблицы `sessions`
@@ -437,7 +631,13 @@ ALTER TABLE `sessions`
 -- AUTO_INCREMENT для таблицы `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT для таблицы `user_notifications`
+--
+ALTER TABLE `user_notifications`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Ограничения внешнего ключа сохраненных таблиц
@@ -465,6 +665,13 @@ ALTER TABLE `follow_requests`
   ADD CONSTRAINT `fk_follow_requests_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Ограничения внешнего ключа таблицы `hidden_posts`
+--
+ALTER TABLE `hidden_posts`
+  ADD CONSTRAINT `fk_hidden_posts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_hidden_posts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Ограничения внешнего ключа таблицы `likes`
 --
 ALTER TABLE `likes`
@@ -472,10 +679,26 @@ ALTER TABLE `likes`
   ADD CONSTRAINT `fk_likes_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Ограничения внешнего ключа таблицы `moderation_reports`
+--
+ALTER TABLE `moderation_reports`
+  ADD CONSTRAINT `fk_reports_reason` FOREIGN KEY (`reason_id`) REFERENCES `moderation_reasons` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_reports_reporter` FOREIGN KEY (`reporter_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_reports_target_comment` FOREIGN KEY (`target_comment_id`) REFERENCES `comments` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_reports_target_user` FOREIGN KEY (`target_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
 -- Ограничения внешнего ключа таблицы `password_reset_tokens`
 --
 ALTER TABLE `password_reset_tokens`
   ADD CONSTRAINT `fk_password_reset_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `pinned_posts`
+--
+ALTER TABLE `pinned_posts`
+  ADD CONSTRAINT `fk_pinned_posts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_pinned_posts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `posts`
@@ -490,6 +713,13 @@ ALTER TABLE `post_media`
   ADD CONSTRAINT `fk_post_media_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
 
 --
+-- Ограничения внешнего ключа таблицы `reposts`
+--
+ALTER TABLE `reposts`
+  ADD CONSTRAINT `fk_reposts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_reposts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Ограничения внешнего ключа таблицы `saved_posts`
 --
 ALTER TABLE `saved_posts`
@@ -497,105 +727,19 @@ ALTER TABLE `saved_posts`
   ADD CONSTRAINT `fk_saved_posts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Ограничения внешнего ключа таблицы `reposts`
---
-ALTER TABLE `reposts`
-  ADD CONSTRAINT `fk_reposts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_reposts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
-ALTER TABLE `hidden_posts`
-  ADD CONSTRAINT `fk_hidden_posts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_hidden_posts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
-ALTER TABLE `pinned_posts`
-  ADD CONSTRAINT `fk_pinned_posts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_pinned_posts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
 -- Ограничения внешнего ключа таблицы `sessions`
 --
 ALTER TABLE `sessions`
   ADD CONSTRAINT `fk_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `user_notifications`
+--
+ALTER TABLE `user_notifications`
+  ADD CONSTRAINT `fk_notifications_report` FOREIGN KEY (`report_id`) REFERENCES `moderation_reports` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_notifications_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
--- --------------------------------------------------------
--- Дополнительные таблицы модерации
--- --------------------------------------------------------
-
-ALTER TABLE `users`
-  ADD COLUMN `role` enum('user','admin') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'user' AFTER `password`;
-
-CREATE TABLE `moderation_reasons` (
-  `id` bigint UNSIGNED NOT NULL,
-  `code` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `label` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `moderation_reports` (
-  `id` bigint UNSIGNED NOT NULL,
-  `reporter_user_id` bigint UNSIGNED NOT NULL,
-  `target_user_id` bigint UNSIGNED DEFAULT NULL,
-  `target_comment_id` bigint UNSIGNED DEFAULT NULL,
-  `reason_id` bigint UNSIGNED DEFAULT NULL,
-  `reason_text` varchar(1000) COLLATE utf8mb4_general_ci NOT NULL,
-  `status` enum('open','reviewed','resolved') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'open',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `user_notifications` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `report_id` bigint UNSIGNED DEFAULT NULL,
-  `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `message` text COLLATE utf8mb4_general_ci NOT NULL,
-  `is_read` tinyint(1) NOT NULL DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-ALTER TABLE `moderation_reasons`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_moderation_reasons_code` (`code`);
-
-ALTER TABLE `moderation_reports`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_reports_reporter` (`reporter_user_id`),
-  ADD KEY `idx_reports_target_user` (`target_user_id`),
-  ADD KEY `idx_reports_target_comment` (`target_comment_id`),
-  ADD KEY `idx_reports_reason` (`reason_id`),
-  ADD KEY `idx_reports_status_created` (`status`,`created_at`);
-
-ALTER TABLE `user_notifications`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_notifications_user_read` (`user_id`,`is_read`,`created_at`),
-  ADD KEY `idx_notifications_report` (`report_id`);
-
-ALTER TABLE `moderation_reasons`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
-ALTER TABLE `moderation_reports`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
-ALTER TABLE `user_notifications`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
-ALTER TABLE `moderation_reports`
-  ADD CONSTRAINT `fk_reports_reporter` FOREIGN KEY (`reporter_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_reports_target_user` FOREIGN KEY (`target_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_reports_target_comment` FOREIGN KEY (`target_comment_id`) REFERENCES `comments` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_reports_reason` FOREIGN KEY (`reason_id`) REFERENCES `moderation_reasons` (`id`) ON DELETE SET NULL;
-
-ALTER TABLE `user_notifications`
-  ADD CONSTRAINT `fk_notifications_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_notifications_report` FOREIGN KEY (`report_id`) REFERENCES `moderation_reports` (`id`) ON DELETE SET NULL;
-
-INSERT INTO `moderation_reasons` (`code`, `label`) VALUES
-('spam', 'Спам'),
-('abuse', 'Оскорбления'),
-('hate', 'Разжигание ненависти'),
-('fraud', 'Мошенничество'),
-('other', 'Другое');

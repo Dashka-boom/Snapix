@@ -1036,10 +1036,11 @@ h2 {
 }
 
 .post-card {
-    overflow: hidden;
+    overflow: visible;
     border-radius: 20px;
     border: 1px solid #e5e7eb;
     background: #fff;
+    position: relative;
 }
 
 .post-card-media {
@@ -1054,6 +1055,7 @@ h2 {
 
 .post-card-copy {
     padding: 16px;
+    position: relative;
 }
 
 .post-card-copy p {

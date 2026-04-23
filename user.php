@@ -593,8 +593,6 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                             </div>
                                         </div>
                                     </div>
-                                    <p><?php echo htmlspecialchars($post['caption'] ?: 'Без подписи'); ?></p>
-                                    <div class="feed-card-stats"><span>Действия с публикацией</span></div>
 
                                     <?php if ($currentUser): ?>
                                         <div class="feed-card-buttons" style="margin-top: 10px;">
@@ -610,10 +608,6 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                             <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><span aria-hidden="true">&#128278;</span></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
                                             <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><span aria-hidden="true">&#128257;</span></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
                                         </div>
-                                    <?php endif; ?>
-
-                                    <?php if ($postReposters): ?>
-                                        <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
                                     <?php endif; ?>
 
                                     <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-user-<?php echo (int) $post['id']; ?>">

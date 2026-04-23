@@ -461,9 +461,6 @@ if ($feedPosts) {
 
                             <div class="feed-card-body">
                                 <div class="feed-card-actions">
-                                    <div class="feed-card-stats">
-                                        <span>Действия с публикацией</span>
-                                    </div>
 
                                     <?php if ($user): ?>
                                         <div class="feed-card-buttons">
@@ -514,11 +511,6 @@ if ($feedPosts) {
                                         <?php echo nl2br(htmlspecialchars($post['caption'])); ?>
                                     </div>
                                 <?php endif; ?>
-
-                                <?php if ($postReposters): ?>
-                                    <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
-                                <?php endif; ?>
-
                                 <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-<?php echo (int) $post['id']; ?>">
                                     <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>"></div>
                                     <div class="comments-modal-dialog">
