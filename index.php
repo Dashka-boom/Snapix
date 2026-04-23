@@ -14,6 +14,7 @@ function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
 $user = null;
 $pendingRequestsCount = 0;
 $notifications = [];
+$unreadMessagesCount = 0;
 
 if (isset($_SESSION['user_id'])) {
     $stmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id');
@@ -28,6 +29,17 @@ if (isset($_SESSION['user_id'])) {
         $notificationsStmt = $pdo->prepare('SELECT id, title, message, created_at FROM user_notifications WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 5');
         $notificationsStmt->execute(['user_id' => $user['id']]);
         $notifications = $notificationsStmt->fetchAll();
+
+        $unreadMessagesStmt = $pdo->prepare('
+            SELECT COUNT(*)
+            FROM messages m
+            INNER JOIN chats c ON c.id = m.chat_id
+            WHERE (c.user_one_id = :user_id OR c.user_two_id = :user_id)
+              AND m.sender_id != :user_id
+              AND m.is_read = 0
+        ');
+        $unreadMessagesStmt->execute(['user_id' => $user['id']]);
+        $unreadMessagesCount = (int) $unreadMessagesStmt->fetchColumn();
     }
 }
 
@@ -359,6 +371,12 @@ if ($feedPosts) {
             <div class="menu">
                 <a href="#">Reels</a>
                 <?php if ($user): ?>
+                    <a href="chat.php" class="notification-bell" aria-label="Открыть сообщения">
+                        <span class="notification-bell-icon">✉️</span>
+                        <?php if ($unreadMessagesCount > 0): ?>
+                            <span class="notification-badge"><?php echo $unreadMessagesCount; ?></span>
+                        <?php endif; ?>
+                    </a>
                     <a href="connections.php?view=requests" class="notification-bell" aria-label="Открыть заявки">
                         <span class="notification-bell-icon">&#128276;</span>
                         <?php if ($pendingRequestsCount > 0): ?>

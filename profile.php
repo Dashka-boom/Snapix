@@ -223,6 +223,17 @@ $stmt = $pdo->prepare("SELECT COUNT(*) FROM followers WHERE following_id = :id A
 $stmt->execute(['id' => $user['id']]);
 $pendingRequestsCount = (int) $stmt->fetchColumn();
 
+$stmt = $pdo->prepare('
+    SELECT COUNT(*)
+    FROM messages m
+    INNER JOIN chats c ON c.id = m.chat_id
+    WHERE (c.user_one_id = :user_id OR c.user_two_id = :user_id)
+      AND m.sender_id != :user_id
+      AND m.is_read = 0
+');
+$stmt->execute(['user_id' => $user['id']]);
+$unreadMessagesCount = (int) $stmt->fetchColumn();
+
 $stmt = $pdo->prepare('SELECT COUNT(*) FROM posts WHERE user_id = :id AND is_deleted = 0');
 $stmt->execute(['id' => $user['id']]);
 $postsCount = (int) $stmt->fetchColumn();
@@ -374,6 +385,12 @@ $showFollowingPanel = $panel === 'following';
             <input type="text" class="search" placeholder="Поиск">
             <div class="menu">
                 <a href="#">Reels</a>
+                <a href="chat.php" class="notification-bell" aria-label="Открыть сообщения">
+                    <span class="notification-bell-icon">✉️</span>
+                    <?php if ($unreadMessagesCount > 0): ?>
+                        <span class="notification-badge"><?php echo $unreadMessagesCount; ?></span>
+                    <?php endif; ?>
+                </a>
                 <a href="connections.php?view=requests" class="notification-bell" data-notification-toggle aria-label="Открыть заявки">
                     <span class="notification-bell-icon">&#128276;</span>
                     <?php if ($pendingRequestsCount > 0): ?>

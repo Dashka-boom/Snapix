@@ -25,6 +25,17 @@ if (!$user) {
     exit;
 }
 
+$unreadMessagesStmt = $pdo->prepare('
+    SELECT COUNT(*)
+    FROM messages m
+    INNER JOIN chats c ON c.id = m.chat_id
+    WHERE (c.user_one_id = :user_id OR c.user_two_id = :user_id)
+      AND m.sender_id != :user_id
+      AND m.is_read = 0
+');
+$unreadMessagesStmt->execute(['user_id' => $user['id']]);
+$unreadMessagesCount = (int) $unreadMessagesStmt->fetchColumn();
+
 $statusMessage = '';
 $statusType = '';
 
@@ -193,6 +204,12 @@ $coverStyle = !empty($user['background_image'])
             <input type="text" class="search" placeholder="Поиск">
             <div class="menu">
                 <a href="#">Reels</a>
+                <a href="chat.php" class="notification-bell" aria-label="Открыть сообщения">
+                    <span class="notification-bell-icon">✉️</span>
+                    <?php if ($unreadMessagesCount > 0): ?>
+                        <span class="notification-badge"><?php echo $unreadMessagesCount; ?></span>
+                    <?php endif; ?>
+                </a>
                 <a href="profile.php" class="user-avatar-link" aria-label="Открыть профиль">
                     <?php if (!empty($user['avatar'])): ?>
                         <span class="user-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></span>

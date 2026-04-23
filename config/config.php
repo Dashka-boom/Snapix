@@ -97,6 +97,38 @@ try {
             ('other', 'Другое')
         ON DUPLICATE KEY UPDATE label = VALUES(label)
     ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS chats (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_one_id BIGINT UNSIGNED NOT NULL,
+            user_two_id BIGINT UNSIGNED NOT NULL,
+            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_chats_user_pair (user_one_id, user_two_id),
+            KEY idx_chats_user_two (user_two_id),
+            CONSTRAINT fk_chats_user_one FOREIGN KEY (user_one_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_chats_user_two FOREIGN KEY (user_two_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS messages (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            chat_id BIGINT UNSIGNED NOT NULL,
+            sender_id BIGINT UNSIGNED NOT NULL,
+            message_text TEXT NOT NULL,
+            is_read TINYINT(1) NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_messages_chat_created (chat_id, created_at),
+            KEY idx_messages_sender_created (sender_id, created_at),
+            KEY idx_messages_chat_read (chat_id, is_read),
+            CONSTRAINT fk_messages_chat FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
+            CONSTRAINT fk_messages_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    ");
 } catch (PDOException $e) {
     die('Ошибка подключения к базе данных: ' . $e->getMessage());
 }

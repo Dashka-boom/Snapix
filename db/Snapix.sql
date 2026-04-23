@@ -58,6 +58,20 @@ INSERT INTO `comments` (`id`, `post_id`, `user_id`, `comment_text`, `is_deleted`
 -- --------------------------------------------------------
 
 --
+-- Структура таблицы `chats`
+--
+
+CREATE TABLE `chats` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_one_id` bigint UNSIGNED NOT NULL,
+  `user_two_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Структура таблицы `followers`
 --
 
@@ -137,6 +151,21 @@ INSERT INTO `likes` (`id`, `user_id`, `post_id`, `created_at`) VALUES
 (6, 5, 8, '2026-04-21 13:48:44'),
 (8, 7, 9, '2026-04-21 17:35:07'),
 (10, 7, 11, '2026-04-23 09:51:14');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `messages`
+--
+
+CREATE TABLE `messages` (
+  `id` bigint UNSIGNED NOT NULL,
+  `chat_id` bigint UNSIGNED NOT NULL,
+  `sender_id` bigint UNSIGNED NOT NULL,
+  `message_text` text COLLATE utf8mb4_general_ci NOT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -414,6 +443,14 @@ ALTER TABLE `comments`
   ADD KEY `idx_comments_user_id` (`user_id`);
 
 --
+-- Индексы таблицы `chats`
+--
+ALTER TABLE `chats`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_chats_user_pair` (`user_one_id`,`user_two_id`),
+  ADD KEY `idx_chats_user_two` (`user_two_id`);
+
+--
 -- Индексы таблицы `followers`
 --
 ALTER TABLE `followers`
@@ -448,6 +485,15 @@ ALTER TABLE `likes`
   ADD UNIQUE KEY `uq_like` (`user_id`,`post_id`),
   ADD KEY `idx_likes_user_id` (`user_id`),
   ADD KEY `idx_likes_post_id` (`post_id`);
+
+--
+-- Индексы таблицы `messages`
+--
+ALTER TABLE `messages`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_messages_chat_created` (`chat_id`,`created_at`),
+  ADD KEY `idx_messages_sender_created` (`sender_id`,`created_at`),
+  ADD KEY `idx_messages_chat_read` (`chat_id`,`is_read`);
 
 --
 -- Индексы таблицы `moderation_reasons`
@@ -550,6 +596,12 @@ ALTER TABLE `comments`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
+-- AUTO_INCREMENT для таблицы `chats`
+--
+ALTER TABLE `chats`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT для таблицы `followers`
 --
 ALTER TABLE `followers`
@@ -572,6 +624,12 @@ ALTER TABLE `hidden_posts`
 --
 ALTER TABLE `likes`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT для таблицы `messages`
+--
+ALTER TABLE `messages`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT для таблицы `moderation_reasons`
@@ -651,6 +709,13 @@ ALTER TABLE `comments`
   ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
 
 --
+-- Ограничения внешнего ключа таблицы `chats`
+--
+ALTER TABLE `chats`
+  ADD CONSTRAINT `fk_chats_user_one` FOREIGN KEY (`user_one_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_chats_user_two` FOREIGN KEY (`user_two_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Ограничения внешнего ключа таблицы `followers`
 --
 ALTER TABLE `followers`
@@ -677,6 +742,13 @@ ALTER TABLE `hidden_posts`
 ALTER TABLE `likes`
   ADD CONSTRAINT `fk_likes_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_likes_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `messages`
+--
+ALTER TABLE `messages`
+  ADD CONSTRAINT `fk_messages_chat` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `moderation_reports`

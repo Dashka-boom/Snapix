@@ -29,6 +29,7 @@ $currentUser = null;
 $pendingRequestsCount = 0;
 $pendingRequestsPreview = [];
 $reportReasons = [];
+$unreadMessagesCount = 0;
 
 if (isset($_SESSION['user_id'])) {
     $viewerStmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id');
@@ -50,6 +51,17 @@ if (isset($_SESSION['user_id'])) {
         ");
         $pendingPreviewStmt->execute(['id' => $currentUser['id']]);
         $pendingRequestsPreview = $pendingPreviewStmt->fetchAll();
+
+        $unreadMessagesStmt = $pdo->prepare('
+            SELECT COUNT(*)
+            FROM messages m
+            INNER JOIN chats c ON c.id = m.chat_id
+            WHERE (c.user_one_id = :user_id OR c.user_two_id = :user_id)
+              AND m.sender_id != :user_id
+              AND m.is_read = 0
+        ');
+        $unreadMessagesStmt->execute(['user_id' => $currentUser['id']]);
+        $unreadMessagesCount = (int) $unreadMessagesStmt->fetchColumn();
     }
 }
 
@@ -398,6 +410,12 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             <div class="menu">
                 <a href="#">Reels</a>
                 <?php if ($currentUser): ?>
+                    <a href="chat.php" class="notification-bell" aria-label="Открыть сообщения">
+                        <span class="notification-bell-icon">✉️</span>
+                        <?php if ($unreadMessagesCount > 0): ?>
+                            <span class="notification-badge"><?php echo $unreadMessagesCount; ?></span>
+                        <?php endif; ?>
+                    </a>
                     <a href="connections.php?view=requests" class="notification-bell" aria-label="Открыть заявки" data-notification-toggle>
                         <span class="notification-bell-icon">&#128276;</span>
                         <?php if ($pendingRequestsCount > 0): ?>
@@ -537,6 +555,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                         <?php endif; ?>
 
                         <?php if ($currentUser && (int) $currentUser['id'] !== (int) $profileUser['id']): ?>
+                            <a href="chat.php?user_id=<?php echo (int) $profileUser['id']; ?>" class="primary-link profile-edit-btn" style="margin-top: 10px;">Написать сообщение</a>
                             <form method="post" class="follow-action-form" style="display:grid; gap:8px; margin-top: 10px;">
                                 <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
                                 <input type="hidden" name="action" value="report_user">
