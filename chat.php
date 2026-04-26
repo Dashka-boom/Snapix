@@ -209,6 +209,10 @@ if (!$activeDialog && !empty($dialogs)) {
     var messageInput = document.getElementById('chat-message-input');
     var badge = document.getElementById('header-chat-badge');
     var lastError = '';
+    var socket = null;
+    var socketReady = false;
+    var pollIntervalId = null;
+
 
     function escapeHtml(value) {
         return String(value).replace(/[&<>"']/g, function (char) {
@@ -324,8 +328,9 @@ if (!$activeDialog && !empty($dialogs)) {
                 updateBadge(Number(data.unread_total || 0));
             })
             .catch(function (error) {
-    console.error(error);
-});
+                lastError = 'poll_request_failed';
+                console.error('Chat poll request failed:', error);
+            });
     }
 
     if (sendForm && messageInput) {
@@ -355,6 +360,11 @@ if (!$activeDialog && !empty($dialogs)) {
                     if (data.ok) {
                         messageInput.value = '';
                         poll();
+
+                        var lastMessage = Array.isArray(data.messages) && data.messages.length
+                            ? data.messages[data.messages.length - 1]
+                            : null;
+                        notifySocketAboutNewMessage(lastMessage ? lastMessage.id : 0);
                     } else {
                         lastError = data.error || 'send_failed';
                         console.error('Chat send error:', data);
@@ -367,8 +377,91 @@ if (!$activeDialog && !empty($dialogs)) {
         });
     }
 
+    function startFallbackPolling() {
+        if (pollIntervalId !== null) {
+            return;
+        }
+        pollIntervalId = setInterval(poll, 3000);
+    }
+
+    function stopFallbackPolling() {
+        if (pollIntervalId === null) {
+            return;
+        }
+        clearInterval(pollIntervalId);
+        pollIntervalId = null;
+    }
+
+    function notifySocketAboutNewMessage(messageId) {
+        if (!socketReady || !socket || socket.readyState !== WebSocket.OPEN || !activeChatId) {
+            return;
+        }
+
+        socket.send(JSON.stringify({
+            type: 'new_message',
+            chat_id: activeChatId,
+            message_id: Number(messageId || 0)
+        }));
+    }
+
+    function initWebSocket() {
+        if (!window.WebSocket || !activeChatId) {
+            startFallbackPolling();
+            return;
+        }
+
+        try {
+            socket = new WebSocket('ws://127.0.0.1:8080');
+        } catch (error) {
+            console.error('WebSocket init failed:', error);
+            startFallbackPolling();
+            return;
+        }
+
+        socket.addEventListener('open', function () {
+            socketReady = true;
+            stopFallbackPolling();
+
+            socket.send(JSON.stringify({
+                type: 'auth',
+                user_id: Number(document.body.getAttribute('data-user-id') || 0),
+                chat_id: activeChatId
+            }));
+        });
+
+        socket.addEventListener('message', function (event) {
+            var data = null;
+
+            try {
+                data = JSON.parse(event.data);
+            } catch (error) {
+                console.error('Invalid WebSocket message:', event.data, error);
+                return;
+            }
+
+            if (data.type === 'new_message' && Number(data.chat_id) === activeChatId) {
+                poll();
+            }
+
+            if (data.type === 'error') {
+                console.error('WebSocket server error:', data.error);
+            }
+        });
+
+        socket.addEventListener('close', function () {
+            socketReady = false;
+            startFallbackPolling();
+        });
+
+        socket.addEventListener('error', function (error) {
+            socketReady = false;
+            console.error('WebSocket error:', error);
+            startFallbackPolling();
+        });
+    }
+
     poll();
-    setInterval(poll, 3000);
+    initWebSocket();
 })();
 </script>
 </body>
