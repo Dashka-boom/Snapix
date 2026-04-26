@@ -109,9 +109,9 @@ class SnapixChatServer implements MessageComponentInterface
 }
 
 $host = getenv('SNAPIX_WS_HOST') ?: '127.0.0.1';
-$port = (int) (getenv('SNAPIX_WS_PORT') ?: 8080);
+$port = (int) (getenv('SNAPIX_WS_PORT') ?: 8090);
 if ($port <= 0) {
-    $port = 8080;
+    $port = 8090;
 }
 
 $server = IoServer::factory(

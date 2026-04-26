@@ -214,8 +214,8 @@ if (!$activeDialog && !empty($dialogs)) {
     var socketConnecting = false;
     var socketUrlIndex = 0;
     var socketUrls = [
-        'ws://127.0.0.1:8080',
-        'ws://localhost:8080'
+        'ws://127.0.0.1:8090',
+        'ws://localhost:8090'
     ];
     var pollIntervalId = null;
 
