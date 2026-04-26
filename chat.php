@@ -211,6 +211,12 @@ if (!$activeDialog && !empty($dialogs)) {
     var lastError = '';
     var socket = null;
     var socketReady = false;
+    var socketConnecting = false;
+    var socketUrlIndex = 0;
+    var socketUrls = [
+        'ws://127.0.0.1:8080',
+        'ws://localhost:8080'
+    ];
     var pollIntervalId = null;
 
 
@@ -239,6 +245,9 @@ if (!$activeDialog && !empty($dialogs)) {
         messageList.innerHTML = items.map(function (item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
             var messageBody = escapeHtml(item.message_text);
+            if (messageBody.indexOf('[post_share]|') === 0) {
+                messageBody = 'Пересланная публикация недоступна';
+            }
             var bodyHtml = '<p>' + messageBody + '</p>';
             if (item.shared_post) {
                 var post = item.shared_post;
@@ -251,14 +260,15 @@ if (!$activeDialog && !empty($dialogs)) {
                     }
                 }
                 var caption = post.caption ? '<p class=\"chat-shared-caption\">' + escapeHtml(post.caption) + '</p>' : '';
+                var authorLogin = post.author_login || '?';
                 var avatarHtml = post.author_avatar
                     ? '<span class="chat-shared-avatar" style="background-image: url(\'' + escapeHtml(post.author_avatar) + '\');"></span>'
-                    : '<span class=\"chat-shared-avatar\">' + escapeHtml((post.author_login || '?').slice(0, 1)) + '</span>';
+                    : '<span class=\"chat-shared-avatar\">' + escapeHtml(authorLogin.slice(0, 1)) + '</span>';
                 messageBody = '' +
                     '<a class=\"chat-shared-card\" href=\"' + escapeHtml(post.post_url) + '\">' +
                         '<span class=\"chat-shared-head\">' +
                             avatarHtml +
-                            '<strong class=\"chat-shared-author\">' + escapeHtml(post.author_login) + '</strong>' +
+                            '<strong class=\"chat-shared-author\">' + escapeHtml(authorLogin) + '</strong>' +
                         '</span>' +
                         mediaHtml +
                         caption +
@@ -410,15 +420,38 @@ if (!$activeDialog && !empty($dialogs)) {
             return;
         }
 
-        try {
-            socket = new WebSocket('ws://127.0.0.1:8080');
-        } catch (error) {
-            console.error('WebSocket init failed:', error);
+        socketConnecting = true;
+        connectWebSocketByIndex(0);
+    }
+
+    function connectWebSocketByIndex(index) {
+        if (!window.WebSocket || !activeChatId) {
+            socketConnecting = false;
             startFallbackPolling();
             return;
         }
 
+        if (index >= socketUrls.length) {
+            socketConnecting = false;
+            startFallbackPolling();
+            return;
+        }
+
+        socketUrlIndex = index;
+        var wsUrl = socketUrls[index];
+        var opened = false;
+
+        try {
+            socket = new WebSocket(wsUrl);
+        } catch (error) {
+            console.error('WebSocket init failed (' + wsUrl + '):', error);
+            connectWebSocketByIndex(index + 1);
+            return;
+        }
+
         socket.addEventListener('open', function () {
+            opened = true;
+            socketConnecting = false;
             socketReady = true;
             stopFallbackPolling();
 
@@ -450,12 +483,20 @@ if (!$activeDialog && !empty($dialogs)) {
 
         socket.addEventListener('close', function () {
             socketReady = false;
+            if (socketConnecting || !opened) {
+                connectWebSocketByIndex(socketUrlIndex + 1);
+                return;
+            }
             startFallbackPolling();
         });
 
         socket.addEventListener('error', function (error) {
             socketReady = false;
-            console.error('WebSocket error:', error);
+            console.error('WebSocket error (' + wsUrl + '):', error);
+            if (!opened) {
+                connectWebSocketByIndex(socketUrlIndex + 1);
+                return;
+            }
             startFallbackPolling();
         });
     }

@@ -12,10 +12,10 @@ class SnapixChatServer implements MessageComponentInterface
     /** @var SplObjectStorage<ConnectionInterface, array{user_id:int, chat_id:int}> */
     private SplObjectStorage $clients;
 
-    public function __construct()
+    public function __construct(private string $host, private int $port)
     {
         $this->clients = new SplObjectStorage();
-        echo "Snapix WebSocket server started on ws://localhost:8080\n";
+        echo "Snapix WebSocket server started on ws://{$this->host}:{$this->port}\n";
     }
 
     public function onOpen(ConnectionInterface $conn): void
@@ -108,13 +108,20 @@ class SnapixChatServer implements MessageComponentInterface
     }
 }
 
+$host = getenv('SNAPIX_WS_HOST') ?: '127.0.0.1';
+$port = (int) (getenv('SNAPIX_WS_PORT') ?: 8080);
+if ($port <= 0) {
+    $port = 8080;
+}
+
 $server = IoServer::factory(
     new HttpServer(
         new WsServer(
-            new SnapixChatServer()
+            new SnapixChatServer($host, $port)
         )
     ),
-    8080
+    $port,
+    $host
 );
 
 $server->run();

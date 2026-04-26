@@ -108,8 +108,10 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
     foreach ($rawMessages as $message) {
         $text = (string) ($message['message_text'] ?? '');
         $sharedPost = null;
+        $isPostShare = false;
         $legacyPostId = 0;
         if (str_starts_with($text, '[post_share]|')) {
+            $isPostShare = true;
             $parts = explode('|', $text);
             $legacyPostId = (int) ($parts[1] ?? 0);
         }
@@ -130,6 +132,9 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
                 'media_url' => (string) ($post['media_url'] ?? ''),
                 'post_url' => 'post.php?id=' . (int) $post['id'],
             ];
+            $isPostShare = true;
+        } elseif ($isPostShare) {
+            $text = 'Пересланная публикация недоступна';
         }
 
         $messages[] = [
@@ -140,7 +145,7 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
             'created_at' => $message['created_at'],
             'created_at_human' => date('d.m.Y H:i', strtotime((string) $message['created_at'])),
             'is_mine' => (int) $message['sender_id'] === $userId,
-            'is_post_share' => $sharedPost !== null,
+            'is_post_share' => $isPostShare,
             'shared_post' => $sharedPost,
         ];
     }
