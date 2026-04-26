@@ -110,6 +110,10 @@
     overflow-wrap: anywhere;
 }
 
+.chat-message-body-card {
+    display: block;
+}
+
 .chat-shared-post {
     color: #0369a1;
     font-weight: 700;

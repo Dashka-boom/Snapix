@@ -231,6 +231,7 @@ if (!$activeDialog && !empty($dialogs)) {
         messageList.innerHTML = items.map(function (item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
             var messageBody = escapeHtml(item.message_text);
+            var bodyHtml = '<p>' + messageBody + '</p>';
             if (item.shared_post) {
                 var post = item.shared_post;
                 var mediaHtml = '';
@@ -254,9 +255,10 @@ if (!$activeDialog && !empty($dialogs)) {
                         mediaHtml +
                         caption +
                     '</a>';
+                bodyHtml = '<div class=\"chat-message-body chat-message-body-card\">' + messageBody + '</div>';
             }
             return '<div class="chat-message ' + sideClass + '">' +
-                '<p>' + messageBody + '</p>' +
+                bodyHtml +
                 '<time>' + escapeHtml(item.created_at_human) + '</time>' +
                 '</div>';
         }).join('');
