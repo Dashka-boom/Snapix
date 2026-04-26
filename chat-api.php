@@ -180,7 +180,7 @@ if ($action === 'send') {
         $insertStmt->execute([
             'chat_id' => $chatId,
             'sender_id' => $currentUserId,
-            'message_text' => mb_substr($messageText, 0, 1000),
+            'message_text' => substr($messageText, 0, 1000),
             'post_id' => null,
         ]);
 

@@ -248,7 +248,7 @@ if (!$activeDialog && !empty($dialogs)) {
                 }
                 var caption = post.caption ? '<p class=\"chat-shared-caption\">' + escapeHtml(post.caption) + '</p>' : '';
                 var avatarHtml = post.author_avatar
-                    ? '<span class=\"chat-shared-avatar\" style=\"background-image: url(' + \"'\" + escapeHtml(post.author_avatar) + \"'\" + ');\"></span>'
+                    ? '<span class="chat-shared-avatar" style="background-image: url(\'' + escapeHtml(post.author_avatar) + '\');"></span>'
                     : '<span class=\"chat-shared-avatar\">' + escapeHtml((post.author_login || '?').slice(0, 1)) + '</span>';
                 messageBody = '' +
                     '<a class=\"chat-shared-card\" href=\"' + escapeHtml(post.post_url) + '\">' +
@@ -323,7 +323,9 @@ if (!$activeDialog && !empty($dialogs)) {
                 }
                 updateBadge(Number(data.unread_total || 0));
             })
-            .catch(function () {});
+            .catch(function (error) {
+    console.error(error);
+});
     }
 
     if (sendForm && messageInput) {
