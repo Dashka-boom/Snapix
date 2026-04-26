@@ -210,12 +210,15 @@ if (!$activeDialog && !empty($dialogs)) {
     var badge = document.getElementById('header-chat-badge');
 
     function escapeHtml(value) {
-        return String(value)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#039;');
+        return String(value).replace(/[&<>"']/g, function (char) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                '\'': '&#039;'
+            }[char] || char;
+        });
     }
 
     function renderMessages(items) {
@@ -307,6 +310,13 @@ if (!$activeDialog && !empty($dialogs)) {
                 }
                 if (Array.isArray(data.dialogs)) {
                     renderDialogs(data.dialogs);
+                    if (activeChatId <= 0 && data.dialogs.length > 0) {
+                        activeChatId = Number(data.dialogs[0].id || 0);
+                        if (activeChatId > 0) {
+                            poll();
+                            return;
+                        }
+                    }
                 }
                 updateBadge(Number(data.unread_total || 0));
             })
@@ -346,10 +356,8 @@ if (!$activeDialog && !empty($dialogs)) {
         });
     }
 
-    if (activeChatId > 0) {
-        poll();
-        setInterval(poll, 3000);
-    }
+    poll();
+    setInterval(poll, 3000);
 })();
 </script>
 </body>
