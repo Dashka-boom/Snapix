@@ -63,12 +63,24 @@ if ($chatId <= 0) {
 
 $messageText = '[post_share]|' . (int) $post['id'] . '|' . (int) $post['user_id'] . '|' . str_replace('|', ' ', (string) $post['login']);
 
-$insertMessageStmt = $pdo->prepare('INSERT INTO messages (chat_id, sender_id, message_text, is_read) VALUES (:chat_id, :sender_id, :message_text, 0)');
-$insertMessageStmt->execute([
-    'chat_id' => $chatId,
-    'sender_id' => $currentUserId,
-    'message_text' => $messageText,
-]);
+try {
+    $insertMessageStmt = $pdo->prepare('INSERT INTO messages (chat_id, sender_id, message_text, post_id, is_read) VALUES (:chat_id, :sender_id, :message_text, :post_id, 0)');
+    $insertMessageStmt->execute([
+        'chat_id' => $chatId,
+        'sender_id' => $currentUserId,
+        'message_text' => $messageText,
+        'post_id' => (int) $post['id'],
+    ]);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode([
+        'ok' => false,
+        'error' => 'share_insert_failed',
+        'chat_id' => $chatId,
+        'details' => $e->getMessage(),
+    ]);
+    exit;
+}
 
 $pdo->prepare('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = :chat_id')->execute(['chat_id' => $chatId]);
 

@@ -55,7 +55,7 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
     ]);
 
     $messagesStmt = $pdo->prepare('
-        SELECT id, sender_id, message_text, created_at
+        SELECT id, sender_id, message_text, post_id, created_at
         FROM messages
         WHERE chat_id = :chat_id
         ORDER BY created_at ASC, id ASC
@@ -67,12 +67,17 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
 
     foreach ($rawMessages as $message) {
         $text = (string) ($message['message_text'] ?? '');
+        $legacyPostId = 0;
         if (str_starts_with($text, '[post_share]|')) {
             $parts = explode('|', $text);
-            $sharedPostId = (int) ($parts[1] ?? 0);
-            if ($sharedPostId > 0) {
-                $sharedPostIds[$sharedPostId] = $sharedPostId;
-            }
+            $legacyPostId = (int) ($parts[1] ?? 0);
+        }
+        $sharedPostId = (int) ($message['post_id'] ?? 0);
+        if ($sharedPostId <= 0) {
+            $sharedPostId = $legacyPostId;
+        }
+        if ($sharedPostId > 0) {
+            $sharedPostIds[$sharedPostId] = $sharedPostId;
         }
     }
 
@@ -91,7 +96,7 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
             FROM posts
             INNER JOIN users ON users.id = posts.user_id
             LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
-            WHERE posts.id IN ($placeholders) AND posts.is_deleted = 0
+            WHERE posts.id IN ($placeholders)
         ");
         $sharedPostsStmt->execute(array_values($sharedPostIds));
         foreach ($sharedPostsStmt->fetchAll() as $sharedPost) {
@@ -103,31 +108,39 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
     foreach ($rawMessages as $message) {
         $text = (string) ($message['message_text'] ?? '');
         $sharedPost = null;
+        $legacyPostId = 0;
         if (str_starts_with($text, '[post_share]|')) {
             $parts = explode('|', $text);
-            $sharedPostId = (int) ($parts[1] ?? 0);
-            if ($sharedPostId > 0 && isset($sharedPosts[$sharedPostId])) {
-                $post = $sharedPosts[$sharedPostId];
-                $sharedPost = [
-                    'id' => (int) $post['id'],
-                    'author_id' => (int) $post['author_id'],
-                    'author_login' => (string) $post['author_login'],
-                    'author_avatar' => (string) ($post['author_avatar'] ?? ''),
-                    'caption' => (string) ($post['caption'] ?? ''),
-                    'media_type' => (string) ($post['media_type'] ?? ''),
-                    'media_url' => (string) ($post['media_url'] ?? ''),
-                    'post_url' => 'post.php?id=' . (int) $post['id'],
-                ];
-            }
+            $legacyPostId = (int) ($parts[1] ?? 0);
+        }
+        $sharedPostId = (int) ($message['post_id'] ?? 0);
+        if ($sharedPostId <= 0) {
+            $sharedPostId = $legacyPostId;
+        }
+
+        if ($sharedPostId > 0 && isset($sharedPosts[$sharedPostId])) {
+            $post = $sharedPosts[$sharedPostId];
+            $sharedPost = [
+                'id' => (int) $post['id'],
+                'author_id' => (int) $post['author_id'],
+                'author_login' => (string) $post['author_login'],
+                'author_avatar' => (string) ($post['author_avatar'] ?? ''),
+                'caption' => (string) ($post['caption'] ?? ''),
+                'media_type' => (string) ($post['media_type'] ?? ''),
+                'media_url' => (string) ($post['media_url'] ?? ''),
+                'post_url' => 'post.php?id=' . (int) $post['id'],
+            ];
         }
 
         $messages[] = [
             'id' => (int) $message['id'],
             'sender_id' => (int) $message['sender_id'],
             'message_text' => $text,
+            'post_id' => $sharedPostId > 0 ? $sharedPostId : null,
             'created_at' => $message['created_at'],
             'created_at_human' => date('d.m.Y H:i', strtotime((string) $message['created_at'])),
             'is_mine' => (int) $message['sender_id'] === $userId,
+            'is_post_share' => $sharedPost !== null,
             'shared_post' => $sharedPost,
         ];
     }
@@ -151,26 +164,38 @@ if ($chatId > 0) {
 if ($action === 'send') {
     if (!$chatBelongsToUser) {
         http_response_code(403);
-        echo json_encode(['ok' => false, 'error' => 'chat_forbidden']);
+        echo json_encode(['ok' => false, 'error' => 'chat_forbidden', 'chat_id' => $chatId]);
         exit;
     }
 
     $messageText = trim((string) ($_POST['message_text'] ?? ''));
     if ($messageText === '') {
         http_response_code(422);
-        echo json_encode(['ok' => false, 'error' => 'message_empty']);
+        echo json_encode(['ok' => false, 'error' => 'message_empty', 'chat_id' => $chatId]);
         exit;
     }
 
-    $insertStmt = $pdo->prepare('INSERT INTO messages (chat_id, sender_id, message_text, is_read) VALUES (:chat_id, :sender_id, :message_text, 0)');
-    $insertStmt->execute([
-        'chat_id' => $chatId,
-        'sender_id' => $currentUserId,
-        'message_text' => mb_substr($messageText, 0, 1000),
-    ]);
+    try {
+        $insertStmt = $pdo->prepare('INSERT INTO messages (chat_id, sender_id, message_text, post_id, is_read) VALUES (:chat_id, :sender_id, :message_text, :post_id, 0)');
+        $insertStmt->execute([
+            'chat_id' => $chatId,
+            'sender_id' => $currentUserId,
+            'message_text' => mb_substr($messageText, 0, 1000),
+            'post_id' => null,
+        ]);
 
-    $touchChatStmt = $pdo->prepare('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = :chat_id');
-    $touchChatStmt->execute(['chat_id' => $chatId]);
+        $touchChatStmt = $pdo->prepare('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = :chat_id');
+        $touchChatStmt->execute(['chat_id' => $chatId]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode([
+            'ok' => false,
+            'error' => 'message_insert_failed',
+            'chat_id' => $chatId,
+            'details' => $e->getMessage(),
+        ]);
+        exit;
+    }
 }
 
 $messages = [];
@@ -189,4 +214,6 @@ echo json_encode([
     'messages' => $messages,
     'dialogs' => $dialogs,
     'unread_total' => $unreadTotal,
+    'chat_id' => $chatId,
+    'chat_exists' => $chatBelongsToUser,
 ]);

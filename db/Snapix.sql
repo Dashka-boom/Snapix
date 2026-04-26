@@ -162,7 +162,8 @@ CREATE TABLE `messages` (
   `id` bigint UNSIGNED NOT NULL,
   `chat_id` bigint UNSIGNED NOT NULL,
   `sender_id` bigint UNSIGNED NOT NULL,
-  `message_text` text COLLATE utf8mb4_general_ci NOT NULL,
+  `message_text` text COLLATE utf8mb4_general_ci,
+  `post_id` bigint UNSIGNED DEFAULT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -493,7 +494,8 @@ ALTER TABLE `messages`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_messages_chat_created` (`chat_id`,`created_at`),
   ADD KEY `idx_messages_sender_created` (`sender_id`,`created_at`),
-  ADD KEY `idx_messages_chat_read` (`chat_id`,`is_read`);
+  ADD KEY `idx_messages_chat_read` (`chat_id`,`is_read`),
+  ADD KEY `idx_messages_post` (`post_id`);
 
 --
 -- Индексы таблицы `moderation_reasons`
@@ -748,7 +750,8 @@ ALTER TABLE `likes`
 --
 ALTER TABLE `messages`
   ADD CONSTRAINT `fk_messages_chat` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_messages_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE SET NULL;
 
 --
 -- Ограничения внешнего ключа таблицы `moderation_reports`

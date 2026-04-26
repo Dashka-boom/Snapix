@@ -118,17 +118,52 @@ try {
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             chat_id BIGINT UNSIGNED NOT NULL,
             sender_id BIGINT UNSIGNED NOT NULL,
-            message_text TEXT NOT NULL,
+            message_text TEXT NULL,
+            post_id BIGINT UNSIGNED DEFAULT NULL,
             is_read TINYINT(1) NOT NULL DEFAULT 0,
             created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY idx_messages_chat_created (chat_id, created_at),
             KEY idx_messages_sender_created (sender_id, created_at),
             KEY idx_messages_chat_read (chat_id, is_read),
+            KEY idx_messages_post (post_id),
             CONSTRAINT fk_messages_chat FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
-            CONSTRAINT fk_messages_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+            CONSTRAINT fk_messages_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_messages_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     ");
+
+    try {
+        $pdo->exec("ALTER TABLE messages ADD COLUMN post_id BIGINT UNSIGNED DEFAULT NULL AFTER message_text");
+    } catch (PDOException $e) {
+        if (($e->errorInfo[1] ?? null) !== 1060) {
+            throw $e;
+        }
+    }
+
+    try {
+        $pdo->exec("ALTER TABLE messages MODIFY COLUMN message_text TEXT NULL");
+    } catch (PDOException $e) {
+        if (($e->errorInfo[1] ?? null) !== 1832) {
+            throw $e;
+        }
+    }
+
+    try {
+        $pdo->exec("ALTER TABLE messages ADD KEY idx_messages_post (post_id)");
+    } catch (PDOException $e) {
+        if (($e->errorInfo[1] ?? null) !== 1061) {
+            throw $e;
+        }
+    }
+
+    try {
+        $pdo->exec("ALTER TABLE messages ADD CONSTRAINT fk_messages_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL");
+    } catch (PDOException $e) {
+        if (($e->errorInfo[1] ?? null) !== 1826 && ($e->errorInfo[1] ?? null) !== 1005) {
+            throw $e;
+        }
+    }
 } catch (PDOException $e) {
     die('Ошибка подключения к базе данных: ' . $e->getMessage());
 }

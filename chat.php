@@ -208,6 +208,7 @@ if (!$activeDialog && !empty($dialogs)) {
     var sendForm = document.getElementById('chat-send-form');
     var messageInput = document.getElementById('chat-message-input');
     var badge = document.getElementById('header-chat-badge');
+    var lastError = '';
 
     function escapeHtml(value) {
         return String(value).replace(/[&<>"']/g, function (char) {
@@ -303,6 +304,8 @@ if (!$activeDialog && !empty($dialogs)) {
             .then(function (response) { return response.json(); })
             .then(function (data) {
                 if (!data.ok) {
+                    lastError = data.error || 'poll_failed';
+                    console.error('Chat poll error:', data);
                     return;
                 }
                 if (Array.isArray(data.messages)) {
@@ -350,9 +353,15 @@ if (!$activeDialog && !empty($dialogs)) {
                     if (data.ok) {
                         messageInput.value = '';
                         poll();
+                    } else {
+                        lastError = data.error || 'send_failed';
+                        console.error('Chat send error:', data);
                     }
                 })
-                .catch(function () {});
+                .catch(function (error) {
+                    lastError = 'send_request_failed';
+                    console.error('Chat send request failed:', error);
+                });
         });
     }
 
