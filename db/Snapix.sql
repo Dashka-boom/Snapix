@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Апр 23 2026 г., 13:29
+-- Время создания: Апр 26 2026 г., 14:23
 -- Версия сервера: 8.0.30
 -- Версия PHP: 8.1.9
 
@@ -20,6 +20,29 @@ SET time_zone = "+00:00";
 --
 -- База данных: `Snapix`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `chats`
+--
+
+CREATE TABLE `chats` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_one_id` bigint UNSIGNED NOT NULL,
+  `user_two_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `chats`
+--
+
+INSERT INTO `chats` (`id`, `user_one_id`, `user_two_id`, `created_at`, `updated_at`) VALUES
+(1, 6, 7, '2026-04-23 12:41:58', '2026-04-23 12:42:44'),
+(2, 5, 6, '2026-04-23 12:45:56', '2026-04-26 11:02:32'),
+(3, 5, 7, '2026-04-23 12:49:46', '2026-04-23 13:15:53');
 
 -- --------------------------------------------------------
 
@@ -58,20 +81,6 @@ INSERT INTO `comments` (`id`, `post_id`, `user_id`, `comment_text`, `is_deleted`
 -- --------------------------------------------------------
 
 --
--- Структура таблицы `chats`
---
-
-CREATE TABLE `chats` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_one_id` bigint UNSIGNED NOT NULL,
-  `user_two_id` bigint UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Структура таблицы `followers`
 --
 
@@ -90,7 +99,8 @@ CREATE TABLE `followers` (
 
 INSERT INTO `followers` (`id`, `follower_id`, `following_id`, `status`, `declined_until`, `created_at`) VALUES
 (1, 5, 6, 'accepted', NULL, '2026-04-20 16:30:43'),
-(4, 6, 5, 'accepted', NULL, '2026-04-21 16:48:53');
+(4, 6, 5, 'accepted', NULL, '2026-04-21 16:48:53'),
+(5, 5, 7, 'accepted', NULL, '2026-04-23 13:15:48');
 
 -- --------------------------------------------------------
 
@@ -167,6 +177,32 @@ CREATE TABLE `messages` (
   `is_read` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `messages`
+--
+
+INSERT INTO `messages` (`id`, `chat_id`, `sender_id`, `message_text`, `post_id`, `is_read`, `created_at`) VALUES
+(1, 1, 7, 'привет', NULL, 1, '2026-04-23 12:42:04'),
+(2, 1, 7, 'как дела', NULL, 1, '2026-04-23 12:42:09'),
+(3, 1, 6, 'норм', NULL, 1, '2026-04-23 12:42:44'),
+(4, 2, 5, 'але', NULL, 1, '2026-04-23 12:46:02'),
+(5, 2, 6, 'але', NULL, 1, '2026-04-23 12:46:14'),
+(6, 2, 6, 'РЕАЛЬНО РАБОТАЕТ', NULL, 1, '2026-04-23 12:46:41'),
+(7, 2, 6, 'задержка 3 секунды', NULL, 1, '2026-04-23 12:46:53'),
+(8, 3, 5, '???', NULL, 1, '2026-04-23 12:49:50'),
+(9, 2, 5, 'ffff', NULL, 1, '2026-04-23 12:51:18'),
+(10, 2, 6, 'sssss', NULL, 1, '2026-04-23 12:51:34'),
+(11, 2, 5, 'привет', NULL, 1, '2026-04-23 13:01:32'),
+(12, 2, 6, 'я крутая', NULL, 1, '2026-04-23 13:02:20'),
+(13, 2, 6, 'оооо', NULL, 1, '2026-04-23 13:02:27'),
+(14, 2, 6, 'ооо', NULL, 1, '2026-04-23 13:02:34'),
+(15, 2, 6, 'ооо', NULL, 1, '2026-04-23 13:02:45'),
+(16, 2, 5, '[post_share]|11|7|pashka-durashka', NULL, 0, '2026-04-23 13:15:21'),
+(17, 3, 5, '[post_share]|9|5|omg', NULL, 1, '2026-04-23 13:15:53'),
+(18, 2, 5, '[post_share]|11|7|pashka-durashka', NULL, 0, '2026-04-23 13:51:13'),
+(19, 2, 5, '[post_share]|11|7|pashka-durashka', NULL, 0, '2026-04-26 10:54:56'),
+(20, 2, 5, '[post_share]|8|6|s', NULL, 0, '2026-04-26 11:02:32');
 
 -- --------------------------------------------------------
 
@@ -332,7 +368,8 @@ INSERT INTO `reposts` (`id`, `user_id`, `post_id`, `created_at`) VALUES
 (4, 6, 8, '2026-04-21 16:49:00'),
 (5, 7, 9, '2026-04-21 17:35:13'),
 (6, 7, 8, '2026-04-23 09:25:31'),
-(7, 7, 11, '2026-04-23 09:25:42');
+(7, 7, 11, '2026-04-23 09:25:42'),
+(8, 5, 11, '2026-04-23 13:07:36');
 
 -- --------------------------------------------------------
 
@@ -436,20 +473,20 @@ INSERT INTO `user_notifications` (`id`, `user_id`, `report_id`, `title`, `messag
 --
 
 --
--- Индексы таблицы `comments`
---
-ALTER TABLE `comments`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_comments_post_id` (`post_id`),
-  ADD KEY `idx_comments_user_id` (`user_id`);
-
---
 -- Индексы таблицы `chats`
 --
 ALTER TABLE `chats`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_chats_user_pair` (`user_one_id`,`user_two_id`),
   ADD KEY `idx_chats_user_two` (`user_two_id`);
+
+--
+-- Индексы таблицы `comments`
+--
+ALTER TABLE `comments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_comments_post_id` (`post_id`),
+  ADD KEY `idx_comments_user_id` (`user_id`);
 
 --
 -- Индексы таблицы `followers`
@@ -592,16 +629,16 @@ ALTER TABLE `user_notifications`
 --
 
 --
+-- AUTO_INCREMENT для таблицы `chats`
+--
+ALTER TABLE `chats`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT для таблицы `comments`
 --
 ALTER TABLE `comments`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
-
---
--- AUTO_INCREMENT для таблицы `chats`
---
-ALTER TABLE `chats`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT для таблицы `followers`
@@ -631,13 +668,13 @@ ALTER TABLE `likes`
 -- AUTO_INCREMENT для таблицы `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT для таблицы `moderation_reasons`
 --
 ALTER TABLE `moderation_reasons`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2048;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5594;
 
 --
 -- AUTO_INCREMENT для таблицы `moderation_reports`
@@ -673,7 +710,7 @@ ALTER TABLE `post_media`
 -- AUTO_INCREMENT для таблицы `reposts`
 --
 ALTER TABLE `reposts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT для таблицы `saved_posts`
@@ -704,18 +741,18 @@ ALTER TABLE `user_notifications`
 --
 
 --
--- Ограничения внешнего ключа таблицы `comments`
---
-ALTER TABLE `comments`
-  ADD CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
-
---
 -- Ограничения внешнего ключа таблицы `chats`
 --
 ALTER TABLE `chats`
   ADD CONSTRAINT `fk_chats_user_one` FOREIGN KEY (`user_one_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_chats_user_two` FOREIGN KEY (`user_two_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `comments`
+--
+ALTER TABLE `comments`
+  ADD CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `followers`
@@ -750,8 +787,8 @@ ALTER TABLE `likes`
 --
 ALTER TABLE `messages`
   ADD CONSTRAINT `fk_messages_chat` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_messages_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `fk_messages_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `moderation_reports`
