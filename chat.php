@@ -372,12 +372,14 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 ? '<div class="chat-forwarded-label">Переслано</div>'
                 : '';
             var editedHtml = item.is_edited ? '<em class="chat-edited-label">изменено</em>' : '';
+            var reactionTrigger = '<button type="button" class="chat-reaction-trigger" data-message-id="' + Number(item.id) + '" aria-label="Выбрать реакцию">🙂</button>';
             var menuButton = '<button type="button" class="chat-message-menu-trigger" data-message-id="' + Number(item.id) + '" aria-label="Действия с сообщением">⋯</button>';
             var menuHtml = '<div class="chat-message-menu" data-menu-for="' + Number(item.id) + '"></div>';
+            var actionsHtml = '<div class="chat-message-actions">' + reactionTrigger + menuButton + '</div>';
 
             var reactionsHtml = '<div class="chat-message-reactions" data-reactions-for="' + Number(item.id) + '"></div>';
             return '<div class="chat-message-row ' + sideClass + '" data-message-row-id="' + Number(item.id) + '">' +
-                menuButton + menuHtml +
+                actionsHtml + menuHtml +
                 '<div class="chat-message ' + sideClass + '" data-message-id="' + Number(item.id) + '">' +
                 replyHtml + forwardedHtml + bodyHtml +
                 '<time>' + escapeHtml(item.created_at_human) + ' ' + editedHtml + '</time>' + reactionsHtml +
@@ -646,6 +648,16 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     }
 
     document.addEventListener('click', function (event) {
+        var reactionTrigger = event.target.closest('.chat-reaction-trigger');
+        if (reactionTrigger) {
+            var reactionMessageIdFromIcon = Number(reactionTrigger.getAttribute('data-message-id'));
+            var reactionRow = reactionTrigger.closest('.chat-message-row');
+            if (reactionRow && reactionMessageIdFromIcon > 0) {
+                showReactionPanel(reactionMessageIdFromIcon, reactionRow);
+            }
+            return;
+        }
+
         var menuTrigger = event.target.closest('.chat-message-menu-trigger');
         if (menuTrigger) {
             var messageId = Number(menuTrigger.getAttribute('data-message-id'));
