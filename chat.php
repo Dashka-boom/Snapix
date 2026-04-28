@@ -124,6 +124,15 @@ if (!$activeDialog && !empty($dialogs)) {
     $activeDialog = $dialogs[0];
     $activeChatId = (int) $activeDialog['id'];
 }
+
+$forwardRecipientsStmt = $pdo->prepare("
+    SELECT DISTINCT u.id, u.login, u.avatar
+    FROM users u
+    WHERE u.id != :user_id
+    ORDER BY u.login ASC
+");
+$forwardRecipientsStmt->execute(['user_id' => $currentUser['id']]);
+$forwardRecipients = $forwardRecipientsStmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -190,8 +199,16 @@ if (!$activeDialog && !empty($dialogs)) {
                     <div class="chat-thread-header">
                         <h2><?php echo htmlspecialchars($activeDialog['partner_login']); ?></h2>
                     </div>
+                    <div class="chat-pinned" id="chat-pinned"></div>
                     <div class="chat-messages" id="chat-messages"></div>
                     <form class="chat-send-form" id="chat-send-form">
+                        <div class="chat-reply-box is-hidden" id="chat-reply-box">
+                            <div class="chat-reply-box-content">
+                                <strong>Ответ на сообщение</strong>
+                                <p id="chat-reply-text"></p>
+                            </div>
+                            <button type="button" class="chat-reply-close" id="chat-reply-close" aria-label="Отменить ответ">×</button>
+                        </div>
                         <input type="text" id="chat-message-input" maxlength="1000" placeholder="Введите сообщение" autocomplete="off">
                         <button type="submit">Отправить</button>
                     </form>
@@ -199,6 +216,31 @@ if (!$activeDialog && !empty($dialogs)) {
             </section>
         </section>
     </main>
+<?php if ($activeDialog): ?>
+<div class="chat-forward-modal is-hidden" id="chat-forward-modal">
+    <div class="chat-forward-modal-card">
+        <div class="chat-forward-head">
+            <h3>Переслать сообщение</h3>
+            <button type="button" id="chat-forward-close" aria-label="Закрыть">×</button>
+        </div>
+        <div class="chat-forward-list" id="chat-forward-list">
+            <?php foreach ($forwardRecipients as $recipient): ?>
+                <button
+                    type="button"
+                    class="chat-forward-user"
+                    data-user-id="<?php echo (int) $recipient['id']; ?>"
+                >
+                    <span class="dialog-avatar"<?php if (!empty($recipient['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($recipient['avatar']); ?>');"<?php endif; ?>>
+                        <?php if (empty($recipient['avatar'])): ?><?php echo htmlspecialchars(mb_substr($recipient['login'], 0, 1)); ?><?php endif; ?>
+                    </span>
+                    <span><?php echo htmlspecialchars($recipient['login']); ?></span>
+                </button>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<div class="chat-reaction-panel is-hidden" id="chat-reaction-panel"></div>
+<?php endif; ?>
 
 <script>
 (function () {
@@ -207,8 +249,18 @@ if (!$activeDialog && !empty($dialogs)) {
     var dialogList = document.getElementById('dialog-list');
     var sendForm = document.getElementById('chat-send-form');
     var messageInput = document.getElementById('chat-message-input');
+    var pinnedBox = document.getElementById('chat-pinned');
+    var replyBox = document.getElementById('chat-reply-box');
+    var replyText = document.getElementById('chat-reply-text');
+    var replyClose = document.getElementById('chat-reply-close');
+    var forwardModal = document.getElementById('chat-forward-modal');
+    var forwardClose = document.getElementById('chat-forward-close');
+    var forwardList = document.getElementById('chat-forward-list');
     var badge = document.getElementById('header-chat-badge');
+    var reactionPanel = document.getElementById('chat-reaction-panel');
     var lastError = '';
+    var replyingToMessage = null;
+    var forwardingMessageId = 0;
     var socket = null;
     var socketReady = false;
     var socketConnecting = false;
@@ -218,6 +270,10 @@ if (!$activeDialog && !empty($dialogs)) {
         'ws://localhost:8090'
     ];
     var pollIntervalId = null;
+    var reactionEmojis = ['❤️', '😂', '👍', '🔥', '😢', '😮'];
+    var longPressTimer = null;
+    var activeReactionMessageId = 0;
+    var lastMessageRenderHash = '';
 
 
     function escapeHtml(value) {
@@ -230,6 +286,37 @@ if (!$activeDialog && !empty($dialogs)) {
                 '\'': '&#039;'
             }[char] || char;
         });
+    }
+
+    function truncateForQuote(text) {
+        return text.length > 120 ? text.slice(0, 117) + '...' : text;
+    }
+
+    function getMessagePreview(item) {
+        if (item.shared_post) {
+            return 'Публикация';
+        }
+        if (item.deleted_for_all) {
+            return 'Сообщение удалено';
+        }
+        return truncateForQuote(item.message_text || '');
+    }
+
+    function renderPinned(pinnedItems) {
+        if (!pinnedBox) {
+            return;
+        }
+        if (!Array.isArray(pinnedItems) || !pinnedItems.length) {
+            pinnedBox.classList.add('is-hidden');
+            pinnedBox.innerHTML = '';
+            return;
+        }
+        pinnedBox.classList.remove('is-hidden');
+        pinnedBox.innerHTML = pinnedItems.map(function (item) {
+            return '<button type="button" class="chat-pinned-item" data-scroll-message-id="' + Number(item.id) + '">' +
+                '<span>📌</span><span>' + escapeHtml(getMessagePreview(item)) + '</span>' +
+                '</button>';
+        }).join('');
     }
 
     function renderMessages(items) {
@@ -275,13 +362,60 @@ if (!$activeDialog && !empty($dialogs)) {
                     '</a>';
                 bodyHtml = '<div class=\"chat-message-body chat-message-body-card\">' + messageBody + '</div>';
             }
-            return '<div class="chat-message ' + sideClass + '">' +
-                bodyHtml +
-                '<time>' + escapeHtml(item.created_at_human) + '</time>' +
+            var replyHtml = '';
+            if (item.reply_to) {
+                replyHtml = '<button type="button" class="chat-reply-chip" data-scroll-message-id="' + Number(item.reply_to.id) + '">' +
+                    '<small>Ответ</small><span>' + escapeHtml(getMessagePreview(item.reply_to)) + '</span></button>';
+            }
+
+            var forwardedHtml = item.forwarded_from
+                ? '<div class="chat-forwarded-label">Переслано</div>'
+                : '';
+            var editedHtml = item.is_edited ? '<em class="chat-edited-label">изменено</em>' : '';
+            var menuButton = '<button type="button" class="chat-message-menu-trigger" data-message-id="' + Number(item.id) + '" aria-label="Действия с сообщением">⋯</button>';
+            var menuHtml = '<div class="chat-message-menu" data-menu-for="' + Number(item.id) + '"></div>';
+
+            var reactionsHtml = '<div class="chat-message-reactions" data-reactions-for="' + Number(item.id) + '"></div>';
+            return '<div class="chat-message-row ' + sideClass + '" data-message-row-id="' + Number(item.id) + '">' +
+                menuButton + menuHtml +
+                '<div class="chat-message ' + sideClass + '" data-message-id="' + Number(item.id) + '">' +
+                replyHtml + forwardedHtml + bodyHtml +
+                '<time>' + escapeHtml(item.created_at_human) + ' ' + editedHtml + '</time>' + reactionsHtml +
+                '</div>' +
                 '</div>';
         }).join('');
 
+        updateReactionsFromPayload(items);
         messageList.scrollTop = messageList.scrollHeight;
+    }
+
+    function renderReactionBadges(message) {
+        var box = document.querySelector('[data-reactions-for="' + Number(message.id) + '"]');
+        if (!box) {
+            return;
+        }
+        var reactions = Array.isArray(message.reactions) ? message.reactions : [];
+        if (!reactions.length) {
+            box.innerHTML = '';
+            return;
+        }
+        box.innerHTML = reactions.map(function (item) {
+            var activeClass = message.my_reaction === item.reaction ? ' is-active' : '';
+            return '<button type="button" class="chat-reaction-badge' + activeClass + '" data-react-message-id="' + Number(message.id) + '" data-reaction="' + escapeHtml(item.reaction) + '">' +
+                '<span>' + escapeHtml(item.reaction) + '</span><span>' + Number(item.count) + '</span></button>';
+        }).join('');
+    }
+
+    function updateReactionsFromPayload(items) {
+        (items || []).forEach(function (item) {
+            renderReactionBadges(item);
+        });
+    }
+
+    function buildMessageRenderHash(items) {
+        return (items || []).map(function (item) {
+            return [item.id, item.message_text, item.deleted_for_all ? 1 : 0, item.is_edited ? 1 : 0, item.reply_to_message_id, item.forwarded_from_message_id].join(':');
+        }).join('|');
     }
 
     function renderDialogs(items) {
@@ -323,8 +457,15 @@ if (!$activeDialog && !empty($dialogs)) {
                     return;
                 }
                 if (Array.isArray(data.messages)) {
-                    renderMessages(data.messages);
+                    var nextHash = buildMessageRenderHash(data.messages);
+                    if (nextHash !== lastMessageRenderHash) {
+                        lastMessageRenderHash = nextHash;
+                        renderMessages(data.messages);
+                    } else {
+                        updateReactionsFromPayload(data.messages);
+                    }
                 }
+                renderPinned(data.pinned_messages || []);
                 if (Array.isArray(data.dialogs)) {
                     renderDialogs(data.dialogs);
                     if (activeChatId <= 0 && data.dialogs.length > 0) {
@@ -356,6 +497,9 @@ if (!$activeDialog && !empty($dialogs)) {
             body.set('action', 'send');
             body.set('chat_id', String(activeChatId));
             body.set('message_text', messageText);
+            if (replyingToMessage) {
+                body.set('reply_to_message_id', String(replyingToMessage.id));
+            }
 
             fetch('chat-api.php', {
                 method: 'POST',
@@ -369,6 +513,7 @@ if (!$activeDialog && !empty($dialogs)) {
                 .then(function (data) {
                     if (data.ok) {
                         messageInput.value = '';
+                        clearReply();
                         poll();
 
                         var lastMessage = Array.isArray(data.messages) && data.messages.length
@@ -384,6 +529,285 @@ if (!$activeDialog && !empty($dialogs)) {
                     lastError = 'send_request_failed';
                     console.error('Chat send request failed:', error);
                 });
+        });
+    }
+
+    function clearReply() {
+        replyingToMessage = null;
+        if (!replyBox) {
+            return;
+        }
+        replyBox.classList.add('is-hidden');
+        if (replyText) {
+            replyText.textContent = '';
+        }
+    }
+
+    function showReactionPanel(messageId, anchorElement) {
+        if (!reactionPanel || !anchorElement) {
+            return;
+        }
+        activeReactionMessageId = Number(messageId);
+        reactionPanel.innerHTML = reactionEmojis.map(function (emoji) {
+            return '<button type="button" class="chat-reaction-option" data-panel-reaction="' + emoji + '">' + emoji + '</button>';
+        }).join('') + '<button type="button" class="chat-reaction-option chat-reaction-option-more" disabled>+</button>';
+
+        var rect = anchorElement.getBoundingClientRect();
+        reactionPanel.classList.remove('is-hidden', 'is-bottom');
+        reactionPanel.style.left = Math.max(8, rect.left + (rect.width / 2) - 118) + 'px';
+        reactionPanel.style.top = (rect.top - 44) + 'px';
+        if (rect.top < 60) {
+            reactionPanel.classList.add('is-bottom');
+            reactionPanel.style.top = (rect.bottom + 8) + 'px';
+        }
+    }
+
+    function hideReactionPanel() {
+        activeReactionMessageId = 0;
+        if (reactionPanel) {
+            reactionPanel.classList.add('is-hidden');
+        }
+    }
+
+    function animateReaction(messageId, emoji) {
+        var messageNode = document.querySelector('.chat-message[data-message-id="' + Number(messageId) + '"]');
+        if (!messageNode) {
+            return;
+        }
+        var blast = document.createElement('span');
+        blast.className = 'chat-reaction-burst';
+        blast.textContent = emoji;
+        messageNode.appendChild(blast);
+        setTimeout(function () {
+            blast.remove();
+        }, 650);
+    }
+
+    if (replyClose) {
+        replyClose.addEventListener('click', clearReply);
+    }
+
+    function openMenu(trigger, message) {
+        closeMenus();
+        var menu = document.querySelector('[data-menu-for="' + message.id + '"]');
+        if (!menu) {
+            return;
+        }
+        var canEdit = !!message.is_mine && !message.forwarded_from && !message.deleted_for_all;
+        var items = [];
+        if (canEdit) {
+            items.push({ action: 'edit', label: 'Редактировать', icon: '✏️' });
+        }
+        items.push({ action: 'delete', label: 'Удалить', icon: '🗑️' });
+        items.push({ action: 'pin', label: 'Закрепить', icon: '📌' });
+        items.push({ action: 'reply', label: 'Ответить', icon: '↩️' });
+        items.push({ action: 'forward', label: 'Переслать', icon: '➡️' });
+        items.push({ action: 'copy', label: 'Копировать', icon: '📋' });
+
+        menu.innerHTML = items.map(function (item) {
+            return '<button type="button" class="chat-message-menu-item" data-action="' + item.action + '" data-message-id="' + Number(message.id) + '">' +
+                '<span>' + escapeHtml(item.label) + '</span><span>' + item.icon + '</span></button>';
+        }).join('');
+        menu.classList.add('is-open');
+    }
+
+    function closeMenus() {
+        Array.prototype.forEach.call(document.querySelectorAll('.chat-message-menu.is-open'), function (menu) {
+            menu.classList.remove('is-open');
+            menu.innerHTML = '';
+        });
+    }
+
+    function getMessageById(id) {
+        var row = document.querySelector('.chat-message[data-message-id="' + Number(id) + '"]');
+        if (!row) {
+            return null;
+        }
+        return {
+            id: Number(id),
+            is_mine: row.classList.contains('is-mine')
+        };
+    }
+
+    function sendMessageAction(action, messageId, extra) {
+        var body = new URLSearchParams();
+        body.set('action', action);
+        body.set('chat_id', String(activeChatId));
+        body.set('message_id', String(messageId));
+        Object.keys(extra || {}).forEach(function (key) {
+            body.set(key, String(extra[key]));
+        });
+        return fetch('chat-api.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+        }).then(function (response) { return response.json(); });
+    }
+
+    document.addEventListener('click', function (event) {
+        var menuTrigger = event.target.closest('.chat-message-menu-trigger');
+        if (menuTrigger) {
+            var messageId = Number(menuTrigger.getAttribute('data-message-id'));
+            fetch('chat-api.php?action=poll&chat_id=' + activeChatId, { credentials: 'same-origin' })
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    var message = (data.messages || []).find(function (item) { return Number(item.id) === messageId; });
+                    if (message) {
+                        openMenu(menuTrigger, message);
+                    }
+                });
+            return;
+        }
+
+        var menuItem = event.target.closest('.chat-message-menu-item');
+        if (menuItem) {
+            var messageId = Number(menuItem.getAttribute('data-message-id'));
+            var action = menuItem.getAttribute('data-action');
+            if (action === 'copy') {
+                var messageNode = document.querySelector('.chat-message[data-message-id="' + messageId + '"] p');
+                var text = messageNode ? messageNode.textContent : '';
+                navigator.clipboard.writeText(text || '');
+                closeMenus();
+                return;
+            }
+            if (action === 'reply') {
+                var replyNode = document.querySelector('.chat-message[data-message-id="' + messageId + '"] p');
+                replyingToMessage = { id: messageId, text: replyNode ? replyNode.textContent : '' };
+                if (replyBox && replyText) {
+                    replyText.textContent = truncateForQuote(replyingToMessage.text);
+                    replyBox.classList.remove('is-hidden');
+                }
+                closeMenus();
+                return;
+            }
+            if (action === 'edit') {
+                var newText = prompt('Изменить сообщение:');
+                if (!newText) {
+                    closeMenus();
+                    return;
+                }
+                sendMessageAction('edit', messageId, { message_text: newText.trim() }).then(poll);
+                closeMenus();
+                return;
+            }
+            if (action === 'delete') {
+                var mode = confirm('Удалить у всех? Нажмите "Отмена", чтобы удалить только у себя.') ? 'all' : 'self';
+                sendMessageAction('delete', messageId, { delete_mode: mode }).then(poll);
+                closeMenus();
+                return;
+            }
+            if (action === 'pin') {
+                sendMessageAction('pin', messageId, {}).then(poll);
+                closeMenus();
+                return;
+            }
+            if (action === 'forward') {
+                forwardingMessageId = messageId;
+                if (forwardModal) {
+                    forwardModal.classList.remove('is-hidden');
+                }
+                closeMenus();
+                return;
+            }
+        }
+
+        var reactionBadge = event.target.closest('.chat-reaction-badge');
+        if (reactionBadge) {
+            var reactionMessageId = Number(reactionBadge.getAttribute('data-react-message-id'));
+            var reaction = reactionBadge.getAttribute('data-reaction');
+            sendMessageAction('react', reactionMessageId, { reaction: reaction }).then(function () {
+                animateReaction(reactionMessageId, reaction);
+                poll();
+            });
+            return;
+        }
+
+        var panelReaction = event.target.closest('[data-panel-reaction]');
+        if (panelReaction && activeReactionMessageId > 0) {
+            var panelEmoji = panelReaction.getAttribute('data-panel-reaction');
+            sendMessageAction('react', activeReactionMessageId, { reaction: panelEmoji }).then(function () {
+                animateReaction(activeReactionMessageId, panelEmoji);
+                poll();
+            });
+            hideReactionPanel();
+            return;
+        }
+
+        var scrollTo = event.target.closest('[data-scroll-message-id]');
+        if (scrollTo) {
+            var targetId = Number(scrollTo.getAttribute('data-scroll-message-id'));
+            var target = document.querySelector('.chat-message[data-message-id="' + targetId + '"]');
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.classList.add('is-highlighted');
+                setTimeout(function () { target.classList.remove('is-highlighted'); }, 1200);
+            }
+            return;
+        }
+
+        if (!event.target.closest('.chat-message-menu')) {
+            closeMenus();
+        }
+        if (!event.target.closest('.chat-reaction-panel')) {
+            hideReactionPanel();
+        }
+    });
+
+    if (messageList) {
+        messageList.addEventListener('mouseover', function (event) {
+            var row = event.target.closest('.chat-message-row');
+            if (!row) {
+                return;
+            }
+            var messageId = Number(row.getAttribute('data-message-row-id') || 0);
+            if (messageId > 0) {
+                showReactionPanel(messageId, row);
+            }
+        });
+        messageList.addEventListener('mouseleave', function () {
+            hideReactionPanel();
+        });
+        messageList.addEventListener('pointerdown', function (event) {
+            var row = event.target.closest('.chat-message-row');
+            if (!row || event.pointerType === 'mouse') {
+                return;
+            }
+            var messageId = Number(row.getAttribute('data-message-row-id') || 0);
+            clearTimeout(longPressTimer);
+            longPressTimer = setTimeout(function () {
+                showReactionPanel(messageId, row);
+            }, 420);
+        });
+        messageList.addEventListener('pointerup', function () {
+            clearTimeout(longPressTimer);
+        });
+        messageList.addEventListener('pointercancel', function () {
+            clearTimeout(longPressTimer);
+        });
+    }
+
+    if (forwardClose) {
+        forwardClose.addEventListener('click', function () {
+            forwardingMessageId = 0;
+            forwardModal.classList.add('is-hidden');
+        });
+    }
+
+    if (forwardList) {
+        forwardList.addEventListener('click', function (event) {
+            var userButton = event.target.closest('.chat-forward-user');
+            if (!userButton || !forwardingMessageId) {
+                return;
+            }
+            var recipientId = Number(userButton.getAttribute('data-user-id'));
+            sendMessageAction('forward', forwardingMessageId, { receiver_id: recipientId }).then(function () {
+                forwardingMessageId = 0;
+                if (forwardModal) {
+                    forwardModal.classList.add('is-hidden');
+                }
+                poll();
+            });
         });
     }
 

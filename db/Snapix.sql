@@ -175,8 +175,12 @@ CREATE TABLE `messages` (
   `sender_id` bigint UNSIGNED NOT NULL,
   `message_text` text COLLATE utf8mb4_general_ci,
   `post_id` bigint UNSIGNED DEFAULT NULL,
+  `reply_to_message_id` bigint UNSIGNED DEFAULT NULL,
+  `forwarded_from_message_id` bigint UNSIGNED DEFAULT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `deleted_for_all` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `edited_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -223,6 +227,33 @@ INSERT INTO `messages` (`id`, `chat_id`, `sender_id`, `message_text`, `post_id`,
 (43, 2, 5, '[post_share]|11|7|pashka-durashka', 11, 0, '2026-04-28 10:47:07'),
 (44, 3, 5, 'привет', NULL, 0, '2026-04-28 10:47:47'),
 (45, 3, 5, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, 0, '2026-04-28 10:48:35');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `message_hidden`
+--
+
+CREATE TABLE `message_hidden` (
+  `id` bigint UNSIGNED NOT NULL,
+  `message_id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `message_reactions`
+--
+
+CREATE TABLE `message_reactions` (
+  `id` bigint UNSIGNED NOT NULL,
+  `message_id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `reaction` varchar(16) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -302,6 +333,20 @@ CREATE TABLE `pinned_posts` (
   `id` bigint UNSIGNED NOT NULL,
   `user_id` bigint UNSIGNED NOT NULL,
   `post_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `pinned_messages`
+--
+
+CREATE TABLE `pinned_messages` (
+  `id` bigint UNSIGNED NOT NULL,
+  `chat_id` bigint UNSIGNED NOT NULL,
+  `message_id` bigint UNSIGNED NOT NULL,
+  `pinned_by_user_id` bigint UNSIGNED NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -555,7 +600,26 @@ ALTER TABLE `messages`
   ADD KEY `idx_messages_chat_created` (`chat_id`,`created_at`),
   ADD KEY `idx_messages_sender_created` (`sender_id`,`created_at`),
   ADD KEY `idx_messages_chat_read` (`chat_id`,`is_read`),
-  ADD KEY `idx_messages_post` (`post_id`);
+  ADD KEY `idx_messages_post` (`post_id`),
+  ADD KEY `idx_messages_reply` (`reply_to_message_id`),
+  ADD KEY `idx_messages_forwarded_from` (`forwarded_from_message_id`);
+
+--
+-- Индексы таблицы `message_hidden`
+--
+ALTER TABLE `message_hidden`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_message_hidden` (`message_id`,`user_id`),
+  ADD KEY `idx_message_hidden_user_id` (`user_id`);
+
+--
+-- Индексы таблицы `message_reactions`
+--
+ALTER TABLE `message_reactions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_message_reaction` (`message_id`,`user_id`),
+  ADD KEY `idx_message_reactions_message` (`message_id`),
+  ADD KEY `idx_message_reactions_user` (`user_id`);
 
 --
 -- Индексы таблицы `moderation_reasons`
@@ -591,6 +655,16 @@ ALTER TABLE `pinned_posts`
   ADD UNIQUE KEY `uq_pinned_post` (`user_id`,`post_id`),
   ADD KEY `idx_pinned_posts_user_id` (`user_id`),
   ADD KEY `idx_pinned_posts_post_id` (`post_id`);
+
+--
+-- Индексы таблицы `pinned_messages`
+--
+ALTER TABLE `pinned_messages`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_pinned_message` (`chat_id`,`message_id`),
+  ADD KEY `idx_pinned_messages_chat_id` (`chat_id`),
+  ADD KEY `idx_pinned_messages_message_id` (`message_id`),
+  ADD KEY `idx_pinned_messages_user_id` (`pinned_by_user_id`);
 
 --
 -- Индексы таблицы `posts`
@@ -694,6 +768,18 @@ ALTER TABLE `messages`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 --
+-- AUTO_INCREMENT для таблицы `message_hidden`
+--
+ALTER TABLE `message_hidden`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT для таблицы `message_reactions`
+--
+ALTER TABLE `message_reactions`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT для таблицы `moderation_reasons`
 --
 ALTER TABLE `moderation_reasons`
@@ -716,6 +802,12 @@ ALTER TABLE `password_reset_tokens`
 --
 ALTER TABLE `pinned_posts`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT для таблицы `pinned_messages`
+--
+ALTER TABLE `pinned_messages`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT для таблицы `posts`
@@ -811,7 +903,23 @@ ALTER TABLE `likes`
 ALTER TABLE `messages`
   ADD CONSTRAINT `fk_messages_chat` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_messages_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_messages_reply_to` FOREIGN KEY (`reply_to_message_id`) REFERENCES `messages` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_messages_forwarded_from` FOREIGN KEY (`forwarded_from_message_id`) REFERENCES `messages` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `message_hidden`
+--
+ALTER TABLE `message_hidden`
+  ADD CONSTRAINT `fk_message_hidden_message` FOREIGN KEY (`message_id`) REFERENCES `messages` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_message_hidden_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `message_reactions`
+--
+ALTER TABLE `message_reactions`
+  ADD CONSTRAINT `fk_message_reactions_message` FOREIGN KEY (`message_id`) REFERENCES `messages` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_message_reactions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `moderation_reports`
@@ -834,6 +942,14 @@ ALTER TABLE `password_reset_tokens`
 ALTER TABLE `pinned_posts`
   ADD CONSTRAINT `fk_pinned_posts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_pinned_posts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `pinned_messages`
+--
+ALTER TABLE `pinned_messages`
+  ADD CONSTRAINT `fk_pinned_messages_chat` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_pinned_messages_message` FOREIGN KEY (`message_id`) REFERENCES `messages` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_pinned_messages_user` FOREIGN KEY (`pinned_by_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `posts`
