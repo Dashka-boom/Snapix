@@ -271,7 +271,6 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     ];
     var pollIntervalId = null;
     var reactionEmojis = ['❤️', '😂', '👍', '🔥', '😢', '😮'];
-    var longPressTimer = null;
     var activeReactionMessageId = 0;
     var lastMessageRenderHash = '';
 
@@ -557,7 +556,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         var rect = anchorElement.getBoundingClientRect();
         reactionPanel.classList.remove('is-hidden', 'is-bottom');
         reactionPanel.style.left = Math.max(8, rect.left + (rect.width / 2) - 118) + 'px';
-        reactionPanel.style.top = (rect.top - 44) + 'px';
+        reactionPanel.style.top = (rect.top - 50) + 'px';
         if (rect.top < 60) {
             reactionPanel.classList.add('is-bottom');
             reactionPanel.style.top = (rect.bottom + 8) + 'px';
@@ -651,9 +650,8 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         var reactionTrigger = event.target.closest('.chat-reaction-trigger');
         if (reactionTrigger) {
             var reactionMessageIdFromIcon = Number(reactionTrigger.getAttribute('data-message-id'));
-            var reactionRow = reactionTrigger.closest('.chat-message-row');
-            if (reactionRow && reactionMessageIdFromIcon > 0) {
-                showReactionPanel(reactionMessageIdFromIcon, reactionRow);
+            if (reactionMessageIdFromIcon > 0) {
+                showReactionPanel(reactionMessageIdFromIcon, reactionTrigger);
             }
             return;
         }
@@ -765,39 +763,6 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             hideReactionPanel();
         }
     });
-
-    if (messageList) {
-        messageList.addEventListener('mouseover', function (event) {
-            var row = event.target.closest('.chat-message-row');
-            if (!row) {
-                return;
-            }
-            var messageId = Number(row.getAttribute('data-message-row-id') || 0);
-            if (messageId > 0) {
-                showReactionPanel(messageId, row);
-            }
-        });
-        messageList.addEventListener('mouseleave', function () {
-            hideReactionPanel();
-        });
-        messageList.addEventListener('pointerdown', function (event) {
-            var row = event.target.closest('.chat-message-row');
-            if (!row || event.pointerType === 'mouse') {
-                return;
-            }
-            var messageId = Number(row.getAttribute('data-message-row-id') || 0);
-            clearTimeout(longPressTimer);
-            longPressTimer = setTimeout(function () {
-                showReactionPanel(messageId, row);
-            }, 420);
-        });
-        messageList.addEventListener('pointerup', function () {
-            clearTimeout(longPressTimer);
-        });
-        messageList.addEventListener('pointercancel', function () {
-            clearTimeout(longPressTimer);
-        });
-    }
 
     if (forwardClose) {
         forwardClose.addEventListener('click', function () {
