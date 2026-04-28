@@ -209,6 +209,16 @@ if (!$activeDialog && !empty($dialogs)) {
     var messageInput = document.getElementById('chat-message-input');
     var badge = document.getElementById('header-chat-badge');
     var lastError = '';
+    var socket = null;
+    var socketReady = false;
+    var socketConnecting = false;
+    var socketUrlIndex = 0;
+    var socketUrls = [
+        'ws://127.0.0.1:8090',
+        'ws://localhost:8090'
+    ];
+    var pollIntervalId = null;
+
 
     function escapeHtml(value) {
         return String(value).replace(/[&<>"']/g, function (char) {
@@ -235,6 +245,9 @@ if (!$activeDialog && !empty($dialogs)) {
         messageList.innerHTML = items.map(function (item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
             var messageBody = escapeHtml(item.message_text);
+            if (messageBody.indexOf('[post_share]|') === 0) {
+                messageBody = 'Пересланная публикация недоступна';
+            }
             var bodyHtml = '<p>' + messageBody + '</p>';
             if (item.shared_post) {
                 var post = item.shared_post;
@@ -247,14 +260,15 @@ if (!$activeDialog && !empty($dialogs)) {
                     }
                 }
                 var caption = post.caption ? '<p class=\"chat-shared-caption\">' + escapeHtml(post.caption) + '</p>' : '';
+                var authorLogin = post.author_login || '?';
                 var avatarHtml = post.author_avatar
                     ? '<span class="chat-shared-avatar" style="background-image: url(\'' + escapeHtml(post.author_avatar) + '\');"></span>'
-                    : '<span class=\"chat-shared-avatar\">' + escapeHtml((post.author_login || '?').slice(0, 1)) + '</span>';
+                    : '<span class=\"chat-shared-avatar\">' + escapeHtml(authorLogin.slice(0, 1)) + '</span>';
                 messageBody = '' +
                     '<a class=\"chat-shared-card\" href=\"' + escapeHtml(post.post_url) + '\">' +
                         '<span class=\"chat-shared-head\">' +
                             avatarHtml +
-                            '<strong class=\"chat-shared-author\">' + escapeHtml(post.author_login) + '</strong>' +
+                            '<strong class=\"chat-shared-author\">' + escapeHtml(authorLogin) + '</strong>' +
                         '</span>' +
                         mediaHtml +
                         caption +
@@ -324,8 +338,9 @@ if (!$activeDialog && !empty($dialogs)) {
                 updateBadge(Number(data.unread_total || 0));
             })
             .catch(function (error) {
-    console.error(error);
-});
+                lastError = 'poll_request_failed';
+                console.error('Chat poll request failed:', error);
+            });
     }
 
     if (sendForm && messageInput) {
@@ -355,6 +370,11 @@ if (!$activeDialog && !empty($dialogs)) {
                     if (data.ok) {
                         messageInput.value = '';
                         poll();
+
+                        var lastMessage = Array.isArray(data.messages) && data.messages.length
+                            ? data.messages[data.messages.length - 1]
+                            : null;
+                        notifySocketAboutNewMessage(lastMessage ? lastMessage.id : 0);
                     } else {
                         lastError = data.error || 'send_failed';
                         console.error('Chat send error:', data);
@@ -367,8 +387,122 @@ if (!$activeDialog && !empty($dialogs)) {
         });
     }
 
+    function startFallbackPolling() {
+        if (pollIntervalId !== null) {
+            return;
+        }
+        pollIntervalId = setInterval(poll, 3000);
+    }
+
+    function stopFallbackPolling() {
+        if (pollIntervalId === null) {
+            return;
+        }
+        clearInterval(pollIntervalId);
+        pollIntervalId = null;
+    }
+
+    function notifySocketAboutNewMessage(messageId) {
+        if (!socketReady || !socket || socket.readyState !== WebSocket.OPEN || !activeChatId) {
+            return;
+        }
+
+        socket.send(JSON.stringify({
+            type: 'new_message',
+            chat_id: activeChatId,
+            message_id: Number(messageId || 0)
+        }));
+    }
+
+    function initWebSocket() {
+        if (!window.WebSocket || !activeChatId) {
+            startFallbackPolling();
+            return;
+        }
+
+        socketConnecting = true;
+        connectWebSocketByIndex(0);
+    }
+
+    function connectWebSocketByIndex(index) {
+        if (!window.WebSocket || !activeChatId) {
+            socketConnecting = false;
+            startFallbackPolling();
+            return;
+        }
+
+        if (index >= socketUrls.length) {
+            socketConnecting = false;
+            startFallbackPolling();
+            return;
+        }
+
+        socketUrlIndex = index;
+        var wsUrl = socketUrls[index];
+        var opened = false;
+
+        try {
+            socket = new WebSocket(wsUrl);
+        } catch (error) {
+            console.error('WebSocket init failed (' + wsUrl + '):', error);
+            connectWebSocketByIndex(index + 1);
+            return;
+        }
+
+        socket.addEventListener('open', function () {
+            opened = true;
+            socketConnecting = false;
+            socketReady = true;
+            stopFallbackPolling();
+
+            socket.send(JSON.stringify({
+                type: 'auth',
+                user_id: Number(document.body.getAttribute('data-user-id') || 0),
+                chat_id: activeChatId
+            }));
+        });
+
+        socket.addEventListener('message', function (event) {
+            var data = null;
+
+            try {
+                data = JSON.parse(event.data);
+            } catch (error) {
+                console.error('Invalid WebSocket message:', event.data, error);
+                return;
+            }
+
+            if (data.type === 'new_message' && Number(data.chat_id) === activeChatId) {
+                poll();
+            }
+
+            if (data.type === 'error') {
+                console.error('WebSocket server error:', data.error);
+            }
+        });
+
+        socket.addEventListener('close', function () {
+            socketReady = false;
+            if (socketConnecting || !opened) {
+                connectWebSocketByIndex(socketUrlIndex + 1);
+                return;
+            }
+            startFallbackPolling();
+        });
+
+        socket.addEventListener('error', function (error) {
+            socketReady = false;
+            console.error('WebSocket error (' + wsUrl + '):', error);
+            if (!opened) {
+                connectWebSocketByIndex(socketUrlIndex + 1);
+                return;
+            }
+            startFallbackPolling();
+        });
+    }
+
     poll();
-    setInterval(poll, 3000);
+    initWebSocket();
 })();
 </script>
 </body>
