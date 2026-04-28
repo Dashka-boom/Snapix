@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Апр 28 2026 г., 13:58
+-- Время создания: Апр 28 2026 г., 18:30
 -- Версия сервера: 8.0.30
 -- Версия PHP: 8.1.9
 
@@ -41,8 +41,8 @@ CREATE TABLE `chats` (
 
 INSERT INTO `chats` (`id`, `user_one_id`, `user_two_id`, `created_at`, `updated_at`) VALUES
 (1, 6, 7, '2026-04-23 12:41:58', '2026-04-23 12:42:44'),
-(2, 5, 6, '2026-04-23 12:45:56', '2026-04-28 10:47:07'),
-(3, 5, 7, '2026-04-23 12:49:46', '2026-04-28 10:48:35');
+(2, 5, 6, '2026-04-23 12:45:56', '2026-04-28 15:18:13'),
+(3, 5, 7, '2026-04-23 12:49:46', '2026-04-28 15:17:13');
 
 -- --------------------------------------------------------
 
@@ -187,46 +187,48 @@ CREATE TABLE `messages` (
 -- Дамп данных таблицы `messages`
 --
 
-INSERT INTO `messages` (`id`, `chat_id`, `sender_id`, `message_text`, `post_id`, `is_read`, `created_at`) VALUES
-(1, 1, 7, 'привет', NULL, 1, '2026-04-23 12:42:04'),
-(2, 1, 7, 'как дела', NULL, 1, '2026-04-23 12:42:09'),
-(3, 1, 6, 'норм', NULL, 1, '2026-04-23 12:42:44'),
-(4, 2, 5, 'але', NULL, 1, '2026-04-23 12:46:02'),
-(5, 2, 6, 'але', NULL, 1, '2026-04-23 12:46:14'),
-(6, 2, 6, 'РЕАЛЬНО РАБОТАЕТ', NULL, 1, '2026-04-23 12:46:41'),
-(7, 2, 6, 'задержка 3 секунды', NULL, 1, '2026-04-23 12:46:53'),
-(8, 3, 5, '???', NULL, 1, '2026-04-23 12:49:50'),
-(9, 2, 5, 'ffff', NULL, 1, '2026-04-23 12:51:18'),
-(10, 2, 6, 'sssss', NULL, 1, '2026-04-23 12:51:34'),
-(11, 2, 5, 'привет', NULL, 1, '2026-04-23 13:01:32'),
-(12, 2, 6, 'я крутая', NULL, 1, '2026-04-23 13:02:20'),
-(13, 2, 6, 'оооо', NULL, 1, '2026-04-23 13:02:27'),
-(14, 2, 6, 'ооо', NULL, 1, '2026-04-23 13:02:34'),
-(15, 2, 6, 'ооо', NULL, 1, '2026-04-23 13:02:45'),
-(22, 2, 5, '[post_share]|11|7|pashka-durashka', 11, 0, '2026-04-26 11:28:00'),
-(23, 2, 5, '[post_share]|11|7|pashka-durashka', 11, 0, '2026-04-26 11:38:13'),
-(24, 3, 5, '[post_share]|11|7|pashka-durashka', 11, 1, '2026-04-26 11:42:46'),
-(25, 2, 5, 'НАКОНЕЦ-ТО', NULL, 0, '2026-04-26 11:45:25'),
-(26, 3, 7, 'ghbdtn', NULL, 1, '2026-04-26 14:02:58'),
-(27, 3, 7, 'и че', NULL, 1, '2026-04-26 14:03:05'),
-(28, 3, 5, 'вв', NULL, 1, '2026-04-26 14:03:42'),
-(29, 3, 5, 'вебсокет работает?', NULL, 1, '2026-04-26 14:04:22'),
-(30, 3, 7, 'нет ошибка event', NULL, 1, '2026-04-26 14:09:34'),
-(31, 3, 7, 'обидно', NULL, 1, '2026-04-26 14:09:40'),
-(32, 3, 5, 'это да', NULL, 1, '2026-04-26 16:21:01'),
-(33, 3, 5, 'а', NULL, 1, '2026-04-26 16:23:47'),
-(34, 3, 7, 'б', NULL, 1, '2026-04-26 16:24:01'),
-(35, 3, 5, 'в', NULL, 1, '2026-04-26 16:24:03'),
-(36, 3, 5, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, 1, '2026-04-26 16:24:11'),
-(37, 3, 7, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, 1, '2026-04-26 16:41:03'),
-(38, 3, 5, 'в', NULL, 1, '2026-04-26 16:41:22'),
-(39, 3, 7, 'ы', NULL, 1, '2026-04-26 16:41:43'),
-(40, 3, 7, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, 1, '2026-04-26 16:41:52'),
-(41, 3, 7, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, 1, '2026-04-26 16:45:43'),
-(42, 3, 5, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, 1, '2026-04-26 16:45:47'),
-(43, 2, 5, '[post_share]|11|7|pashka-durashka', 11, 0, '2026-04-28 10:47:07'),
-(44, 3, 5, 'привет', NULL, 0, '2026-04-28 10:47:47'),
-(45, 3, 5, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, 0, '2026-04-28 10:48:35');
+INSERT INTO `messages` (`id`, `chat_id`, `sender_id`, `message_text`, `post_id`, `reply_to_message_id`, `forwarded_from_message_id`, `is_read`, `deleted_for_all`, `created_at`, `edited_at`) VALUES
+(1, 1, 7, 'привет', NULL, NULL, NULL, 1, 0, '2026-04-23 12:42:04', NULL),
+(2, 1, 7, 'как дела', NULL, NULL, NULL, 1, 0, '2026-04-23 12:42:09', NULL),
+(3, 1, 6, 'норм', NULL, NULL, NULL, 1, 0, '2026-04-23 12:42:44', NULL),
+(4, 2, 5, 'але', NULL, NULL, NULL, 1, 0, '2026-04-23 12:46:02', NULL),
+(5, 2, 6, 'але', NULL, NULL, NULL, 1, 0, '2026-04-23 12:46:14', NULL),
+(6, 2, 6, 'РЕАЛЬНО РАБОТАЕТ', NULL, NULL, NULL, 1, 0, '2026-04-23 12:46:41', NULL),
+(7, 2, 6, 'задержка 3 секунды', NULL, NULL, NULL, 1, 0, '2026-04-23 12:46:53', NULL),
+(8, 3, 5, '???', NULL, NULL, NULL, 1, 0, '2026-04-23 12:49:50', NULL),
+(9, 2, 5, 'ffff', NULL, NULL, NULL, 1, 0, '2026-04-23 12:51:18', NULL),
+(10, 2, 6, 'sssss', NULL, NULL, NULL, 1, 0, '2026-04-23 12:51:34', NULL),
+(11, 2, 5, 'привет', NULL, NULL, NULL, 1, 0, '2026-04-23 13:01:32', NULL),
+(12, 2, 6, 'я крутая', NULL, NULL, NULL, 1, 0, '2026-04-23 13:02:20', NULL),
+(13, 2, 6, 'оооо', NULL, NULL, NULL, 1, 0, '2026-04-23 13:02:27', NULL),
+(14, 2, 6, 'ооо', NULL, NULL, NULL, 1, 0, '2026-04-23 13:02:34', NULL),
+(15, 2, 6, 'ооо', NULL, NULL, NULL, 1, 0, '2026-04-23 13:02:45', NULL),
+(22, 2, 5, '[post_share]|11|7|pashka-durashka', 11, NULL, NULL, 0, 0, '2026-04-26 11:28:00', NULL),
+(23, 2, 5, '[post_share]|11|7|pashka-durashka', 11, NULL, NULL, 0, 0, '2026-04-26 11:38:13', NULL),
+(24, 3, 5, '[post_share]|11|7|pashka-durashka', 11, NULL, NULL, 1, 0, '2026-04-26 11:42:46', NULL),
+(25, 2, 5, 'НАКОНЕЦ-ТО', NULL, NULL, NULL, 0, 0, '2026-04-26 11:45:25', NULL),
+(26, 3, 7, 'ghbdtn', NULL, NULL, NULL, 1, 0, '2026-04-26 14:02:58', NULL),
+(27, 3, 7, 'и че', NULL, NULL, NULL, 1, 0, '2026-04-26 14:03:05', NULL),
+(28, 3, 5, 'вв', NULL, NULL, NULL, 1, 0, '2026-04-26 14:03:42', NULL),
+(29, 3, 5, 'вебсокет работает?', NULL, NULL, NULL, 1, 0, '2026-04-26 14:04:22', NULL),
+(30, 3, 7, 'нет ошибка event', NULL, NULL, NULL, 1, 0, '2026-04-26 14:09:34', NULL),
+(31, 3, 7, 'обидно', NULL, NULL, NULL, 1, 0, '2026-04-26 14:09:40', NULL),
+(32, 3, 5, 'это да', NULL, NULL, NULL, 1, 0, '2026-04-26 16:21:01', NULL),
+(33, 3, 5, 'а', NULL, NULL, NULL, 1, 0, '2026-04-26 16:23:47', NULL),
+(34, 3, 7, 'б', NULL, NULL, NULL, 1, 0, '2026-04-26 16:24:01', NULL),
+(35, 3, 5, 'в', NULL, NULL, NULL, 1, 0, '2026-04-26 16:24:03', NULL),
+(36, 3, 5, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, NULL, NULL, 1, 0, '2026-04-26 16:24:11', NULL),
+(37, 3, 7, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, NULL, NULL, 1, 0, '2026-04-26 16:41:03', NULL),
+(38, 3, 5, 'в', NULL, NULL, NULL, 1, 0, '2026-04-26 16:41:22', NULL),
+(39, 3, 7, 'ы', NULL, NULL, NULL, 1, 0, '2026-04-26 16:41:43', NULL),
+(40, 3, 7, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, NULL, NULL, 1, 0, '2026-04-26 16:41:52', NULL),
+(41, 3, 7, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, NULL, NULL, 1, 0, '2026-04-26 16:45:43', NULL),
+(42, 3, 5, 'аааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааааа', NULL, NULL, NULL, 1, 0, '2026-04-26 16:45:47', NULL),
+(43, 2, 5, '[post_share]|11|7|pashka-durashka', 11, NULL, NULL, 0, 0, '2026-04-28 10:47:07', NULL),
+(44, 3, 5, 'привет', NULL, NULL, NULL, 0, 0, '2026-04-28 10:47:47', NULL),
+(45, 3, 5, 'сообщение изменено', NULL, NULL, NULL, 0, 0, '2026-04-28 10:48:35', '2026-04-28 15:16:26'),
+(46, 3, 5, 'Сообщение удалено', NULL, 45, NULL, 0, 1, '2026-04-28 15:17:13', NULL),
+(47, 2, 5, 'сообщение изменено', NULL, NULL, 45, 0, 0, '2026-04-28 15:18:13', NULL);
 
 -- --------------------------------------------------------
 
@@ -240,6 +242,14 @@ CREATE TABLE `message_hidden` (
   `user_id` bigint UNSIGNED NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `message_hidden`
+--
+
+INSERT INTO `message_hidden` (`id`, `message_id`, `user_id`, `created_at`) VALUES
+(1, 46, 5, '2026-04-28 15:19:56'),
+(2, 44, 5, '2026-04-28 15:20:30');
 
 -- --------------------------------------------------------
 
@@ -312,19 +322,6 @@ CREATE TABLE `password_reset_tokens` (
 -- --------------------------------------------------------
 
 --
--- Структура таблицы `pinned_posts`
---
-
-CREATE TABLE `pinned_posts` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `post_id` bigint UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Структура таблицы `pinned_messages`
 --
 
@@ -333,6 +330,26 @@ CREATE TABLE `pinned_messages` (
   `chat_id` bigint UNSIGNED NOT NULL,
   `message_id` bigint UNSIGNED NOT NULL,
   `pinned_by_user_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Дамп данных таблицы `pinned_messages`
+--
+
+INSERT INTO `pinned_messages` (`id`, `chat_id`, `message_id`, `pinned_by_user_id`, `created_at`) VALUES
+(1, 3, 46, 5, '2026-04-28 15:18:06');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `pinned_posts`
+--
+
+CREATE TABLE `pinned_posts` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `post_id` bigint UNSIGNED NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -625,15 +642,6 @@ ALTER TABLE `password_reset_tokens`
   ADD KEY `idx_password_reset_user_id` (`user_id`);
 
 --
--- Индексы таблицы `pinned_posts`
---
-ALTER TABLE `pinned_posts`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_pinned_post` (`user_id`,`post_id`),
-  ADD KEY `idx_pinned_posts_user_id` (`user_id`),
-  ADD KEY `idx_pinned_posts_post_id` (`post_id`);
-
---
 -- Индексы таблицы `pinned_messages`
 --
 ALTER TABLE `pinned_messages`
@@ -642,6 +650,15 @@ ALTER TABLE `pinned_messages`
   ADD KEY `idx_pinned_messages_chat_id` (`chat_id`),
   ADD KEY `idx_pinned_messages_message_id` (`message_id`),
   ADD KEY `idx_pinned_messages_user_id` (`pinned_by_user_id`);
+
+--
+-- Индексы таблицы `pinned_posts`
+--
+ALTER TABLE `pinned_posts`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_pinned_post` (`user_id`,`post_id`),
+  ADD KEY `idx_pinned_posts_user_id` (`user_id`),
+  ADD KEY `idx_pinned_posts_post_id` (`post_id`);
 
 --
 -- Индексы таблицы `posts`
@@ -742,19 +759,19 @@ ALTER TABLE `likes`
 -- AUTO_INCREMENT для таблицы `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT для таблицы `message_hidden`
 --
 ALTER TABLE `message_hidden`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT для таблицы `moderation_reasons`
 --
 ALTER TABLE `moderation_reasons`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12019;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12364;
 
 --
 -- AUTO_INCREMENT для таблицы `moderation_reports`
@@ -769,16 +786,16 @@ ALTER TABLE `password_reset_tokens`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT для таблицы `pinned_messages`
+--
+ALTER TABLE `pinned_messages`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT для таблицы `pinned_posts`
 --
 ALTER TABLE `pinned_posts`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
-
---
--- AUTO_INCREMENT для таблицы `pinned_messages`
---
-ALTER TABLE `pinned_messages`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT для таблицы `posts`
@@ -873,9 +890,9 @@ ALTER TABLE `likes`
 --
 ALTER TABLE `messages`
   ADD CONSTRAINT `fk_messages_chat` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_messages_forwarded_from` FOREIGN KEY (`forwarded_from_message_id`) REFERENCES `messages` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_messages_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_messages_reply_to` FOREIGN KEY (`reply_to_message_id`) REFERENCES `messages` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_messages_forwarded_from` FOREIGN KEY (`forwarded_from_message_id`) REFERENCES `messages` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
@@ -901,19 +918,19 @@ ALTER TABLE `password_reset_tokens`
   ADD CONSTRAINT `fk_password_reset_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Ограничения внешнего ключа таблицы `pinned_posts`
---
-ALTER TABLE `pinned_posts`
-  ADD CONSTRAINT `fk_pinned_posts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_pinned_posts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
 -- Ограничения внешнего ключа таблицы `pinned_messages`
 --
 ALTER TABLE `pinned_messages`
   ADD CONSTRAINT `fk_pinned_messages_chat` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_pinned_messages_message` FOREIGN KEY (`message_id`) REFERENCES `messages` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_pinned_messages_user` FOREIGN KEY (`pinned_by_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `pinned_posts`
+--
+ALTER TABLE `pinned_posts`
+  ADD CONSTRAINT `fk_pinned_posts_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_pinned_posts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `posts`
