@@ -765,7 +765,6 @@ $showFollowingPanel = $panel === 'following';
                     <?php foreach ($repostedPosts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <article class="post-card" id="repost-<?php echo (int) $post['id']; ?>">
-                            <p class="feed-repost-mark">Вы поделились</p>
                             <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                 <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                             <?php elseif (!empty($post['media_url'])): ?>
@@ -782,8 +781,6 @@ $showFollowingPanel = $panel === 'following';
                         </article>
                     <?php endforeach; ?>
                 </div>
-            <?php else: ?>
-                <p class="empty-state">У вас пока нет репостов.</p>
             <?php endif; ?>
         </section>
 
