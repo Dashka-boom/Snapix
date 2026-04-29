@@ -70,11 +70,11 @@ if ($activeChatId > 0) {
         $activeChatId = 0;
         $error = 'Диалог недоступен.';
     } else {
-        $markReadStmt = $pdo->prepare('UPDATE messages SET is_read = 1 WHERE chat_id = :chat_id AND sender_id != :user_id AND is_read = 0');
-        $markReadStmt->execute([
-            'chat_id' => $activeChatId,
-            'user_id' => $currentUser['id'],
-        ]);
+    $markReadStmt = $pdo->prepare('UPDATE messages SET is_read = 1 WHERE chat_id = :chat_id AND sender_id != :user_id AND is_read = 0');
+$markReadStmt->execute([
+    'chat_id' => $chatId,
+    'user_id' => $userId,
+]);
     }
 }
 

@@ -110,11 +110,11 @@ function getDialogs(PDO $pdo, int $userId): array
 
 function getMessages(PDO $pdo, int $chatId, int $userId): array
 {
-    $markReadStmt = $pdo->prepare('UPDATE messages SET is_read = 1 WHERE chat_id = :chat_id AND sender_id != :user_id AND is_read = 0');
-    $markReadStmt->execute([
-        'chat_id' => $chatId,
-        'user_id' => $userId,
-    ]);
+   $markReadStmt = $pdo->prepare('UPDATE messages SET is_read = 1 WHERE chat_id = :chat_id AND sender_id != :user_id AND is_read = 0');
+$markReadStmt->execute([
+    'chat_id' => $chatId,
+    'user_id' => $userId,
+]);
 
     $messagesStmt = $pdo->prepare('
         SELECT
@@ -348,41 +348,90 @@ if ($action === 'send') {
         exit;
     }
 
+    // проверка reply
     if ($replyToMessageId > 0) {
-        $replyExistsStmt = $pdo->prepare('SELECT id FROM messages WHERE id = :message_id AND chat_id = :chat_id LIMIT 1');
+        $replyExistsStmt = $pdo->prepare('
+            SELECT id FROM messages 
+            WHERE id = :message_id AND chat_id = :chat_id 
+            LIMIT 1
+        ');
         $replyExistsStmt->execute([
             'message_id' => $replyToMessageId,
             'chat_id' => $chatId,
         ]);
+
         if (!$replyExistsStmt->fetchColumn()) {
             $replyToMessageId = 0;
         }
     }
 
-    try {
-        $insertStmt = $pdo->prepare('INSERT INTO messages (chat_id, sender_id, message_text, post_id, reply_to_message_id, forwarded_from_message_id, is_read, deleted_for_all) VALUES (:chat_id, :sender_id, :message_text, :post_id, :reply_to_message_id, NULL, 0, 0)');
-        $insertStmt->execute([
-            'chat_id' => $chatId,
-            'sender_id' => $currentUserId,
-            'message_text' => substr($messageText, 0, 1000),
-            'post_id' => null,
-            'reply_to_message_id' => $replyToMessageId > 0 ? $replyToMessageId : null,
-        ]);
+    $createdMessageId = 0;
+    $maxRetries = 3;
 
-        $touchChatStmt = $pdo->prepare('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = :chat_id');
-        $touchChatStmt->execute(['chat_id' => $chatId]);
-        $createdMessageId = (int) $pdo->lastInsertId();
-    } catch (Throwable $e) {
-        http_response_code(500);
-        echo json_encode([
-            'ok' => false,
-            'error' => 'message_insert_failed',
-            'chat_id' => $chatId,
-            'details' => $e->getMessage(),
-        ]);
-        exit;
+    while ($maxRetries--) {
+        try {
+            $pdo->beginTransaction();
+
+            $insertStmt = $pdo->prepare('
+                INSERT INTO messages (
+                    chat_id, sender_id, message_text, post_id,
+                    reply_to_message_id, forwarded_from_message_id,
+                    is_read, deleted_for_all
+                ) VALUES (
+                    :chat_id, :sender_id, :message_text, :post_id,
+                    :reply_to_message_id, NULL,
+                    0, 0
+                )
+            ');
+
+            $insertStmt->execute([
+                'chat_id' => $chatId,
+                'sender_id' => $currentUserId,
+                'message_text' => mb_substr($messageText, 0, 1000),
+                'post_id' => null,
+                'reply_to_message_id' => $replyToMessageId > 0 ? $replyToMessageId : null,
+            ]);
+
+            $createdMessageId = (int) $pdo->lastInsertId();
+
+            $touchChatStmt = $pdo->prepare('
+                UPDATE chats 
+                SET updated_at = CURRENT_TIMESTAMP 
+                WHERE id = :chat_id
+            ');
+            $touchChatStmt->execute(['chat_id' => $chatId]);
+
+            $pdo->commit();
+            break;
+
+        } 
+        catch (PDOException $e) {
+            $pdo->rollBack();
+
+            // DEADLOCK RETRY
+            if ($e->getCode() === '40001') {
+                usleep(100000); // 0.1 сек
+                continue;
+            }
+
+            // ЛОГ ошибки
+            file_put_contents(
+                __DIR__ . '/chat_error.log',
+                date('Y-m-d H:i:s') . ' SEND ERROR: ' . $e->getMessage() . PHP_EOL,
+                FILE_APPEND
+            );
+
+            http_response_code(500);
+            echo json_encode([
+                'ok' => false,
+                'error' => 'message_insert_failed',
+                'chat_id' => $chatId
+            ]);
+            exit;
+        }
     }
-}
+    }
+
 
 if ($action === 'edit' && $chatBelongsToUser) {
     $messageId = (int) ($_POST['message_id'] ?? 0);
