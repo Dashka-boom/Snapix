@@ -265,11 +265,8 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var socketReady = false;
     var socketConnecting = false;
     var socketUrlIndex = 0;
-    var socketUrls = [
-        'ws://127.0.0.1:8090',
-        'ws://localhost:8090'
-    ];
-    var pollIntervalId = null;
+    var socketUrls = ['ws://127.0.0.1:8090'];
+    var fallbackTimeoutId = null;
     var reactionEmojis = ['❤️', '😂', '👍', '🔥', '😢', '😮'];
     var activeReactionMessageId = 0;
     var lastMessageRenderHash = '';
@@ -318,17 +315,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         }).join('');
     }
 
-    function renderMessages(items) {
-        if (!messageList) {
-            return;
-        }
-
-        if (!items.length) {
-            messageList.innerHTML = '<p class="chat-empty">Сообщений пока нет.</p>';
-            return;
-        }
-
-        messageList.innerHTML = items.map(function (item) {
+    function buildMessageRowHtml(item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
             var messageBody = escapeHtml(item.message_text);
             if (messageBody.indexOf('[post_share]|') === 0) {
@@ -384,7 +371,32 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 '<time>' + escapeHtml(item.created_at_human) + ' ' + editedHtml + '</time>' + reactionsHtml +
                 '</div>' +
                 '</div>';
-        }).join('');
+    }
+
+    function appendMessage(item) {
+        if (!messageList || !item || Number(item.id || 0) <= 0) {
+            return;
+        }
+        if (document.querySelector('.chat-message[data-message-id="' + Number(item.id) + '"]')) {
+            return;
+        }
+        if (messageList.querySelector('.chat-empty')) {
+            messageList.innerHTML = '';
+        }
+        messageList.insertAdjacentHTML('beforeend', buildMessageRowHtml(item));
+        renderReactionBadges(item);
+        messageList.scrollTop = messageList.scrollHeight;
+    }
+
+    function renderMessages(items) {
+        if (!messageList) {
+            return;
+        }
+        if (!items.length) {
+            messageList.innerHTML = '<p class="chat-empty">Сообщений пока нет.</p>';
+            return;
+        }
+        messageList.innerHTML = items.map(buildMessageRowHtml).join('');
 
         updateReactionsFromPayload(items);
         messageList.scrollTop = messageList.scrollHeight;
@@ -448,7 +460,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         badge.classList.toggle('is-hidden', count <= 0);
     }
 
-    function poll() {
+    function refreshChatState() {
         fetch('chat-api.php?action=poll&chat_id=' + activeChatId, { credentials: 'same-origin' })
             .then(function (response) { return response.json(); })
             .then(function (data) {
@@ -471,10 +483,6 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                     renderDialogs(data.dialogs);
                     if (activeChatId <= 0 && data.dialogs.length > 0) {
                         activeChatId = Number(data.dialogs[0].id || 0);
-                        if (activeChatId > 0) {
-                            poll();
-                            return;
-                        }
                     }
                 }
                 updateBadge(Number(data.unread_total || 0));
@@ -515,12 +523,11 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                     if (data.ok) {
                         messageInput.value = '';
                         clearReply();
-                        poll();
-
-                        var lastMessage = Array.isArray(data.messages) && data.messages.length
-                            ? data.messages[data.messages.length - 1]
-                            : null;
-                        notifySocketAboutNewMessage(lastMessage ? lastMessage.id : 0);
+                        if (Number(data.message_id || 0) > 0) {
+                            notifySocketAboutNewMessage(Number(data.message_id));
+                        } else {
+                            refreshChatState();
+                        }
                     } else {
                         lastError = data.error || 'send_failed';
                         console.error('Chat send error:', data);
@@ -697,18 +704,18 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                     closeMenus();
                     return;
                 }
-                sendMessageAction('edit', messageId, { message_text: newText.trim() }).then(poll);
+                sendMessageAction('edit', messageId, { message_text: newText.trim() }).then(refreshChatState);
                 closeMenus();
                 return;
             }
             if (action === 'delete') {
                 var mode = confirm('Удалить у всех? Нажмите "Отмена", чтобы удалить только у себя.') ? 'all' : 'self';
-                sendMessageAction('delete', messageId, { delete_mode: mode }).then(poll);
+                sendMessageAction('delete', messageId, { delete_mode: mode }).then(refreshChatState);
                 closeMenus();
                 return;
             }
             if (action === 'pin') {
-                sendMessageAction('pin', messageId, {}).then(poll);
+                sendMessageAction('pin', messageId, {}).then(refreshChatState);
                 closeMenus();
                 return;
             }
@@ -728,7 +735,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             var reaction = reactionBadge.getAttribute('data-reaction');
             sendMessageAction('react', reactionMessageId, { reaction: reaction }).then(function () {
                 animateReaction(reactionMessageId, reaction);
-                poll();
+                refreshChatState();
             });
             return;
         }
@@ -738,7 +745,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             var panelEmoji = panelReaction.getAttribute('data-panel-reaction');
             sendMessageAction('react', activeReactionMessageId, { reaction: panelEmoji }).then(function () {
                 animateReaction(activeReactionMessageId, panelEmoji);
-                poll();
+                refreshChatState();
             });
             hideReactionPanel();
             return;
@@ -783,24 +790,28 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 if (forwardModal) {
                     forwardModal.classList.add('is-hidden');
                 }
-                poll();
+                refreshChatState();
             });
         });
     }
 
     function startFallbackPolling() {
-        if (pollIntervalId !== null) {
+        if (fallbackTimeoutId !== null) {
             return;
         }
-        pollIntervalId = setInterval(poll, 3000);
+        fallbackTimeoutId = window.setTimeout(function () {
+            fallbackTimeoutId = null;
+            refreshChatState();
+            startFallbackPolling();
+        }, 3000);
     }
 
     function stopFallbackPolling() {
-        if (pollIntervalId === null) {
+        if (fallbackTimeoutId === null) {
             return;
         }
-        clearInterval(pollIntervalId);
-        pollIntervalId = null;
+        clearTimeout(fallbackTimeoutId);
+        fallbackTimeoutId = null;
     }
 
     function notifySocketAboutNewMessage(messageId) {
@@ -873,8 +884,9 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 return;
             }
 
-            if (data.type === 'new_message' && Number(data.chat_id) === activeChatId) {
-                poll();
+            if (data.type === 'new_message' && Number(data.chat_id) === activeChatId && data.message) {
+                appendMessage(data.message);
+                return;
             }
 
             if (data.type === 'error') {
@@ -902,7 +914,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         });
     }
 
-    poll();
+    refreshChatState();
     initWebSocket();
 })();
 </script>
