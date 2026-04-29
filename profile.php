@@ -284,6 +284,10 @@ $stmt = $pdo->prepare('SELECT COUNT(*) FROM saved_posts WHERE user_id = :id');
 $stmt->execute(['id' => $user['id']]);
 $savedPostsCount = (int) $stmt->fetchColumn();
 
+$stmt = $pdo->prepare('SELECT COUNT(*) FROM reposts WHERE user_id = :id');
+$stmt->execute(['id' => $user['id']]);
+$repostsCount = (int) $stmt->fetchColumn();
+
 $stmt = $pdo->prepare('
     SELECT posts.*, post_media.media_url, post_media.media_type,
            users.id AS author_user_id, users.login AS author_login,
@@ -329,6 +333,37 @@ $stmt->execute([
     'viewer_id' => $user['id'],
 ]);
 $savedPosts = $stmt->fetchAll();
+
+$stmt = $pdo->prepare("
+    SELECT
+        posts.id,
+        posts.user_id AS author_user_id,
+        posts.caption,
+        posts.created_at,
+        post_media.media_url,
+        post_media.media_type,
+        users.login AS author_login,
+        users.avatar AS author_avatar,
+        (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
+        (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id) AS comments_count,
+        (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
+        (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
+        (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
+        (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted,
+        (SELECT COUNT(*) FROM pinned_posts WHERE pinned_posts.user_id = :viewer_id AND pinned_posts.post_id = posts.id) AS is_pinned
+    FROM reposts
+    INNER JOIN posts ON posts.id = reposts.post_id AND posts.is_deleted = 0
+    INNER JOIN users ON users.id = posts.user_id
+    LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
+    WHERE reposts.user_id = :id
+    GROUP BY posts.id
+    ORDER BY MAX(reposts.created_at) DESC
+");
+$stmt->execute([
+    'id' => $user['id'],
+    'viewer_id' => $user['id'],
+]);
+$repostedPosts = $stmt->fetchAll();
 
 $stmt = $pdo->prepare("
     SELECT followers.id, followers.created_at, users.id AS user_id, users.login, users.avatar
@@ -624,6 +659,13 @@ $showFollowingPanel = $panel === 'following';
         <?php endif; ?>
 
         <section class="profile-posts card-surface">
+            <div class="profile-post-tabs" role="tablist" aria-label="Разделы профиля">
+                <button type="button" class="profile-post-tab is-active" data-profile-tab-button="publications">Публикации</button>
+                <button type="button" class="profile-post-tab" data-profile-tab-button="reposts">Репосты</button>
+            </div>
+        </section>
+
+        <section class="profile-posts card-surface" data-profile-tab-panel="publications">
             <div class="section-heading">
                 <h2>Публикации</h2>
             </div>
@@ -711,6 +753,37 @@ $showFollowingPanel = $panel === 'following';
                 </div>
             <?php else: ?>
                 <p class="empty-state">Пока нет публикаций. Добавьте первую публикацию.</p>
+            <?php endif; ?>
+        </section>
+
+        <section class="profile-posts card-surface" data-profile-tab-panel="reposts" hidden>
+            <div class="section-heading">
+                <h2>Репосты</h2>
+            </div>
+            <?php if ($repostedPosts): ?>
+                <div class="posts-grid">
+                    <?php foreach ($repostedPosts as $post): ?>
+                        <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
+                        <article class="post-card" id="repost-<?php echo (int) $post['id']; ?>">
+                            <p class="feed-repost-mark">Вы поделились</p>
+                            <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
+                                <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
+                            <?php elseif (!empty($post['media_url'])): ?>
+                                <div class="post-card-media" style="background-image: url('<?php echo htmlspecialchars($post['media_url']); ?>');"></div>
+                            <?php else: ?>
+                                <div class="post-card-media"></div>
+                            <?php endif; ?>
+                            <div class="post-card-copy">
+                                <div class="feed-card-header">
+                                    <div class="feed-header-main"><strong><?php echo htmlspecialchars($post['author_login']); ?></strong></div>
+                                </div>
+                                <?php if (!empty($post['caption'])): ?><p><?php echo nl2br(htmlspecialchars($post['caption'])); ?></p><?php endif; ?>
+                            </div>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p class="empty-state">У вас пока нет репостов.</p>
             <?php endif; ?>
         </section>
 
@@ -865,6 +938,23 @@ $showFollowingPanel = $panel === 'following';
                 }
             });
         });
+
+        (() => {
+            const tabButtons = document.querySelectorAll('[data-profile-tab-button]');
+            const tabPanels = document.querySelectorAll('[data-profile-tab-panel]');
+            if (!tabButtons.length || !tabPanels.length) {
+                return;
+            }
+            tabButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const tab = button.getAttribute('data-profile-tab-button');
+                    tabButtons.forEach((item) => item.classList.toggle('is-active', item === button));
+                    tabPanels.forEach((panel) => {
+                        panel.hidden = panel.getAttribute('data-profile-tab-panel') !== tab;
+                    });
+                });
+            });
+        })();
 
         document.querySelectorAll('.post-menu-toggle').forEach((button) => {
             button.addEventListener('click', () => {

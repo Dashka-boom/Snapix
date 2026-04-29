@@ -1133,6 +1133,31 @@ h2 {
     margin-bottom: 18px;
 }
 
+.profile-post-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.profile-post-tab {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: transparent;
+    color: #fff;
+    border-radius: 999px;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.profile-post-tab.is-active {
+    background: #fff;
+    color: #111;
+}
+
+.feed-repost-mark {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: #b3b3b3;
+}
+
 .posts-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
