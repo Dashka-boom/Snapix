@@ -664,7 +664,9 @@ $showFollowingPanel = $panel === 'following';
         <section class="profile-posts card-surface">
             <div class="profile-post-tabs" role="tablist" aria-label="Разделы профиля">
                 <button type="button" class="profile-post-tab is-active" data-profile-tab-button="publications">Публикации</button>
-                <button type="button" class="profile-post-tab" data-profile-tab-button="reposts">Репосты</button>
+                <button type="button" class="profile-post-tab profile-post-tab-icon" data-profile-tab-button="reposts" aria-label="Репосты" title="Репосты">
+                    <span aria-hidden="true">&#128257;</span>
+                </button>
             </div>
         </section>
 
