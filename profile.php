@@ -351,13 +351,16 @@ $stmt = $pdo->prepare("
         (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
         (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted,
         (SELECT COUNT(*) FROM pinned_posts WHERE pinned_posts.user_id = :viewer_id AND pinned_posts.post_id = posts.id) AS is_pinned
-    FROM reposts
-    INNER JOIN posts ON posts.id = reposts.post_id AND posts.is_deleted = 0
+    FROM (
+        SELECT post_id, MAX(created_at) AS last_repost_at
+        FROM reposts
+        WHERE user_id = :id
+        GROUP BY post_id
+    ) user_reposts
+    INNER JOIN posts ON posts.id = user_reposts.post_id AND posts.is_deleted = 0
     INNER JOIN users ON users.id = posts.user_id
     LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
-    WHERE reposts.user_id = :id
-    GROUP BY posts.id
-    ORDER BY MAX(reposts.created_at) DESC
+    ORDER BY user_reposts.last_repost_at DESC
 ");
 $stmt->execute([
     'id' => $user['id'],
