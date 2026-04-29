@@ -178,11 +178,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
             $repostId = $repostExistsStmt->fetchColumn();
 
             if (!$repostId) {
-                $insertRepostStmt = $pdo->prepare('INSERT INTO reposts (user_id, post_id) VALUES (:user_id, :post_id)');
+                $insertRepostStmt = $pdo->prepare('INSERT IGNORE INTO reposts (user_id, post_id) VALUES (:user_id, :post_id)');
                 $insertRepostStmt->execute([
                     'user_id' => $user['id'],
                     'post_id' => $postId,
                 ]);
+                $isRepostedNow = true;
+            } else {
+                $deleteRepostStmt = $pdo->prepare('DELETE FROM reposts WHERE id = :id AND user_id = :user_id');
+                $deleteRepostStmt->execute([
+                    'id' => (int) $repostId,
+                    'user_id' => $user['id'],
+                ]);
+                $isRepostedNow = false;
+            }
+
+            if (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest') {
+                $repostsCountStmt = $pdo->prepare('SELECT COUNT(*) FROM reposts WHERE post_id = :post_id');
+                $repostsCountStmt->execute(['post_id' => $postId]);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'ok' => true,
+                    'reposted' => $isRepostedNow,
+                    'reposts_count' => (int) $repostsCountStmt->fetchColumn(),
+                ]);
+                exit;
             }
         }
 
@@ -654,6 +674,40 @@ document.querySelectorAll('.post-menu-toggle').forEach(function (button) {
         if (menu) {
             menu.classList.toggle('is-open');
         }
+    });
+});
+
+document.querySelectorAll('form.inline-action-form input[name="action"][value="add_repost"]').forEach(function (actionInput) {
+    var form = actionInput.closest('form.inline-action-form');
+    if (!form) {
+        return;
+    }
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var formData = new FormData(form);
+        fetch(form.getAttribute('action') || window.location.href, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams(formData).toString()
+        })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            if (!data || !data.ok) {
+                return;
+            }
+            var button = form.querySelector('.feed-action-btn-repost');
+            var countNode = form.parentElement ? form.parentElement.querySelector('.feed-action-count') : null;
+            if (button) {
+                button.classList.toggle('is-reposted', !!data.reposted);
+            }
+            if (countNode) {
+                countNode.textContent = String(Number(data.reposts_count || 0));
+            }
+        });
     });
 });
 

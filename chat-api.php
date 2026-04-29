@@ -320,6 +320,7 @@ ensureChatSchema($pdo);
 
 $action = $_POST['action'] ?? $_GET['action'] ?? 'poll';
 $chatId = (int) ($_POST['chat_id'] ?? $_GET['chat_id'] ?? 0);
+$createdMessageId = 0;
 
 $chatBelongsToUser = false;
 if ($chatId > 0) {
@@ -370,6 +371,7 @@ if ($action === 'send') {
 
         $touchChatStmt = $pdo->prepare('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = :chat_id');
         $touchChatStmt->execute(['chat_id' => $chatId]);
+        $createdMessageId = (int) $pdo->lastInsertId();
     } catch (Throwable $e) {
         http_response_code(500);
         echo json_encode([
@@ -555,6 +557,7 @@ $unreadTotal = (int) $unreadTotalStmt->fetchColumn();
 
 echo json_encode([
     'ok' => true,
+    'message_id' => $action === 'send' ? ($createdMessageId ?? 0) : 0,
     'messages' => $messages,
     'dialogs' => $dialogs,
     'pinned_messages' => $pinnedMessages,

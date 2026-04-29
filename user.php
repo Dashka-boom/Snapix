@@ -169,11 +169,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                 'user_id' => $currentUser['id'],
                 'post_id' => $postId,
             ]);
-            if (!$repostExistsStmt->fetchColumn()) {
-                $pdo->prepare('INSERT INTO reposts (user_id, post_id) VALUES (:user_id, :post_id)')->execute([
+            $repostId = $repostExistsStmt->fetchColumn();
+            if (!$repostId) {
+                $pdo->prepare('INSERT IGNORE INTO reposts (user_id, post_id) VALUES (:user_id, :post_id)')->execute([
                     'user_id' => $currentUser['id'],
                     'post_id' => $postId,
                 ]);
+                $isRepostedNow = true;
+            } else {
+                $pdo->prepare('DELETE FROM reposts WHERE id = :id AND user_id = :user_id')->execute([
+                    'id' => (int) $repostId,
+                    'user_id' => $currentUser['id'],
+                ]);
+                $isRepostedNow = false;
+            }
+
+            if (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest') {
+                $repostsCountStmt = $pdo->prepare('SELECT COUNT(*) FROM reposts WHERE post_id = :post_id');
+                $repostsCountStmt->execute(['post_id' => $postId]);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'ok' => true,
+                    'reposted' => $isRepostedNow,
+                    'reposts_count' => (int) $repostsCountStmt->fetchColumn(),
+                ]);
+                exit;
             }
         }
 
@@ -771,6 +791,40 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 if (menu) {
                     menu.classList.toggle('is-open');
                 }
+            });
+        });
+
+        document.querySelectorAll('form.inline-action-form input[name="action"][value="add_repost"]').forEach((actionInput) => {
+            const form = actionInput.closest('form.inline-action-form');
+            if (!form) {
+                return;
+            }
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const params = new URLSearchParams(new FormData(form));
+                fetch(form.getAttribute('action') || window.location.href, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: params.toString(),
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (!data || !data.ok) {
+                        return;
+                    }
+                    const button = form.querySelector('.feed-action-btn-repost');
+                    const countNode = form.parentElement ? form.parentElement.querySelector('.feed-action-count') : null;
+                    if (button) {
+                        button.classList.toggle('is-reposted', !!data.reposted);
+                    }
+                    if (countNode) {
+                        countNode.textContent = String(Number(data.reposts_count || 0));
+                    }
+                });
             });
         });
 
