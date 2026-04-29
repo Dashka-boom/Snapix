@@ -288,46 +288,43 @@ $stmt = $pdo->prepare('SELECT COUNT(*) FROM reposts WHERE user_id = :id');
 $stmt->execute(['id' => $user['id']]);
 $repostsCount = (int) $stmt->fetchColumn();
 
-$stmt = $pdo->prepare('
+$postStatsSql = "
+    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
+    (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0) AS comments_count,
+    (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
+    (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id) AS saves_count,
+    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
+    (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
+    (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted,
+    (SELECT COUNT(*) FROM pinned_posts WHERE pinned_posts.post_id = posts.id AND pinned_posts.user_id = :viewer_id) AS is_pinned
+";
+
+$stmt = $pdo->prepare("
     SELECT posts.*, post_media.media_url, post_media.media_type,
            users.id AS author_user_id, users.login AS author_login,
-           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
-           (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0) AS comments_count,
-           (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
-           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
-           (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id) AS saves_count,
-           (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
-           (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted,
-           (SELECT COUNT(*) FROM pinned_posts WHERE pinned_posts.post_id = posts.id AND pinned_posts.user_id = :viewer_id) AS is_pinned
+           $postStatsSql
     FROM posts
     INNER JOIN users ON users.id = posts.user_id
     LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
     WHERE posts.user_id = :id AND posts.is_deleted = 0
     ORDER BY posts.created_at DESC
-');
+");
 $stmt->execute([
     'id' => $user['id'],
     'viewer_id' => $user['id'],
 ]);
 $posts = $stmt->fetchAll();
 
-$stmt = $pdo->prepare('
+$stmt = $pdo->prepare("
     SELECT posts.*, post_media.media_url, post_media.media_type, users.id AS author_user_id, users.login AS author_login,
-           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
-           (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0) AS comments_count,
-           (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
-           (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
-           (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id) AS saves_count,
-           (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
-           (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted,
-           (SELECT COUNT(*) FROM pinned_posts WHERE pinned_posts.post_id = posts.id AND pinned_posts.user_id = :viewer_id) AS is_pinned
+           $postStatsSql
     FROM saved_posts
     INNER JOIN posts ON posts.id = saved_posts.post_id AND posts.is_deleted = 0
     INNER JOIN users ON users.id = posts.user_id
     LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
     WHERE saved_posts.user_id = :id
     ORDER BY saved_posts.created_at DESC
-');
+");
 $stmt->execute([
     'id' => $user['id'],
     'viewer_id' => $user['id'],
@@ -344,13 +341,7 @@ $stmt = $pdo->prepare("
         post_media.media_type,
         users.login AS author_login,
         users.avatar AS author_avatar,
-        (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
-        (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id) AS comments_count,
-        (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
-        (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
-        (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
-        (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted,
-        (SELECT COUNT(*) FROM pinned_posts WHERE pinned_posts.user_id = :viewer_id AND pinned_posts.post_id = posts.id) AS is_pinned
+        $postStatsSql
     FROM (
         SELECT post_id, MAX(created_at) AS last_repost_at
         FROM reposts
