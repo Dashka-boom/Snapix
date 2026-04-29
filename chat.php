@@ -450,13 +450,19 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 
     function poll() {
         fetch('chat-api.php?action=poll&chat_id=' + activeChatId, { credentials: 'same-origin' })
-            .then(function (response) { return response.json(); })
-            .then(function (data) {
-                if (!data.ok) {
-                    lastError = data.error || 'poll_failed';
-                    console.error('Chat poll error:', data);
-                    return;
-                }
+            .then(function (response) { return response.text(); })
+.then(function (text) {
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        console.error('НЕ JSON ОТВЕТ С СЕРВЕРА:', text);
+        return { ok: false }; // ВАЖНО: не ломаем чат
+    }
+})
+.then(function (data) {
+    if (!data.ok) {
+        return;
+    }
                 if (Array.isArray(data.messages)) {
                     var nextHash = buildMessageRenderHash(data.messages);
                     if (nextHash !== lastMessageRenderHash) {
