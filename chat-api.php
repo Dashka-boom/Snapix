@@ -368,10 +368,10 @@ if ($action === 'send') {
             'post_id' => null,
             'reply_to_message_id' => $replyToMessageId > 0 ? $replyToMessageId : null,
         ]);
-
+         $createdMessageId = (int) $pdo->lastInsertId();
         $touchChatStmt = $pdo->prepare('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = :chat_id');
         $touchChatStmt->execute(['chat_id' => $chatId]);
-        $createdMessageId = (int) $pdo->lastInsertId();
+       
     } catch (Throwable $e) {
         http_response_code(500);
         echo json_encode([
