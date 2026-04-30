@@ -64,10 +64,10 @@ class SnapixChatServer implements MessageComponentInterface
             $chatId = (int) ($data['chat_id'] ?? $sender['chat_id'] ?? 0);
             $messageId = (int) ($data['message_id'] ?? 0);
 
-            if ($chatId <= 0 || $messageId <= 0 || (int) ($sender['user_id'] ?? 0) <= 0) {
-                $this->sendError($from, 'not_authenticated');
-                return;
-            }
+            if ($chatId <= 0 || $messageId <= 0) {
+    $this->sendError($from, 'invalid_data');
+    return;
+}
 
             $message = $this->loadMessageForChat($chatId, $messageId);
             if ($message === null) {
@@ -132,7 +132,16 @@ class SnapixChatServer implements MessageComponentInterface
             'id' => (int) $message['id'],
             'sender_id' => (int) $message['sender_id'],
             'message_text' => (string) $message['message_text'],
+            'created_at' => (string) $message['created_at'],
             'created_at_human' => date('d.m.Y H:i', strtotime((string) $message['created_at'])),
+
+             'deleted_for_all' => false,
+             'is_edited' => false,
+             'reply_to' => null,
+             'forwarded_from' => null,
+             'shared_post' => null,
+             'reactions' => [],
+             'my_reaction' => null,
         ];
     }
 }
