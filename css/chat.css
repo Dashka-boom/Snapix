@@ -587,3 +587,13 @@
 .chat-message.is-mine,.chat-message-row.is-mine .chat-message{background:#6926be!important;color:#fff!important}
 .chat-message.is-theirs,.chat-message-row.is-theirs .chat-message{background:#1f191d!important;color:#fff!important}
 .chat-message-menu-trigger,.chat-reaction-trigger,.chat-shared-post,.chat-shared-author{color:#6926be!important}
+
+.chat-shell,.chat-thread,.chat-dialogs,.chat-thread-header,.chat-pinned,.chat-forward-dialog{background:#2a2328!important;color:#fff!important}
+.chat-dialogs,.chat-thread-header,.chat-pinned,.chat-forward-user,.chat-shared-card{border-color:#3a3338!important}
+.dialog-item,.chat-shared-card{color:#fff!important}
+.dialog-item:hover,.dialog-item.is-active{background:#1f1a20!important}
+.dialog-content small,.chat-message time,.chat-shared-caption,.chat-empty,.chat-placeholder{color:#b3b3b3!important}
+.chat-message.is-mine,.chat-message-row.is-mine .chat-message{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;color:#111!important}
+.chat-message.is-theirs,.chat-message-row.is-theirs .chat-message{background:#1a1619!important;color:#fff!important}
+.chat-message-menu-trigger,.chat-reaction-trigger{color:#fff!important}
+.chat-shared-post,.chat-shared-author,.chat-reaction.is-active{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb);-webkit-background-clip:text;background-clip:text;color:transparent!important}
