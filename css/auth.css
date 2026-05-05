@@ -332,4 +332,4 @@ body{background:radial-gradient(circle at top, rgba(100,39,181,.22), transparent
 .brand,.link,.inline-link{color:#c8a7ff}.subtitle,.checkbox,.divider,.switch-text{color:var(--text-muted)}
 .auth-form input{background:#151124;border-color:#3b2d5e;color:var(--text-main)}
 .auth-form input:focus{border-color:#8c59d8;box-shadow:0 0 0 4px rgba(100,39,181,.35)}
-.submit-btn{background:#6427b5;color:#f7f2ff}.submit-btn:hover{box-shadow:0 0 20px rgba(100,39,181,.45)}
+.submit-btn{background:#3b2039;color:#f7f2ff}.submit-btn:hover{box-shadow:0 0 20px rgba(100,39,181,.45)}
