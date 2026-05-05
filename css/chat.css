@@ -568,3 +568,13 @@
 .chat-shared-card{background:#2f2f34;border-color:#4b4b52;color:#f4f4f5}
 .chat-shared-post,.chat-shared-author{color:#fad330}
 .chat-message-menu-trigger,.chat-reaction-trigger{color:#fff}
+
+.chat-shell,.chat-thread,.chat-dialogs,.chat-thread-header,.chat-pinned{background:#161322;color:#f5f3ff}
+.chat-dialogs,.chat-thread-header,.chat-pinned{border-color:#34284f}
+.dialog-item:hover,.dialog-item.is-active{background:#221a35}
+.dialog-avatar,.chat-shared-avatar{background:#2a2140;color:#d7bfff}
+.chat-message.is-mine,.chat-message-row.is-mine .chat-message{background:#6427b5;color:#f7f2ff}
+.chat-message.is-theirs,.chat-message-row.is-theirs .chat-message{background:#241c36;color:#f5f3ff}
+.chat-shared-card{background:#1a1628;border-color:#3b2d5c;color:#f5f3ff}
+.chat-shared-post,.chat-shared-author{color:#c8a7ff}
+.dialog-content small,.chat-message time,.chat-shared-caption,.chat-empty,.chat-placeholder{color:#b7b1cc}

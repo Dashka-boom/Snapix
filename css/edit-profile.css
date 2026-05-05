@@ -286,3 +286,10 @@
 .field input:focus,.field textarea:focus,.field select:focus{border-color:#fad330;box-shadow:0 0 0 3px rgba(250,211,48,.2)}
 .checkbox-field input{accent-color:#fad330}
 .upload-trigger{background:rgba(250,211,48,.9);color:#1f1f1f}
+
+.edit-preview-shell,.edit-preview-summary,.form-card{background:#1c182a;border-color:#33274e;color:#f5f3ff}
+.edit-profile-cover{background:linear-gradient(135deg,#171227,#0e0c13)}
+.summary-copy h1,.field label{color:#f5f3ff}.summary-copy p,.status{color:#b7b1cc}
+.field input,.field textarea,.field select{background:#151124;border-color:#3b2d5e;color:#f5f3ff}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#8c59d8;box-shadow:0 0 0 3px rgba(100,39,181,.35)}
+.upload-trigger{background:#6427b5;color:#f7f2ff}

@@ -161,3 +161,12 @@ body{background:radial-gradient(circle at top, rgba(250,211,48,.08), transparent
 .admin-form button:hover,.danger-btn:hover{transform:scale(1.01);box-shadow:0 0 12px rgba(250,211,48,.35)}
 th,td{border-bottom:1px solid #505058}
 .status-success,.status-error{background:#2f2f34;color:var(--text);border-color:#505058}
+
+:root{--bg:#0e0c13;--card:#1c182a;--text:#f5f3ff;--muted:#b7b1cc;--line:#33274e;--accent:#6427b5;--danger:#c84b6a}
+body{background:radial-gradient(circle at top, rgba(100,39,181,.2), transparent 45%), #0e0c13;color:var(--text)}
+.admin-form input{background:#151124;color:var(--text);border-color:#3b2d5e}
+.admin-form button,.admin-nav a,.back-link{background:#6427b5;color:#f7f2ff;border-color:#6427b5}
+.admin-card,.admin-section,.admin-header{border-color:#33274e}
+th,td{border-bottom-color:#3a2d5c;color:#f5f3ff}
+.muted,.subtitle{color:#b7b1cc}
+.status-success,.status-error{background:#1a1628;color:#f5f3ff;border-color:#3a2d5c}

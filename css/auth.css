@@ -325,3 +325,11 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;ba
 .auth-form input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(250,211,48,.2);} 
 .submit-btn{background:var(--accent);color:#1f1f1f;} .submit-btn:hover{transform:scale(1.02);box-shadow:0 0 18px rgba(250,211,48,.35);} 
 @keyframes stars-twinkle{from{opacity:.35;}to{opacity:.68;}}
+
+:root{--bg-main:#0e0c13;--bg-soft:#161322;--text-main:#f5f3ff;--text-muted:#b7b1cc;--accent:#6427b5}
+body{background:radial-gradient(circle at top, rgba(100,39,181,.22), transparent 38%), #0e0c13;color:var(--text-main)}
+.auth-card{background:#1c182a;border-color:#2f2546;color:var(--text-main)}
+.brand,.link,.inline-link{color:#c8a7ff}.subtitle,.checkbox,.divider,.switch-text{color:var(--text-muted)}
+.auth-form input{background:#151124;border-color:#3b2d5e;color:var(--text-main)}
+.auth-form input:focus{border-color:#8c59d8;box-shadow:0 0 0 4px rgba(100,39,181,.35)}
+.submit-btn{background:#6427b5;color:#f7f2ff}.submit-btn:hover{box-shadow:0 0 20px rgba(100,39,181,.45)}
