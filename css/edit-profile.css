@@ -278,3 +278,11 @@
             justify-content: center;
         }
     }
+.edit-preview-shell,.edit-preview-summary,.form-card{background:#303035;border-color:#45454d;color:#f4f4f5}
+.edit-profile-cover{background:linear-gradient(135deg,#2a2a2f,#242426)}
+.summary-copy h1,.field label{color:#f4f4f5}
+.summary-copy p,.status{color:#a1a1aa}
+.field input,.field textarea,.field select{background:#2b2b2f;border-color:#4b4b52;color:#f4f4f5}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#fad330;box-shadow:0 0 0 3px rgba(250,211,48,.2)}
+.checkbox-field input{accent-color:#fad330}
+.upload-trigger{background:rgba(250,211,48,.9);color:#1f1f1f}

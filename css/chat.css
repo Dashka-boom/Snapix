@@ -556,3 +556,15 @@
         border-bottom: 1px solid #e5e7eb;
     }
 }
+
+.chat-shell,.chat-thread,.chat-dialogs,.chat-thread-header,.chat-pinned{background:#2d2d30;color:#f4f4f5}
+.chat-dialogs,.chat-thread-header,.chat-pinned{border-color:#434349}
+.dialog-item{color:#f4f4f5}
+.dialog-item:hover,.dialog-item.is-active{background:#35353a}
+.dialog-avatar,.chat-shared-avatar{background:#3b3b40;color:#fad330}
+.dialog-content small,.chat-message time,.chat-shared-caption{color:#a1a1aa}
+.chat-message.is-mine,.chat-message-row.is-mine .chat-message{background:#fad330;color:#1f1f1f}
+.chat-message.is-theirs,.chat-message-row.is-theirs .chat-message{background:#3a3a3f;color:#f4f4f5}
+.chat-shared-card{background:#2f2f34;border-color:#4b4b52;color:#f4f4f5}
+.chat-shared-post,.chat-shared-author{color:#fad330}
+.chat-message-menu-trigger,.chat-reaction-trigger{color:#fff}
