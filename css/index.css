@@ -1759,7 +1759,7 @@ body[data-page='home'] .feed-action-btn-repost.is-reposted {
 /* Snapix minimal dark redesign (full override) */
 :root {
   --sx-bg: #1f191d;
-  --sx-surface: #2a2227;
+  --sx-surface: #1f191d;
   --sx-text: #ffffff;
   --sx-muted: #b3b3b3;
   --sx-accent: #6926be;
@@ -1773,7 +1773,7 @@ body::before, body::after, body[data-page='home']::before, body[data-page='home'
 .header,.nav,main,.card-surface,.feed-card,.notification-popover,.notification-popover-item,.comments-modal-dialog,.share-modal-content,.post-menu,.profile-header,.profile-tabs,.profile-tab-content { background: var(--sx-surface) !important; color: var(--sx-text) !important; border-color: var(--sx-border) !important; box-shadow:none !important; }
 .logo,a,.menu a,.feed-author-name,.comment-author,.page-eyebrow { color: var(--sx-text) !important; }
 p,small,.empty-state,.feed-action-count,.comments-empty,.notification-popover-empty,.profile-meta,.profile-bio { color: var(--sx-muted) !important; }
-input,textarea,select,.search { background:#241d22 !important; color:var(--sx-text) !important; border:1px solid var(--sx-border) !important; }
+input,textarea,select,.search { background:#1f191d !important; color:var(--sx-text) !important; border:1px solid var(--sx-border) !important; }
 input::placeholder,textarea::placeholder,.search::placeholder{ color:var(--sx-muted) !important; }
 input:focus,textarea:focus,select:focus { border-color:var(--sx-accent)!important; box-shadow:none!important; outline:none!important; }
 button,.auth,.primary-link,.secondary-link,.feed-action-btn,.header-plus-btn,.notification-bell,[type='submit'] { background:var(--sx-accent)!important; color:#fff!important; border:1px solid var(--sx-accent)!important; border-radius:14px!important; box-shadow:none!important; transform:none!important; transition:background-color .2s ease!important; }

@@ -340,7 +340,7 @@ body::before,body::after{content:none!important;display:none!important}
 .auth-card{background:var(--sx-surface)!important;border:1px solid var(--sx-border)!important;box-shadow:none!important;color:var(--sx-text)!important}
 .subtitle,.checkbox,.switch-text,.divider{color:var(--sx-muted)!important}
 .brand,.link,.inline-link{color:var(--sx-accent)!important}
-.auth-form input{background:#241d22!important;color:var(--sx-text)!important;border:1px solid var(--sx-border)!important}
+.auth-form input{background:#1f191d!important;color:var(--sx-text)!important;border:1px solid var(--sx-border)!important}
 .auth-form input::placeholder{color:var(--sx-muted)!important}
 .auth-form input:focus{border-color:var(--sx-accent)!important;box-shadow:none!important}
 .submit-btn{background:var(--sx-accent)!important;color:#fff!important}

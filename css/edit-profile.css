@@ -295,10 +295,10 @@
 .upload-trigger{background:#3b2039;color:#f7f2ff}
 
 .edit-preview-shell,.edit-preview-summary,.form-card{background:#2a2227!important;border-color:#3a3137!important;box-shadow:none!important;color:#fff!important}
-.edit-profile-cover{background:#241d22!important}
+.edit-profile-cover{background:#1f191d!important}
 .summary-copy h1,.field label{color:#fff!important}
 .summary-copy p,.status{color:#b3b3b3!important}
-.field input,.field textarea,.field select{background:#241d22!important;border-color:#3a3137!important;color:#fff!important}
+.field input,.field textarea,.field select{background:#1f191d!important;border-color:#3a3137!important;color:#fff!important}
 .field input:focus,.field textarea:focus,.field select:focus{border-color:#6926be!important;box-shadow:none!important}
 .upload-trigger,.primary-link,.secondary-link{background:#6926be!important;color:#fff!important}
 .upload-trigger:hover,.primary-link:hover,.secondary-link:hover{background:#7a35d1!important;transform:none!important;box-shadow:none!important}
