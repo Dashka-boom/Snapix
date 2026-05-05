@@ -1796,3 +1796,15 @@ button:hover,.auth:hover,.primary-link:hover,.secondary-link:hover,.feed-action-
 .feed-icon-btn.is-active,.feed-action-btn-save.is-saved,.feed-action-btn-repost.is-reposted,.notification-bell.is-active{background:var(--sx-iri)!important;color:#111!important;border-color:transparent!important}
 svg,i,.notification-bell-icon{color:#fff!important}
 .feed-icon-btn.is-active span,[aria-pressed='true'] span{color:#111!important}
+
+/* Final strict palette: black + iridescent only */
+:root{--sx-black:#000;--sx-iri:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)}
+*{box-shadow:none!important}
+body,body[data-page],body[data-page='home'],.header,main,.nav,.card-surface,.feed-card,.notification-popover,.notification-popover-item,.comments-modal-dialog,.share-modal-content,.post-menu,.profile-header,.profile-tabs,.profile-tab-content{background:#000!important;border-color:#000!important;color:#fff!important}
+body::before,body::after,body[data-page='home']::before,body[data-page='home']::after{content:none!important;display:none!important}
+input,textarea,select,.search{background:#000!important;color:#fff!important;border:1px solid transparent!important;background-image:linear-gradient(#000,#000),var(--sx-iri)!important;background-origin:border-box!important;background-clip:padding-box,border-box!important}
+button,.auth,.primary-link,.secondary-link,.feed-action-btn,.header-plus-btn,.notification-bell,[type='submit']{background:var(--sx-iri)!important;color:#111!important;border:0!important}
+button:hover,.auth:hover,.primary-link:hover,.secondary-link:hover,.feed-action-btn:hover,.header-plus-btn:hover,.notification-bell:hover,[type='submit']:hover{filter:brightness(1.06)!important}
+.feed-icon-btn.is-active,.feed-action-btn-save.is-saved,.feed-action-btn-repost.is-reposted,a:hover,.menu a:hover,.page-eyebrow,.feed-author-name,.comment-author{background:var(--sx-iri)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
+.feed-action-count,.empty-state,.comments-empty,.profile-meta,.profile-bio,small,p{color:#fff!important;opacity:.9}
+svg,i,.notification-bell-icon{background:var(--sx-iri)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
