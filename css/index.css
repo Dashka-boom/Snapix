@@ -1755,3 +1755,28 @@ body[data-page='home'] .feed-action-btn-repost.is-reposted {
   background: #A78BFA !important;
   color: #0B0F1A !important;
 }
+
+/* Snapix minimal dark redesign (full override) */
+:root {
+  --sx-bg: #1f191d;
+  --sx-surface: #2a2227;
+  --sx-text: #ffffff;
+  --sx-muted: #b3b3b3;
+  --sx-accent: #6926be;
+  --sx-border: #3a3137;
+}
+body, body[data-page], body[data-page='home'] {
+  background: var(--sx-bg) !important;
+  color: var(--sx-text) !important;
+}
+body::before, body::after, body[data-page='home']::before, body[data-page='home']::after { content:none !important; display:none !important; }
+.header,.nav,main,.card-surface,.feed-card,.notification-popover,.notification-popover-item,.comments-modal-dialog,.share-modal-content,.post-menu,.profile-header,.profile-tabs,.profile-tab-content { background: var(--sx-surface) !important; color: var(--sx-text) !important; border-color: var(--sx-border) !important; box-shadow:none !important; }
+.logo,a,.menu a,.feed-author-name,.comment-author,.page-eyebrow { color: var(--sx-text) !important; }
+p,small,.empty-state,.feed-action-count,.comments-empty,.notification-popover-empty,.profile-meta,.profile-bio { color: var(--sx-muted) !important; }
+input,textarea,select,.search { background:#241d22 !important; color:var(--sx-text) !important; border:1px solid var(--sx-border) !important; }
+input::placeholder,textarea::placeholder,.search::placeholder{ color:var(--sx-muted) !important; }
+input:focus,textarea:focus,select:focus { border-color:var(--sx-accent)!important; box-shadow:none!important; outline:none!important; }
+button,.auth,.primary-link,.secondary-link,.feed-action-btn,.header-plus-btn,.notification-bell,[type='submit'] { background:var(--sx-accent)!important; color:#fff!important; border:1px solid var(--sx-accent)!important; border-radius:14px!important; box-shadow:none!important; transform:none!important; transition:background-color .2s ease!important; }
+button:hover,.auth:hover,.primary-link:hover,.secondary-link:hover,.feed-action-btn:hover,.header-plus-btn:hover,.notification-bell:hover,[type='submit']:hover { background:#7a35d1!important; box-shadow:none!important; transform:none!important; }
+.feed-card-media img,.feed-card-media video,.user-avatar,.feed-author-avatar,.dialog-avatar { border-radius:16px !important; }
+svg,i,.notification-bell-icon { color:#fff !important; }
