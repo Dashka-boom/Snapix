@@ -363,3 +363,69 @@ body,.auth-card{background:#000!important;border-color:#000!important;color:#fff
 .brand,.link,.inline-link,.subtitle,.checkbox,.switch-text,.divider{background:var(--sx-iri)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
 .auth-form input{background:#000!important;color:#fff!important;border:1px solid transparent!important;background-image:linear-gradient(#000,#000),var(--sx-iri)!important;background-origin:border-box!important;background-clip:padding-box,border-box!important}
 .submit-btn{background:var(--sx-iri)!important;color:#111!important;border:0!important}
+
+/* Final unified Snapix auth palette */
+:root {
+    --snapix-bg: #040607;
+    --snapix-accent: #68C5DB;
+    --snapix-text: #ffffff;
+}
+
+body,
+.auth-card {
+    background: var(--snapix-bg) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
+    box-shadow: none !important;
+}
+
+body::before,
+body::after {
+    content: none !important;
+    display: none !important;
+}
+
+.auth-card h1,
+.brand,
+.subtitle,
+.checkbox,
+.switch-text,
+.divider,
+.link,
+.inline-link,
+.back-link {
+    color: var(--snapix-text) !important;
+}
+
+.brand:hover,
+.link:hover,
+.inline-link:hover,
+.back-link:hover {
+    color: var(--snapix-accent) !important;
+}
+
+.auth-form input {
+    background: var(--snapix-bg) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
+}
+
+.auth-form input::placeholder {
+    color: var(--snapix-text) !important;
+    opacity: 0.75;
+}
+
+.submit-btn {
+    background: var(--snapix-accent) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.submit-btn:hover {
+    background: var(--snapix-accent) !important;
+    filter: brightness(0.95);
+    box-shadow: none !important;
+    transform: none !important;
+}

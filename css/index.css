@@ -1595,10 +1595,10 @@ h2 {
 
 /* Final clean home dark theme */
 :root {
-    --home-bg: #040607;
-    --home-surface: #040607;
-    --home-header: #040607;
-    --home-accent: #68C5DB;
+    --home-bg: #000000;
+    --home-surface: #000000;
+    --home-header: #000000;
+    --home-accent: #8be8cb;
     --home-text: #ffffff;
 }
 
@@ -1738,5 +1738,5 @@ body[data-page="home"] .notification-bell-icon {
 .logo:focus-visible,
 body[data-page="home"] .logo:hover,
 body[data-page="home"] .logo:focus-visible {
-    color: #68C5DB !important;
+    color: #8be8cb !important;
 }
