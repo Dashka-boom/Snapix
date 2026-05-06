@@ -1882,3 +1882,93 @@ body[data-page='home'] .feed-icon-btn.is-active,
 body[data-page='home'] .feed-action-btn-save.is-saved,
 body[data-page='home'] .feed-action-btn-repost.is-reposted,
 body[data-page='home'] .notification-bell.is-active{background:#8be8cb!important;color:#111!important}
+
+/* Home final three-color override: #303633 bg, #8be8cb accent, #ffffff text */
+html:has(body[data-page='home']),
+body[data-page='home'] {
+  background-color: #303633 !important;
+  color: #ffffff !important;
+}
+
+body[data-page='home']::before,
+body[data-page='home']::after {
+  content: none !important;
+  display: none !important;
+}
+
+body[data-page='home'] *,
+body[data-page='home'] *::before,
+body[data-page='home'] *::after {
+  background-color: #303633 !important;
+  border-color: #303633 !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+body[data-page='home'] button,
+body[data-page='home'] [type='submit'],
+body[data-page='home'] .auth,
+body[data-page='home'] .primary-link,
+body[data-page='home'] .secondary-link,
+body[data-page='home'] .feed-action-btn,
+body[data-page='home'] .header-plus-btn,
+body[data-page='home'] .notification-bell,
+body[data-page='home'] .feed-icon-btn.is-active,
+body[data-page='home'] .feed-action-btn-save.is-saved,
+body[data-page='home'] .feed-action-btn-repost.is-reposted,
+body[data-page='home'] .notification-badge {
+  background: #8be8cb !important;
+  border-color: #8be8cb !important;
+  color: #ffffff !important;
+}
+
+body[data-page='home'] button:hover,
+body[data-page='home'] [type='submit']:hover,
+body[data-page='home'] .auth:hover,
+body[data-page='home'] .primary-link:hover,
+body[data-page='home'] .secondary-link:hover,
+body[data-page='home'] .feed-action-btn:hover,
+body[data-page='home'] .header-plus-btn:hover,
+body[data-page='home'] .notification-bell:hover {
+  background: #8be8cb !important;
+  border-color: #8be8cb !important;
+  color: #ffffff !important;
+  filter: brightness(0.95);
+}
+
+body[data-page='home'] input,
+body[data-page='home'] textarea,
+body[data-page='home'] select,
+body[data-page='home'] .search {
+  background: #303633 !important;
+  border-color: #8be8cb !important;
+  color: #ffffff !important;
+}
+
+body[data-page='home'] input::placeholder,
+body[data-page='home'] textarea::placeholder,
+body[data-page='home'] .search::placeholder {
+  color: #ffffff !important;
+}
+
+body[data-page='home'] a,
+body[data-page='home'] .menu a,
+body[data-page='home'] .feed-author-name,
+body[data-page='home'] .comment-author,
+body[data-page='home'] p,
+body[data-page='home'] small,
+body[data-page='home'] .feed-card-caption,
+body[data-page='home'] .feed-action-count,
+body[data-page='home'] .comments-empty,
+body[data-page='home'] .empty-state {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
+body[data-page='home'] svg,
+body[data-page='home'] i,
+body[data-page='home'] .notification-bell-icon {
+  background: transparent !important;
+  color: #ffffff !important;
+}
