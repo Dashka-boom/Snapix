@@ -278,3 +278,41 @@
             justify-content: center;
         }
     }
+.edit-preview-shell,.edit-preview-summary,.form-card{background:#303035;border-color:#45454d;color:#f4f4f5}
+.edit-profile-cover{background:linear-gradient(135deg,#2a2a2f,#242426)}
+.summary-copy h1,.field label{color:#f4f4f5}
+.summary-copy p,.status{color:#a1a1aa}
+.field input,.field textarea,.field select{background:#2b2b2f;border-color:#4b4b52;color:#f4f4f5}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#fad330;box-shadow:0 0 0 3px rgba(250,211,48,.2)}
+.checkbox-field input{accent-color:#fad330}
+.upload-trigger{background:rgba(250,211,48,.9);color:#1f1f1f}
+
+.edit-preview-shell,.edit-preview-summary,.form-card{background:#1c182a;border-color:#33274e;color:#f5f3ff}
+.edit-profile-cover{background:linear-gradient(135deg,#171227,#0e0c13)}
+.summary-copy h1,.field label{color:#f5f3ff}.summary-copy p,.status{color:#b7b1cc}
+.field input,.field textarea,.field select{background:#151124;border-color:#3b2d5e;color:#f5f3ff}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#8c59d8;box-shadow:0 0 0 3px rgba(100,39,181,.35)}
+.upload-trigger{background:#3b2039;color:#f7f2ff}
+
+.edit-preview-shell,.edit-preview-summary,.form-card{background:#2a2227!important;border-color:#3a3137!important;box-shadow:none!important;color:#fff!important}
+.edit-profile-cover{background:#1f191d!important}
+.summary-copy h1,.field label{color:#fff!important}
+.summary-copy p,.status{color:#b3b3b3!important}
+.field input,.field textarea,.field select{background:#1f191d!important;border-color:#3a3137!important;color:#fff!important}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#6926be!important;box-shadow:none!important}
+.upload-trigger,.primary-link,.secondary-link{background:#6926be!important;color:#fff!important}
+.upload-trigger:hover,.primary-link:hover,.secondary-link:hover{background:#7a35d1!important;transform:none!important;box-shadow:none!important}
+
+.edit-preview-shell,.edit-preview-summary,.form-card{background:#2a2328!important;border-color:#3a3338!important;box-shadow:none!important;color:#fff!important}
+.edit-profile-cover{background:#1a1619!important}
+.summary-copy h1,.field label{color:#fff!important}
+.summary-copy p,.status{color:#b3b3b3!important}
+.field input,.field textarea,.field select{background:#151215!important;border-color:#3a3338!important;color:#fff!important}
+.field input:focus,.field textarea:focus,.field select:focus{border:1px solid transparent!important;background:linear-gradient(#151215,#151215) padding-box,linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb) border-box!important;box-shadow:none!important}
+.upload-trigger,.primary-link,.secondary-link{background:#1f1a20!important;color:#fff!important;border:1px solid #4a404a!important}
+.upload-trigger:hover,.primary-link:hover,.secondary-link:hover{border:1px solid transparent!important;background:linear-gradient(#201a22,#201a22) padding-box,linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb) border-box!important;box-shadow:0 0 10px rgba(194,233,251,.16)!important;transform:none!important}
+
+.edit-preview-shell,.edit-preview-summary,.form-card,.edit-profile-cover{background:#000!important;border-color:#000!important;color:#fff!important}
+.summary-copy h1,.summary-copy p,.status,.field label{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
+.field input,.field textarea,.field select{background:#000!important;color:#fff!important;border:1px solid transparent!important;background-image:linear-gradient(#000,#000),linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;background-origin:border-box!important;background-clip:padding-box,border-box!important}
+.upload-trigger,.primary-link,.secondary-link{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;color:#111!important;border:0!important}
