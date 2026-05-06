@@ -1732,3 +1732,11 @@ body[data-page="home"] .notification-bell-icon {
     color: var(--home-text) !important;
     fill: currentColor;
 }
+
+/* Logo hover accent */
+.logo:hover,
+.logo:focus-visible,
+body[data-page="home"] .logo:hover,
+body[data-page="home"] .logo:focus-visible {
+    color: #8be8cb !important;
+}
