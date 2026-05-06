@@ -1595,9 +1595,9 @@ h2 {
 
 /* Final clean home dark theme */
 :root {
-    --home-bg: #303633;
-    --home-surface: #303633;
-    --home-header: #303633;
+    --home-bg: #000000;
+    --home-surface: #000000;
+    --home-header: #000000;
     --home-accent: #8be8cb;
     --home-text: #ffffff;
 }
