@@ -1596,8 +1596,8 @@ h2 {
 /* Final clean home dark theme */
 :root {
     --home-bg: #303633;
-    --home-surface: #353c39;
-    --home-header: #000000;
+    --home-surface: #303633;
+    --home-header: #303633;
     --home-accent: #8be8cb;
     --home-text: #ffffff;
 }
@@ -1640,7 +1640,7 @@ body[data-page="home"] .notification-popover-item,
 body[data-page="home"] .post-menu,
 body[data-page="home"] .comment-item {
     background: var(--home-surface) !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid var(--home-accent) !important;
     color: var(--home-text) !important;
     box-shadow: none !important;
 }
