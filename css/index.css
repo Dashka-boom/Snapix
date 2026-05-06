@@ -1595,10 +1595,10 @@ h2 {
 
 /* Final clean home dark theme */
 :root {
-    --home-bg: #000000;
-    --home-surface: #000000;
-    --home-header: #000000;
-    --home-accent: #8be8cb;
+    --home-bg: #040607;
+    --home-surface: #040607;
+    --home-header: #040607;
+    --home-accent: #68C5DB;
     --home-text: #ffffff;
 }
 
@@ -1738,5 +1738,139 @@ body[data-page="home"] .notification-bell-icon {
 .logo:focus-visible,
 body[data-page="home"] .logo:hover,
 body[data-page="home"] .logo:focus-visible {
-    color: #8be8cb !important;
+    color: #68C5DB !important;
+}
+
+/* Final unified Snapix palette for all index.css pages */
+:root {
+    --snapix-bg: #040607;
+    --snapix-surface: #040607;
+    --snapix-accent: #68C5DB;
+    --snapix-text: #ffffff;
+}
+
+html,
+body,
+body[data-page] {
+    background: var(--snapix-bg) !important;
+    color: var(--snapix-text) !important;
+}
+
+body::before,
+body::after {
+    content: none !important;
+    display: none !important;
+}
+
+.header,
+.nav,
+main,
+.card-surface,
+.feed-card,
+.comments-modal-dialog,
+.share-modal-content,
+.notification-popover,
+.notification-popover-item,
+.post-menu,
+.comment-item,
+.profile-header,
+.profile-tabs,
+.profile-tab-content,
+.request-card,
+.connections-card,
+.post-detail-card {
+    background: var(--snapix-surface) !important;
+    color: var(--snapix-text) !important;
+    border-color: var(--snapix-accent) !important;
+    box-shadow: none !important;
+}
+
+h1,
+h2,
+h3,
+p,
+small,
+label,
+span,
+strong,
+a,
+.logo,
+.menu a,
+.feed-author-name,
+.comment-author,
+.feed-card-caption,
+.feed-action-count,
+.comments-empty,
+.empty-state,
+.notification-popover-empty,
+.profile-meta,
+.profile-bio {
+    color: var(--snapix-text) !important;
+}
+
+.logo:hover,
+.logo:focus-visible,
+.menu a:hover,
+.menu a:focus-visible,
+a:hover,
+a:focus-visible {
+    color: var(--snapix-accent) !important;
+}
+
+input,
+textarea,
+select,
+.search {
+    background: var(--snapix-bg) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.search::placeholder {
+    color: var(--snapix-text) !important;
+    opacity: 0.75;
+}
+
+button,
+[type="submit"],
+.auth,
+.primary-link,
+.secondary-link,
+.feed-action-btn,
+.header-plus-btn,
+.notification-bell,
+.notification-badge,
+.feed-icon-btn.is-active,
+.feed-action-btn-save.is-saved,
+.feed-action-btn-repost.is-reposted {
+    background: var(--snapix-accent) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+button:hover,
+[type="submit"]:hover,
+.auth:hover,
+.primary-link:hover,
+.secondary-link:hover,
+.feed-action-btn:hover,
+.header-plus-btn:hover,
+.notification-bell:hover {
+    background: var(--snapix-accent) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
+    filter: brightness(0.95);
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+svg,
+i,
+.notification-bell-icon {
+    color: var(--snapix-text) !important;
+    fill: currentColor;
 }
