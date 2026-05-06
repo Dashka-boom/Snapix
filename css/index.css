@@ -1891,3 +1891,23 @@ i,
     background-position: center !important;
     background-repeat: no-repeat !important;
 }
+
+/* Keep post three-dot menu icon visible */
+.post-menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    opacity: 1 !important;
+    visibility: visible !important;
+    background-color: var(--home-panel) !important;
+    border: 1px solid var(--home-border) !important;
+    color: var(--home-accent) !important;
+}
+
+.post-menu-toggle:hover,
+.post-menu-toggle:focus-visible {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-accent) !important;
+    color: var(--home-accent) !important;
+    filter: none !important;
+}
