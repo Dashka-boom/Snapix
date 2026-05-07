@@ -311,3 +311,54 @@ body {
 body[data-page="login"] .subtitle {
     display: none;
 }
+
+/* Liquid glass auth/register panels */
+body[data-page="login"] .auth-card,
+body[data-page="register"] .auth-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.32),
+        inset 0 -24px 48px rgba(4, 6, 7, 0.22),
+        0 24px 60px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+body[data-page="login"] .auth-card {
+    background: rgba(32, 178, 170, 0.24);
+}
+
+body[data-page="register"] .auth-card {
+    background: rgba(104, 197, 219, 0.24);
+}
+
+body[data-page="login"] .auth-card::before,
+body[data-page="register"] .auth-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.28), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.16), transparent 24%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.14), transparent 48%);
+}
+
+body[data-page="login"] .auth-card > *,
+body[data-page="register"] .auth-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+body[data-page="login"] .submit-btn {
+    background: #20B2AA;
+    border-color: #20B2AA;
+}
+
+body[data-page="register"] .submit-btn {
+    background: #68C5DB;
+    border-color: #68C5DB;
+}
