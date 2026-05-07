@@ -65,13 +65,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Ещё нет аккаунта?
                 <a href="register.php" class="link">Создать профиль</a>
             </p>
+            <div class="auth-envelope-animation" aria-hidden="true">
+    <div class="envelope-paper"></div>
+    <div class="envelope-body"></div>
+    <div class="envelope-flap"></div>
+</div>
         </section>
     </main>
 <?php if ($authSuccess): ?>
     <script>
         window.setTimeout(function () {
             window.location.href = <?php echo json_encode($redirectUrl); ?>;
-        }, 1800);
+        }, 2000);
     </script>
 <?php endif; ?>
 </body>

@@ -117,6 +117,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Уже есть аккаунт?
                 <a href="login.php" class="link">Войти</a>
             </p>
+            <div class="auth-envelope-animation" aria-hidden="true">
+    <div class="envelope-paper"></div>
+    <div class="envelope-body"></div>
+    <div class="envelope-flap"></div>
+</div>
         </section>
     </main>
 
@@ -172,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
         window.setTimeout(function () {
             window.location.href = <?php echo json_encode($redirectUrl); ?>;
-        }, 1800);
+        }, 2000);
     </script>
 <?php endif; ?>
 </body>

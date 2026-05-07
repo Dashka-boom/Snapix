@@ -313,72 +313,84 @@ body[data-page="login"] .subtitle {
 }
 
 /* Envelope success animation */
-.auth-success .auth-card {
-    min-height: 240px;
-    background: transparent;
-    animation: auth-card-fly 1.8s ease-in-out forwards;
-    overflow: hidden;
-    position: relative;
+.auth-envelope-animation {
+    display: none;
 }
 
-.auth-success .auth-card > * {
+.auth-success .auth-card {
+    min-height: 260px;
+    background: transparent;
+    border: none;
+    position: relative;
+    overflow: visible;
+    animation: auth-card-fly 2s ease-in-out forwards;
+}
+
+.auth-success .auth-card > *:not(.auth-envelope-animation) {
     animation: auth-content-hide 0.28s ease forwards;
     pointer-events: none;
 }
 
-.auth-success .auth-card::before {
-    content: "";
+.auth-success .auth-envelope-animation {
+    display: block;
     position: absolute;
     left: 50%;
     top: 50%;
-    width: min(260px, 70vw);
-    height: 148px;
+    width: min(280px, 76vw);
+    height: 190px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.envelope-body {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 135px;
     border: 2px solid var(--auth-accent);
-    border-radius: 16px;
+    border-radius: 18px;
     background:
         linear-gradient(145deg, transparent 49%, var(--auth-accent) 50%, transparent 51%),
         linear-gradient(215deg, transparent 49%, var(--auth-accent) 50%, transparent 51%),
         var(--auth-bg);
+    box-shadow: 0 0 22px rgba(104, 197, 219, 0.28);
+    z-index: 3;
     opacity: 0;
-    transform: translate(-50%, -36%) scale(0.82);
-    pointer-events: none;
-    animation: auth-envelope-body 1.8s ease-in-out forwards;
+    animation: envelope-body-show 2s ease-in-out forwards;
 }
 
-.auth-success .auth-card::after {
-    content: "";
+.envelope-paper {
     position: absolute;
     left: 50%;
-    top: 50%;
-    width: min(220px, 58vw);
-    height: 112px;
+    bottom: 58px;
+    width: 78%;
+    height: 118px;
     border: 2px solid var(--auth-accent);
-    border-radius: 12px;
-    background: var(--auth-bg);
-    opacity: 0;
-    transform: translate(-50%, -112%) scale(0.86);
-    pointer-events: none;
-    animation: auth-envelope-paper 1.8s ease-in-out forwards;
-}
-
-.auth-success .auth-form::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
+    border-radius: 14px;
+    background: #0b1215;
+    transform: translateX(-50%) translateY(-34px);
+    box-shadow: 0 0 18px rgba(104, 197, 219, 0.18);
     z-index: 2;
-    width: min(260px, 70vw);
-    height: 88px;
-    border: 2px solid var(--auth-accent);
-    border-bottom: 0;
-    border-radius: 14px 14px 0 0;
-    background: rgba(104, 197, 219, 0.12);
-    clip-path: polygon(0 0, 50% 100%, 100% 0);
     opacity: 0;
-    transform-origin: center bottom;
-    transform: translate(-50%, -147%) rotateX(180deg) scale(0.82);
-    pointer-events: none;
-    animation: auth-envelope-flap 1.8s ease-in-out forwards;
+    animation: envelope-paper-in 2s ease-in-out forwards;
+}
+
+.envelope-flap {
+    position: absolute;
+    left: 50%;
+    bottom: 132px;
+    width: 100%;
+    height: 88px;
+    background: rgba(104, 197, 219, 0.16);
+    border: 2px solid var(--auth-accent);
+    border-bottom: none;
+    clip-path: polygon(0 100%, 50% 0, 100% 100%);
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotateX(0deg);
+    z-index: 1;
+    opacity: 0;
+    animation: envelope-flap-close 2s ease-in-out forwards;
 }
 
 @keyframes auth-content-hide {
@@ -388,71 +400,84 @@ body[data-page="login"] .subtitle {
     }
 }
 
-@keyframes auth-envelope-paper {
+@keyframes envelope-body-show {
     0% {
         opacity: 0;
-        transform: translate(-50%, -128%) scale(0.82);
+        transform: scale(0.86);
     }
+
+    15%,
+    78% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-45px) scale(0.72) rotate(-6deg);
+    }
+}
+
+@keyframes envelope-paper-in {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-72px) scale(0.9);
+    }
+
     18% {
         opacity: 1;
-        transform: translate(-50%, -128%) scale(1);
+        transform: translateX(-50%) translateY(-48px) scale(1);
     }
+
     48% {
         opacity: 1;
-        transform: translate(-50%, -74%) scale(0.96);
+        transform: translateX(-50%) translateY(8px) scale(0.96);
     }
-    64% {
-        opacity: 0.2;
-        transform: translate(-50%, -50%) scale(0.92);
+
+    66% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(45px) scale(0.9);
     }
+
     100% {
         opacity: 0;
-        transform: translate(-50%, -170%) scale(0.58);
+        transform: translateX(-50%) translateY(-35px) scale(0.65);
     }
 }
 
-@keyframes auth-envelope-body {
-    0% {
-        opacity: 0;
-        transform: translate(-50%, -30%) scale(0.82) rotate(0deg);
-    }
-    18% {
+@keyframes envelope-flap-close {
+    0%,
+    48% {
         opacity: 1;
-        transform: translate(-50%, -36%) scale(1) rotate(0deg);
+        transform: translateX(-50%) rotateX(0deg);
+        z-index: 1;
     }
-    70% {
-        opacity: 1;
-        transform: translate(-50%, -36%) scale(0.96) rotate(0deg);
-    }
-    100% {
-        opacity: 0;
-        transform: translate(-50%, -170%) scale(0.58) rotate(-8deg);
-    }
-}
 
-@keyframes auth-envelope-flap {
-    0%, 48% {
-        opacity: 0;
-        transform: translate(-50%, -147%) rotateX(180deg) scale(0.82);
-    }
-    54% {
+    62% {
         opacity: 1;
-        transform: translate(-50%, -147%) rotateX(180deg) scale(1);
+        transform: translateX(-50%) rotateX(0deg);
+        z-index: 4;
     }
-    72% {
+
+    76% {
         opacity: 1;
-        transform: translate(-50%, -72%) rotateX(0deg) scale(0.96);
+        transform: translateX(-50%) rotateX(180deg);
+        z-index: 4;
     }
+
     100% {
         opacity: 0;
-        transform: translate(-50%, -170%) rotateX(0deg) scale(0.58);
+        transform: translateX(-50%) translateY(-45px) scale(0.72) rotateX(180deg);
+        z-index: 4;
     }
 }
 
 @keyframes auth-card-fly {
-    0%, 70% {
+    0%,
+    78% {
         transform: scale(1);
     }
+
     100% {
         transform: translateY(-28px) scale(0.92);
     }
