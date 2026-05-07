@@ -556,3 +556,53 @@
         border-bottom: 1px solid #e5e7eb;
     }
 }
+
+/* Clean outline-only chat icons */
+.chat-message-menu-trigger,
+.chat-reaction-trigger,
+.chat-reply-close,
+#chat-forward-close,
+.chat-send-form button {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: #ffffff;
+    border-radius: 0;
+    transition: opacity 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.chat-message-menu-trigger:hover,
+.chat-message-menu-trigger:focus-visible,
+.chat-reaction-trigger:hover,
+.chat-reaction-trigger:focus-visible,
+.chat-reply-close:hover,
+.chat-reply-close:focus-visible,
+#chat-forward-close:hover,
+#chat-forward-close:focus-visible,
+.chat-send-form button:hover,
+.chat-send-form button:focus-visible {
+    background: none;
+    opacity: 0.72;
+}
+
+.chat-send-form button {
+    min-width: 44px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-message-menu-item .snapix-icon,
+.chat-pinned-item .snapix-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.chat-message-menu-item span:last-child,
+.chat-pinned-item span:first-child {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+}

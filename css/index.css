@@ -1592,3 +1592,126 @@ h2 {
         width: auto;
     }
 }
+
+/* Twitter/X-inspired outline icon system */
+.snapix-icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+    color: currentColor;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex: 0 0 auto;
+}
+
+.snapix-icon circle {
+    fill: currentColor;
+    stroke: none;
+}
+
+.snapix-icon-smile circle:first-child {
+    fill: none;
+    stroke: currentColor;
+}
+
+.notification-bell,
+.post-menu-toggle,
+.feed-icon-btn,
+.profile-post-tab-icon {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: #ffffff;
+}
+
+.notification-bell {
+    width: 32px;
+    height: 32px;
+    border-radius: 0;
+    transition: opacity 0.18s ease, color 0.18s ease;
+}
+
+.notification-bell-icon,
+.feed-icon-btn,
+.post-menu-toggle,
+.profile-post-tab-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-bell-icon {
+    font-size: 0;
+}
+
+.post-menu-toggle {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 0;
+    transition: opacity 0.18s ease, color 0.18s ease;
+}
+
+.feed-action-btn.feed-icon-btn {
+    width: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0;
+    border-radius: 0;
+    transition: opacity 0.18s ease, color 0.18s ease;
+}
+
+.notification-bell:hover,
+.notification-bell:focus-visible,
+.post-menu-toggle:hover,
+.post-menu-toggle:focus-visible,
+.feed-action-btn.feed-icon-btn:hover,
+.feed-action-btn.feed-icon-btn:focus-visible,
+.profile-post-tab-icon:hover,
+.profile-post-tab-icon:focus-visible {
+    background: none;
+    border-color: transparent;
+    color: #ffffff;
+    opacity: 0.72;
+}
+
+.feed-action-btn.feed-icon-btn.is-active,
+.feed-action-btn-save.is-saved,
+.feed-action-btn-repost.is-reposted,
+.profile-post-tab.is-active.profile-post-tab-icon {
+    background: none;
+    border-color: transparent;
+    box-shadow: none;
+    color: #68C5DB;
+}
+
+.feed-action-btn.feed-icon-btn.is-active .snapix-icon-heart path,
+.feed-action-btn-save.is-saved .snapix-icon-bookmark path {
+    fill: currentColor;
+}
+
+.feed-action-btn.feed-icon-btn .snapix-icon-heart path,
+.feed-action-btn-save .snapix-icon-bookmark path {
+    transition: fill 0.18s ease, stroke 0.18s ease;
+}
+
+.profile-post-tab-icon .snapix-icon,
+.post-menu-toggle .snapix-icon,
+.notification-bell .snapix-icon,
+.feed-icon-btn .snapix-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.snapix-icon circle {
+    fill: none;
+    stroke: currentColor;
+}
+
+.snapix-icon-more-vertical circle {
+    fill: currentColor;
+    stroke: none;
+}

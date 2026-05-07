@@ -1,6 +1,7 @@
 <?php
 session_start();
 require './config/config.php';
+require './includes/icons.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -151,7 +152,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             <div class="menu">
                 <a href="index.php">Лента</a>
                 <a href="chat.php" class="notification-bell" aria-label="Открыть чаты">
-                    <span class="notification-bell-icon">✉️</span>
+                    <span class="notification-bell-icon"><?php echo snapix_icon('mail'); ?></span>
                     <?php if ($unreadTotal > 0): ?><span class="notification-badge" id="header-chat-badge"><?php echo $unreadTotal; ?></span><?php else: ?><span class="notification-badge is-hidden" id="header-chat-badge">0</span><?php endif; ?>
                 </a>
                 <a href="profile.php" class="user-avatar-link" aria-label="Открыть профиль">
@@ -207,10 +208,10 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                                 <strong>Ответ на сообщение</strong>
                                 <p id="chat-reply-text"></p>
                             </div>
-                            <button type="button" class="chat-reply-close" id="chat-reply-close" aria-label="Отменить ответ">×</button>
+                            <button type="button" class="chat-reply-close" id="chat-reply-close" aria-label="Отменить ответ"><?php echo snapix_icon('x'); ?></button>
                         </div>
                         <input type="text" id="chat-message-input" maxlength="1000" placeholder="Введите сообщение" autocomplete="off">
-                        <button type="submit">Отправить</button>
+                        <button type="submit" aria-label="Отправить сообщение"><?php echo snapix_icon('send'); ?></button>
                     </form>
                 <?php endif; ?>
             </section>
@@ -221,7 +222,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     <div class="chat-forward-modal-card">
         <div class="chat-forward-head">
             <h3>Переслать сообщение</h3>
-            <button type="button" id="chat-forward-close" aria-label="Закрыть">×</button>
+            <button type="button" id="chat-forward-close" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button>
         </div>
         <div class="chat-forward-list" id="chat-forward-list">
             <?php foreach ($forwardRecipients as $recipient): ?>
@@ -271,6 +272,15 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var activeReactionMessageId = 0;
     var lastMessageRenderHash = '';
 
+    var iconSmile = <?php echo json_encode(snapix_icon('smile')); ?>;
+    var iconMoreVertical = <?php echo json_encode(snapix_icon('more-vertical')); ?>;
+    var iconEdit = <?php echo json_encode(snapix_icon('edit')); ?>;
+    var iconTrash = <?php echo json_encode(snapix_icon('trash')); ?>;
+    var iconPin = <?php echo json_encode(snapix_icon('pin')); ?>;
+    var iconReply = <?php echo json_encode(snapix_icon('reply')); ?>;
+    var iconForward = <?php echo json_encode(snapix_icon('forward')); ?>;
+    var iconCopy = <?php echo json_encode(snapix_icon('copy')); ?>;
+
 
     function escapeHtml(value) {
         return String(value).replace(/[&<>"']/g, function (char) {
@@ -310,7 +320,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         pinnedBox.classList.remove('is-hidden');
         pinnedBox.innerHTML = pinnedItems.map(function (item) {
             return '<button type="button" class="chat-pinned-item" data-scroll-message-id="' + Number(item.id) + '">' +
-                '<span>📌</span><span>' + escapeHtml(getMessagePreview(item)) + '</span>' +
+                '<span>' + iconPin + '</span><span>' + escapeHtml(getMessagePreview(item)) + '</span>' +
                 '</button>';
         }).join('');
     }
@@ -358,8 +368,8 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 ? '<div class="chat-forwarded-label">Переслано</div>'
                 : '';
             var editedHtml = item.is_edited ? '<em class="chat-edited-label">изменено</em>' : '';
-            var reactionTrigger = '<button type="button" class="chat-reaction-trigger" data-message-id="' + Number(item.id) + '" aria-label="Выбрать реакцию">🙂</button>';
-            var menuButton = '<button type="button" class="chat-message-menu-trigger" data-message-id="' + Number(item.id) + '" aria-label="Действия с сообщением">⋯</button>';
+            var reactionTrigger = '<button type="button" class="chat-reaction-trigger" data-message-id="' + Number(item.id) + '" aria-label="Выбрать реакцию">' + iconSmile + '</button>';
+            var menuButton = '<button type="button" class="chat-message-menu-trigger" data-message-id="' + Number(item.id) + '" aria-label="Действия с сообщением">' + iconMoreVertical + '</button>';
             var menuHtml = '<div class="chat-message-menu" data-menu-for="' + Number(item.id) + '"></div>';
             var actionsHtml = '<div class="chat-message-actions">' + reactionTrigger + menuButton + '</div>';
 
@@ -605,13 +615,13 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         var canEdit = !!message.is_mine && !message.forwarded_from && !message.deleted_for_all;
         var items = [];
         if (canEdit) {
-            items.push({ action: 'edit', label: 'Редактировать', icon: '✏️' });
+            items.push({ action: 'edit', label: 'Редактировать', icon: iconEdit });
         }
-        items.push({ action: 'delete', label: 'Удалить', icon: '🗑️' });
-        items.push({ action: 'pin', label: 'Закрепить', icon: '📌' });
-        items.push({ action: 'reply', label: 'Ответить', icon: '↩️' });
-        items.push({ action: 'forward', label: 'Переслать', icon: '➡️' });
-        items.push({ action: 'copy', label: 'Копировать', icon: '📋' });
+        items.push({ action: 'delete', label: 'Удалить', icon: iconTrash });
+        items.push({ action: 'pin', label: 'Закрепить', icon: iconPin });
+        items.push({ action: 'reply', label: 'Ответить', icon: iconReply });
+        items.push({ action: 'forward', label: 'Переслать', icon: iconForward });
+        items.push({ action: 'copy', label: 'Копировать', icon: iconCopy });
 
         menu.innerHTML = items.map(function (item) {
             return '<button type="button" class="chat-message-menu-item" data-action="' + item.action + '" data-message-id="' + Number(message.id) + '">' +

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require './config/config.php';
+require './includes/icons.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -205,7 +206,7 @@ $coverStyle = !empty($user['background_image'])
             <div class="menu">
                 <a href="#">Reels</a>
                 <a href="chat.php" class="notification-bell" aria-label="Открыть сообщения">
-                    <span class="notification-bell-icon">✉️</span>
+                    <span class="notification-bell-icon"><?php echo snapix_icon('mail'); ?></span>
                     <?php if ($unreadMessagesCount > 0): ?>
                         <span class="notification-badge"><?php echo $unreadMessagesCount; ?></span>
                     <?php endif; ?>
@@ -226,7 +227,7 @@ $coverStyle = !empty($user['background_image'])
             <div class="edit-profile-cover" id="coverPreview" style="<?php echo $coverStyle; ?>">
                 <input class="file-input-hidden" type="file" id="backgroundInput" name="background" accept="image/*" form="editProfileForm">
                 <button type="button" class="upload-trigger cover" data-target-input="backgroundInput" aria-label="Изменить фон профиля">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5 7.7 6H5.5A2.5 2.5 0 0 0 3 8.5v9A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 18.5 6h-2.2L15 4.5H9Zm3 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-1.8a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z"/></svg>
+                    <?php echo snapix_icon('camera'); ?>
                 </button>
             </div>
             <div class="edit-preview-summary">
@@ -234,7 +235,7 @@ $coverStyle = !empty($user['background_image'])
                     <div class="edit-avatar" id="avatarPreview" style="<?php echo $avatarStyle; ?>"><?php echo empty($user['avatar']) ? htmlspecialchars(mb_substr($user['login'], 0, 1)) : ''; ?></div>
                     <input class="file-input-hidden" type="file" id="avatarInput" name="avatar" accept="image/*" form="editProfileForm">
                     <button type="button" class="upload-trigger avatar" data-target-input="avatarInput" aria-label="Изменить аватар">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5 7.7 6H5.5A2.5 2.5 0 0 0 3 8.5v9A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 18.5 6h-2.2L15 4.5H9Zm3 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-1.8a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z"/></svg>
+                        <?php echo snapix_icon('camera'); ?>
                     </button>
                 </div>
                 <div class="summary-copy">

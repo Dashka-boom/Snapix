@@ -1,6 +1,7 @@
 <?php
 session_start();
 require './config/config.php';
+require './includes/icons.php';
 
 function buildProfileUrl(int $profileUserId, int $currentUserId): string
 {
@@ -457,13 +458,13 @@ $showFollowingPanel = $panel === 'following';
             <div class="menu">
                 <a href="#">Reels</a>
                 <a href="chat.php" class="notification-bell" aria-label="Открыть сообщения">
-                    <span class="notification-bell-icon">✉️</span>
+                    <span class="notification-bell-icon"><?php echo snapix_icon('mail'); ?></span>
                     <?php if ($unreadMessagesCount > 0): ?>
                         <span class="notification-badge"><?php echo $unreadMessagesCount; ?></span>
                     <?php endif; ?>
                 </a>
                 <a href="connections.php?view=requests" class="notification-bell" data-notification-toggle aria-label="Открыть заявки">
-                    <span class="notification-bell-icon">&#128276;</span>
+                    <span class="notification-bell-icon"><?php echo snapix_icon('bell'); ?></span>
                     <?php if ($pendingRequestsCount > 0): ?>
                         <span class="notification-badge"><?php echo $pendingRequestsCount; ?></span>
                     <?php endif; ?>
@@ -656,7 +657,7 @@ $showFollowingPanel = $panel === 'following';
             <div class="profile-post-tabs" role="tablist" aria-label="Разделы профиля">
                 <button type="button" class="profile-post-tab is-active" data-profile-tab-button="publications">Публикации</button>
                 <button type="button" class="profile-post-tab profile-post-tab-icon" data-profile-tab-button="reposts" aria-label="Репосты" title="Репосты">
-                    <span aria-hidden="true">&#128257;</span>
+                    <?php echo snapix_icon('repeat'); ?>
                 </button>
             </div>
         </section>
@@ -696,7 +697,7 @@ $showFollowingPanel = $panel === 'following';
                                 <div class="feed-card-header">
                                     <div class="feed-header-main"><strong><?php echo htmlspecialchars($user['login']); ?></strong></div>
                                     <div class="post-menu-wrap">
-                                        <button type="button" class="post-menu-toggle" data-post-menu="profile-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией">&#8942;</button>
+                                        <button type="button" class="post-menu-toggle" data-post-menu="profile-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-vertical'); ?></button>
                                         <div class="post-menu" id="profile-post-menu-<?php echo (int) $post['id']; ?>">
                                             <form method="post"><input type="hidden" name="action" value="delete_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $user['id']; ?>"><button type="submit">Удалить пост</button></form>
                                             <a href="edit-post.php?id=<?php echo (int) $post['id']; ?>">Редактировать пост</a>
@@ -707,11 +708,11 @@ $showFollowingPanel = $panel === 'following';
                                 </div>
                                 <div class="feed-card-stats"><span>Действия с публикацией</span></div>
                                 <div class="feed-card-buttons" style="margin-top: 10px;">
-                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><span aria-hidden="true">&#9829;</span></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-profile-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
-                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
-                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><span aria-hidden="true">&#9993;</span></button></div>
+                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><?php echo snapix_icon('heart'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-profile-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><?php echo snapix_icon('message-circle'); ?></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><?php echo snapix_icon('bookmark'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><?php echo snapix_icon('repeat'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><?php echo snapix_icon('send'); ?></button></div>
                                 </div>
                                 <?php if ($postReposters): ?>
                                     <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
@@ -721,7 +722,7 @@ $showFollowingPanel = $panel === 'following';
                                     <div class="comments-modal-dialog">
                                         <div class="comments-modal-header">
                                             <h3>Комментарии</h3>
-                                            <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-profile-<?php echo (int) $post['id']; ?>" aria-label="Закрыть">&times;</button>
+                                            <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-profile-<?php echo (int) $post['id']; ?>" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button>
                                         </div>
                                         <div class="comments-modal-body">
                                     <?php if ($postComments): ?>
@@ -778,11 +779,11 @@ $showFollowingPanel = $panel === 'following';
                                 </a>
                                 <?php if (!empty($post['caption'])): ?><p><?php echo nl2br(htmlspecialchars($post['caption'])); ?></p><?php endif; ?>
                                 <div class="feed-card-buttons" style="margin-top: 10px;">
-                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><span aria-hidden="true">&#9829;</span></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-repost-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
-                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
-                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><span aria-hidden="true">&#9993;</span></button></div>
+                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><?php echo snapix_icon('heart'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-repost-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><?php echo snapix_icon('message-circle'); ?></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><?php echo snapix_icon('bookmark'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><?php echo snapix_icon('repeat'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><?php echo snapix_icon('send'); ?></button></div>
                                 </div>
                                 <?php if ($postReposters): ?>
                                     <p class="feed-reposts-note">Репостнули: <?php echo htmlspecialchars(implode(', ', $postReposters)); ?></p>
@@ -792,7 +793,7 @@ $showFollowingPanel = $panel === 'following';
                                     <div class="comments-modal-dialog">
                                         <div class="comments-modal-header">
                                             <h3>Комментарии</h3>
-                                            <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-repost-<?php echo (int) $post['id']; ?>" aria-label="Закрыть">&times;</button>
+                                            <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-repost-<?php echo (int) $post['id']; ?>" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button>
                                         </div>
                                         <div class="comments-modal-body">
                                             <?php if ($postComments): ?>
@@ -843,7 +844,7 @@ $showFollowingPanel = $panel === 'following';
                                 <div class="feed-card-header">
                                     <div class="feed-header-main"><strong><?php echo htmlspecialchars($post['author_login']); ?></strong></div>
                                     <div class="post-menu-wrap">
-                                        <button type="button" class="post-menu-toggle" data-post-menu="profile-saved-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией">&#8942;</button>
+                                        <button type="button" class="post-menu-toggle" data-post-menu="profile-saved-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-vertical'); ?></button>
                                         <div class="post-menu" id="profile-saved-post-menu-<?php echo (int) $post['id']; ?>">
                                             <?php if ((int) $post['author_user_id'] === (int) $user['id']): ?>
                                                 <form method="post"><input type="hidden" name="action" value="delete_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $user['id']; ?>"><button type="submit">Удалить пост</button></form>
@@ -863,18 +864,18 @@ $showFollowingPanel = $panel === 'following';
                                 </a>
 
                                 <div class="feed-card-buttons" style="margin-top: 10px;">
-                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><span aria-hidden="true">&#9829;</span></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-saved-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
-                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
-                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><span aria-hidden="true">&#9993;</span></button></div>
+                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><?php echo snapix_icon('heart'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-saved-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><?php echo snapix_icon('message-circle'); ?></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><?php echo snapix_icon('bookmark'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                    <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><?php echo snapix_icon('repeat'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                    <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><?php echo snapix_icon('send'); ?></button></div>
                                 </div>
                                 <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-saved-<?php echo (int) $post['id']; ?>">
                                     <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-saved-<?php echo (int) $post['id']; ?>"></div>
                                     <div class="comments-modal-dialog">
                                         <div class="comments-modal-header">
                                             <h3>Комментарии</h3>
-                                            <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-saved-<?php echo (int) $post['id']; ?>" aria-label="Закрыть">&times;</button>
+                                            <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-saved-<?php echo (int) $post['id']; ?>" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button>
                                         </div>
                                         <div class="comments-modal-body">
                                     <?php if ($postComments): ?>
@@ -910,7 +911,7 @@ $showFollowingPanel = $panel === 'following';
         <div class="share-modal-dialog">
             <div class="share-modal-header">
                 <h3>Отправить публикацию</h3>
-                <button type="button" class="feed-action-btn feed-icon-btn js-close-share-modal" aria-label="Закрыть">&times;</button>
+                <button type="button" class="feed-action-btn feed-icon-btn js-close-share-modal" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button>
             </div>
             <div class="share-modal-body">
                 <?php if ($shareRecipients): ?>
