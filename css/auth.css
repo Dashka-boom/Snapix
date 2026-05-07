@@ -301,3 +301,12 @@ body {
         max-width: none;
     }
 }
+
+/* Auth heading alignment */
+.auth-card h1 {
+    text-align: center;
+}
+
+body[data-page="login"] .subtitle {
+    display: none;
+}
