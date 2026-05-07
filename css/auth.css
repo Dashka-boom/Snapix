@@ -393,6 +393,7 @@ body[data-page="login"] .subtitle {
     animation: envelope-flap-close 2s ease-in-out forwards;
 }
 
+
 @keyframes auth-content-hide {
     to {
         opacity: 0;
