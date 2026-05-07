@@ -3,6 +3,8 @@ session_start();
 require './config/config.php';
 
 $error = '';
+$authSuccess = false;
+$redirectUrl = 'login.php';
 $today = new DateTime('today');
 $minimumBirthDate = (clone $today)->modify('-13 years');
 $maximumBirthDateValue = $minimumBirthDate->format('Y-m-d');
@@ -57,8 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'birth_date' => $birthDate
                 ]);
 
-                header('Location: login.php');
-                exit;
+                $authSuccess = true;
             }
         }
     }
@@ -70,9 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/auth.css">
-    <title>Регистрация</title>
+    <title>Snapix</title>
 </head>
-<body data-page="register">
+<body data-page="register"<?php echo $authSuccess ? ' class="auth-success"' : ''; ?>>
     <main class="auth-page">
         <section class="auth-card">
             <a href="index.php" class="back-link" aria-label="Вернуться на главную">
@@ -167,5 +168,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
     </script>
+<?php if ($authSuccess): ?>
+    <script>
+        window.setTimeout(function () {
+            window.location.href = <?php echo json_encode($redirectUrl); ?>;
+        }, 1800);
+    </script>
+<?php endif; ?>
 </body>
 </html>

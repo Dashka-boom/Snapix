@@ -278,3 +278,110 @@
             justify-content: center;
         }
     }
+
+/* Unified Snapix edit-profile theme */
+:root {
+    --home-bg: #040607;
+    --home-surface: #040607;
+    --home-header: #040607;
+    --home-accent: #68C5DB;
+    --home-text: #ffffff;
+    --home-secondary-text: #aeb8bc;
+    --home-border: rgba(104, 197, 219, 0.2);
+    --home-panel: #0b0f11;
+}
+
+html,
+body,
+.edit-profile-page {
+    background-color: var(--home-bg) !important;
+    color: var(--home-text) !important;
+}
+
+.edit-preview-shell,
+.edit-preview-summary,
+.form-card,
+.edit-avatar-shell,
+.edit-avatar {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
+    color: var(--home-text) !important;
+    box-shadow: none !important;
+}
+
+.edit-profile-cover {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
+}
+
+.summary-copy h1,
+.field label,
+.checkbox-field,
+a {
+    color: var(--home-text) !important;
+}
+
+.summary-copy p,
+.status {
+    color: var(--home-secondary-text) !important;
+}
+
+a:hover {
+    color: var(--home-accent) !important;
+}
+
+.field input,
+.field textarea,
+.field select {
+    background-color: var(--home-bg) !important;
+    border-color: var(--home-border) !important;
+    color: var(--home-text) !important;
+    box-shadow: none !important;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+    color: var(--home-secondary-text) !important;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+    border-color: var(--home-accent) !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.upload-trigger,
+.primary-link,
+.secondary-link,
+button,
+[type="submit"] {
+    background-color: var(--home-accent) !important;
+    border-color: var(--home-accent) !important;
+    color: var(--home-bg) !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.upload-trigger:hover,
+.primary-link:hover,
+.secondary-link:hover,
+button:hover,
+[type="submit"]:hover {
+    background-color: var(--home-accent) !important;
+    color: var(--home-bg) !important;
+    filter: brightness(0.92);
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Unified theme edit-profile refinements */
+.edit-profile-cover::after {
+    background: rgba(4, 6, 7, 0.35) !important;
+}
+
+.upload-trigger svg {
+    color: var(--home-bg) !important;
+    fill: currentColor;
+}

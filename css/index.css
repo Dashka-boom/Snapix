@@ -1592,3 +1592,322 @@ h2 {
         width: auto;
     }
 }
+
+/* Unified Snapix dark theme */
+:root {
+    --home-bg: #040607;
+    --home-surface: #040607;
+    --home-header: #040607;
+    --home-accent: #68C5DB;
+    --home-text: #ffffff;
+    --home-secondary-text: #aeb8bc;
+    --home-border: rgba(104, 197, 219, 0.2);
+    --home-panel: #0b0f11;
+    --home-message-other: #111517;
+}
+
+html,
+body,
+body[data-page] {
+    background-color: var(--home-bg) !important;
+    color: var(--home-text) !important;
+}
+
+body::before,
+body::after {
+    content: none !important;
+    display: none !important;
+}
+
+.header,
+.nav,
+.profile-sticky-nav,
+.profile-nav-inner {
+    background-color: var(--home-header) !important;
+    border-color: var(--home-border) !important;
+    color: var(--home-text) !important;
+    box-shadow: none !important;
+}
+
+main,
+.feed-wrap,
+.feed-list,
+.section-heading,
+.profile-page,
+.post-page,
+.connections-page,
+.create-post-page,
+.edit-post-page,
+.insights-page {
+    background-color: var(--home-bg) !important;
+    color: var(--home-text) !important;
+}
+
+.card-surface:not(.profile-cover),
+.feed-card,
+.post-detail-card,
+.post-card,
+.comments-modal-dialog,
+.share-modal-content,
+.notification-popover,
+.notification-popover-item,
+.post-menu,
+.comment-item,
+.profile-header,
+.profile-tabs,
+.profile-tab-content,
+.request-card,
+.connections-card,
+.create-post-card,
+.edit-post-card,
+.insights-card,
+.reels-card {
+    background-color: var(--home-panel) !important;
+    border: 1px solid var(--home-border) !important;
+    color: var(--home-text) !important;
+    box-shadow: none !important;
+}
+
+.profile-cover {
+    background-color: var(--home-panel) !important;
+    border: 1px solid var(--home-border) !important;
+    box-shadow: none !important;
+}
+
+.profile-cover.has-image {
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+.profile-cover.has-image::after {
+    background: rgba(4, 6, 7, 0.35) !important;
+}
+
+.profile-metrics,
+.profile-metric,
+.profile-avatar-shell,
+.profile-avatar,
+.user-avatar,
+.feed-author-avatar,
+.request-avatar,
+.share-recipient-avatar {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
+    color: var(--home-text) !important;
+    box-shadow: none !important;
+}
+
+.profile-metric strong,
+.profile-metric-link:hover strong,
+.profile-metric-link:focus-visible strong {
+    color: var(--home-accent) !important;
+}
+
+h1,
+h2,
+h3,
+p,
+small,
+label,
+span,
+strong,
+a,
+.logo,
+.menu a,
+.feed-author-name,
+.comment-author,
+.feed-card-caption,
+.feed-action-count,
+.comments-empty,
+.empty-state,
+.notification-popover-empty,
+.profile-username,
+.profile-display-name,
+.profile-nav-title {
+    color: var(--home-text) !important;
+}
+
+.profile-meta,
+.profile-bio,
+.page-eyebrow,
+.post-date,
+.comment-date,
+.notification-popover-empty,
+.feed-card-time {
+    color: var(--home-secondary-text) !important;
+}
+
+.logo:hover,
+.logo:focus-visible,
+a:hover,
+a:focus-visible,
+.menu a:hover,
+.menu a:focus-visible,
+.feed-author-name:hover,
+.comment-author:hover {
+    color: var(--home-accent) !important;
+}
+
+input,
+textarea,
+select,
+.search {
+    background-color: var(--home-panel) !important;
+    border: 1px solid var(--home-border) !important;
+    color: var(--home-text) !important;
+    box-shadow: none !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.search::placeholder {
+    color: var(--home-secondary-text) !important;
+    opacity: 1;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.search:focus {
+    border-color: var(--home-accent) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+button,
+[type="submit"],
+.auth,
+.primary-link,
+.secondary-link,
+.feed-action-btn,
+.header-plus-btn,
+.notification-bell,
+.notification-badge,
+.profile-edit-btn,
+.profile-nav-back {
+    background-color: var(--home-accent) !important;
+    border: 1px solid var(--home-accent) !important;
+    color: var(--home-bg) !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+button:hover,
+[type="submit"]:hover,
+.auth:hover,
+.primary-link:hover,
+.secondary-link:hover,
+.feed-action-btn:hover,
+.header-plus-btn:hover,
+.notification-bell:hover,
+.profile-edit-btn:hover,
+.profile-nav-back:hover {
+    background-color: var(--home-accent) !important;
+    border-color: var(--home-accent) !important;
+    color: var(--home-bg) !important;
+    filter: brightness(0.92);
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.feed-icon-btn,
+.post-menu-toggle,
+.chat-message-menu-trigger,
+.chat-reaction-trigger,
+svg,
+i,
+.notification-bell-icon {
+    color: var(--home-accent) !important;
+    fill: currentColor;
+}
+
+.comments-modal-overlay,
+.share-modal-overlay {
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(3px);
+}
+
+.comments-modal,
+.share-modal {
+    background: transparent !important;
+}
+
+.feed-card-media,
+.feed-card-media img,
+.feed-card-media video,
+.post-card-media {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
+}
+
+/* Unified theme refinements for modals, posts, and profile */
+.home-hero,
+.legal-hero,
+.profile-post-tab,
+.profile-post-tab.is-active,
+.post-card,
+.post-card-media,
+.post-card-actions,
+.share-modal-dialog,
+.share-modal-header,
+.share-modal-body,
+.comments-modal-header,
+.comments-modal-body,
+.comments-modal-form,
+.comment-form textarea,
+.profile-quick-actions,
+.profile-section,
+.profile-metric {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
+    color: var(--home-text) !important;
+    box-shadow: none !important;
+}
+
+.comments-modal-dialog,
+.share-modal-dialog {
+    background-color: var(--home-bg) !important;
+    border: 1px solid var(--home-border) !important;
+}
+
+.comments-modal-header,
+.comments-modal-form,
+.share-modal-header {
+    border-color: var(--home-border) !important;
+}
+
+.post-card-btn-delete,
+.post-card-btn-edit,
+.profile-post-tab.is-active {
+    background-color: var(--home-accent) !important;
+    border-color: var(--home-accent) !important;
+    color: var(--home-bg) !important;
+}
+
+.profile-cover.has-image {
+    background-color: var(--home-panel) !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+/* Keep post three-dot menu icon visible */
+.post-menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    opacity: 1 !important;
+    visibility: visible !important;
+    background-color: var(--home-panel) !important;
+    border: 1px solid var(--home-border) !important;
+    color: var(--home-accent) !important;
+}
+
+.post-menu-toggle:hover,
+.post-menu-toggle:focus-visible {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-accent) !important;
+    color: var(--home-accent) !important;
+    filter: none !important;
+}
