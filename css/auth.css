@@ -8,6 +8,7 @@
     --auth-bg: #040607;
     --auth-accent: #68C5DB;
     --auth-text: #ffffff;
+    --auth-panel: #0b1215;
 }
 
 html,
@@ -37,7 +38,7 @@ body {
     max-width: 420px;
     min-height: auto;
     padding: 32px;
-    background: #0b0f11;
+    background: var(--auth-panel);
     border: none;
     border-radius: 24px;
     color: var(--auth-text);
