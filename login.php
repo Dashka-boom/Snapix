@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/auth.css">
-    <title>Вход</title>
+    <title>Snapix</title>
 </head>
 <body data-page="login">
     <main class="auth-page">
@@ -45,8 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span aria-hidden="true">←</span>
             </a>
             <h1>Вход в аккаунт</h1>
-            <p class="subtitle">Войдите по логину или email.</p>
-
             <form class="auth-form" method="post" action="">
                 <label>
                     <input type="text" name="login" placeholder="Логин или адрес электронной почты" value="<?php echo htmlspecialchars($_POST['login'] ?? ''); ?>" required>

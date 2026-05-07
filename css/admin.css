@@ -152,3 +152,86 @@ td {
     border: 1px solid #fecaca;
     color: #991b1b;
 }
+
+/* Unified Snapix admin theme */
+:root {
+    --home-bg: #040607;
+    --home-surface: #040607;
+    --home-header: #040607;
+    --home-accent: #68C5DB;
+    --home-text: #ffffff;
+    --home-secondary-text: #aeb8bc;
+    --home-border: rgba(104, 197, 219, 0.2);
+    --home-panel: #0b0f11;
+}
+
+html,
+body {
+    background-color: var(--home-bg) !important;
+    color: var(--home-text) !important;
+}
+
+.admin-card,
+.admin-section,
+.admin-header,
+.status-success,
+.status-error {
+    background-color: var(--home-panel) !important;
+    border: 1px solid var(--home-border) !important;
+    color: var(--home-text) !important;
+    box-shadow: none !important;
+}
+
+table,
+th,
+td {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
+    color: var(--home-text) !important;
+}
+
+.admin-form input {
+    background-color: var(--home-bg) !important;
+    border-color: var(--home-border) !important;
+    color: var(--home-text) !important;
+}
+
+.admin-form input:focus {
+    border-color: var(--home-accent) !important;
+    outline: none !important;
+}
+
+.admin-form button,
+.admin-nav a,
+.back-link,
+.danger-btn {
+    background-color: var(--home-accent) !important;
+    border-color: var(--home-accent) !important;
+    color: var(--home-bg) !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.admin-form button:hover,
+.admin-nav a:hover,
+.back-link:hover,
+.danger-btn:hover {
+    background-color: var(--home-accent) !important;
+    color: var(--home-bg) !important;
+    filter: brightness(0.92);
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.subtitle,
+.muted {
+    color: var(--home-secondary-text) !important;
+}
+
+a {
+    color: var(--home-text) !important;
+}
+
+a:hover {
+    color: var(--home-accent) !important;
+}
