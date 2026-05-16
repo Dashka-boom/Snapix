@@ -1943,7 +1943,7 @@ i,
     color: #ffffff !important;
     cursor: pointer;
     font: inherit;
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 700;
     line-height: 1;
     position: relative;
@@ -2153,7 +2153,7 @@ body[data-page="home"] {
     .home-feed-tab {
         min-width: 84px;
         padding: 12px 0 2px;
-        font-size: 23px;
+        font-size: 18px;
     }
 
     .side-menu-icon {
