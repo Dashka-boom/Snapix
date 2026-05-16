@@ -1989,7 +1989,8 @@ main[data-feed-content].is-switching {
 }
 
 /* Collapsible left-side menu for the homepage */
-body[data-page="home"] {
+body[data-page="home"],
+body.has-side-menu {
     padding-left: 80px;
 }
 
@@ -2137,7 +2138,8 @@ body[data-page="home"] {
 }
 
 @media (max-width: 768px) {
-    body[data-page="home"] {
+    body[data-page="home"],
+    body.has-side-menu {
         padding-left: 66px;
     }
 
