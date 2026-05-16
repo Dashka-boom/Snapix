@@ -1914,11 +1914,11 @@ i,
 
 /* Collapsible left-side menu for the homepage */
 body[data-page="home"] {
-    padding-left: 84px;
+    padding-left: 80px;
 }
 
 .side-menu {
-    width: 84px;
+    width: 80px;
     height: 100vh;
     height: 100dvh;
     padding: 20px 12px;
@@ -1944,14 +1944,14 @@ body[data-page="home"] {
 
 .side-menu:hover,
 .side-menu:focus-within {
-    width: 228px;
+    width: 222px;
 }
 
 .side-menu-toggle,
 .side-menu-item,
 .side-menu-profile {
-    min-width: 60px;
-    min-height: 56px;
+    min-width: 56px;
+    min-height: 50px;
     width: 100%;
     border: 0 !important;
     border-radius: 16px;
@@ -1980,11 +1980,11 @@ body[data-page="home"] {
 }
 
 .side-menu-nav {
-    margin-top: 28px;
+    margin-top: 24px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 14px;
+    gap: 12px;
 }
 
 .side-menu-button {
@@ -1993,9 +1993,9 @@ body[data-page="home"] {
 }
 
 .side-menu-icon {
-    width: 30px;
-    height: 30px;
-    flex: 0 0 30px;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
     object-fit: contain;
     filter: brightness(0) invert(1);
     background: transparent !important;
@@ -2049,36 +2049,36 @@ body[data-page="home"] {
 
 @media (max-width: 768px) {
     body[data-page="home"] {
-        padding-left: 70px;
+        padding-left: 66px;
     }
 
     .side-menu {
-        width: 70px;
+        width: 66px;
         padding: 16px 8px;
     }
 
     .side-menu:hover,
     .side-menu:focus-within {
-        width: 206px;
+        width: 200px;
     }
 
     .side-menu-toggle,
     .side-menu-item,
     .side-menu-profile {
-        min-width: 54px;
-        min-height: 54px;
+        min-width: 50px;
+        min-height: 50px;
         border-radius: 14px;
         padding: 0 10px;
-        gap: 14px;
+        gap: 12px;
     }
 
     .side-menu-icon {
-        width: 28px;
-        height: 28px;
-        flex-basis: 28px;
+        width: 26px;
+        height: 26px;
+        flex-basis: 26px;
     }
 
     .side-menu-nav {
-        gap: 10px;
+        gap: 9px;
     }
 }
