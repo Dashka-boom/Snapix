@@ -593,14 +593,17 @@ h2 {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    min-width: 0;
     padding: 16px;
 }
 
 .feed-header-main {
     display: flex;
     align-items: center;
+    flex: 1 1 auto;
     gap: 10px;
     min-width: 0;
+    overflow: hidden;
 }
 
 .post-menu-wrap {
@@ -615,6 +618,7 @@ h2 {
     border-radius: 999px;
     background: #fff;
     cursor: pointer;
+    flex-shrink: 0;
     font-size: 18px;
     line-height: 1;
 }
@@ -662,6 +666,25 @@ h2 {
 .comment-author,
 .saved-post-author {
     text-decoration: none;
+}
+
+.feed-author-avatar-link {
+    flex: 0 0 auto;
+}
+
+.feed-header-main > div {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.feed-header-main strong,
+.feed-author-name {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .feed-author-avatar {
