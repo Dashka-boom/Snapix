@@ -1935,7 +1935,7 @@ i,
 
 .home-feed-tab {
     min-width: 96px;
-    padding: 12px 0 4px;
+    padding: 14px 0 2px;
     border: 0 !important;
     border-radius: 0;
     background: transparent !important;
@@ -2152,7 +2152,7 @@ body[data-page="home"] {
 
     .home-feed-tab {
         min-width: 84px;
-        padding: 10px 0 4px;
+        padding: 12px 0 2px;
         font-size: 13px;
     }
 
