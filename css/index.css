@@ -1912,9 +1912,9 @@ i,
     filter: none !important;
 }
 
-/* Collapsible right-side menu for the homepage */
+/* Collapsible left-side menu for the homepage */
 body[data-page="home"] {
-    padding-right: 76px;
+    padding-left: 76px;
 }
 
 .side-menu {
@@ -1923,15 +1923,16 @@ body[data-page="home"] {
     height: 100dvh;
     padding: 20px 12px;
     background: #040607;
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
     position: fixed;
     top: 0;
-    right: 0;
+    left: 0;
     z-index: 200;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     transition: width 0.28s ease;
 }
 
@@ -2042,7 +2043,7 @@ body[data-page="home"] {
 
 @media (max-width: 768px) {
     body[data-page="home"] {
-        padding-right: 64px;
+        padding-left: 64px;
     }
 
     .side-menu {
