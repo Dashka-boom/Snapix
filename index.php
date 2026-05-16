@@ -13,9 +13,7 @@ function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
 }
 
 $user = null;
-$pendingRequestsCount = 0;
 $notifications = [];
-$unreadMessagesCount = 0;
 $shareRecipients = [];
 
 if (isset($_SESSION['user_id'])) {
@@ -24,24 +22,9 @@ if (isset($_SESSION['user_id'])) {
     $user = $stmt->fetch();
 
     if ($user) {
-        $pendingStmt = $pdo->prepare("SELECT COUNT(*) FROM followers WHERE following_id = :id AND status = 'pending'");
-        $pendingStmt->execute(['id' => $user['id']]);
-        $pendingRequestsCount = (int) $pendingStmt->fetchColumn();
-
         $notificationsStmt = $pdo->prepare('SELECT id, title, message, created_at FROM user_notifications WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 5');
         $notificationsStmt->execute(['user_id' => $user['id']]);
         $notifications = $notificationsStmt->fetchAll();
-
-        $unreadMessagesStmt = $pdo->prepare('
-            SELECT COUNT(*)
-            FROM messages m
-            INNER JOIN chats c ON c.id = m.chat_id
-            WHERE (c.user_one_id = :user_id OR c.user_two_id = :user_id)
-              AND m.sender_id != :user_id
-              AND m.is_read = 0
-        ');
-        $unreadMessagesStmt->execute(['user_id' => $user['id']]);
-        $unreadMessagesCount = (int) $unreadMessagesStmt->fetchColumn();
 
         $shareRecipientsStmt = $pdo->prepare("
             SELECT
@@ -405,44 +388,6 @@ if ($feedPosts) {
     <title>Snapix</title>
 </head>
 <body data-page="home">
-    <header class="header">
-        <nav class="nav">
-            <a href="index.php" class="logo">Snapix</a>
-
-            <input type="text" class="search" placeholder="Поиск">
-
-            <div class="menu">
-                <a href="#">Reels</a>
-                <?php if ($user): ?>
-                    <a href="chat.php" class="notification-bell" aria-label="Открыть сообщения">
-                        <span class="notification-bell-icon"><?php echo snapix_icon('mail'); ?></span>
-                        <?php if ($unreadMessagesCount > 0): ?>
-                            <span class="notification-badge"><?php echo $unreadMessagesCount; ?></span>
-                        <?php endif; ?>
-                    </a>
-                    <a href="connections.php?view=requests" class="notification-bell" aria-label="Открыть заявки">
-                        <span class="notification-bell-icon"><?php echo snapix_icon('bell'); ?></span>
-                        <?php if ($pendingRequestsCount > 0): ?>
-                            <span class="notification-badge"><?php echo $pendingRequestsCount; ?></span>
-                        <?php endif; ?>
-                    </a>
-                    <a href="create-post.php" class="header-plus-btn" aria-label="Добавить публикацию">+</a>
-                    <a href="profile.php" class="user-avatar-link" aria-label="Открыть профиль">
-                        <?php if (!empty($user['avatar'])): ?>
-                            <span class="user-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></span>
-                        <?php else: ?>
-                            <span class="user-avatar"><?php echo htmlspecialchars(mb_substr($user['login'], 0, 1)); ?></span>
-                        <?php endif; ?>
-                    </a>
-                <?php else: ?>
-                    <div class="auth-actions">
-                        <a href="login.php">Войти</a>
-                        <a href="register.php" class="auth">Регистрация</a>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </nav>
-    </header>
     <main>
         <section class="feed-wrap">
             <?php if ($user && $notifications): ?>
