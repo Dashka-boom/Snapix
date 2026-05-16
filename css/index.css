@@ -1912,13 +1912,13 @@ i,
     filter: none !important;
 }
 
-/* Collapsible left-side menu for the homepage */
-body[data-page="home"] {
-    padding-left: 76px;
+/* Collapsible left-side menu */
+body.has-side-menu {
+    padding-left: 80px;
 }
 
 .side-menu {
-    width: 76px;
+    width: 80px;
     height: 100vh;
     height: 100dvh;
     padding: 20px 12px;
@@ -1933,19 +1933,25 @@ body[data-page="home"] {
     align-items: stretch;
     overflow-x: hidden;
     overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     transition: width 0.28s ease;
+}
+
+.side-menu::-webkit-scrollbar {
+    display: none;
 }
 
 .side-menu:hover,
 .side-menu:focus-within {
-    width: 218px;
+    width: 222px;
 }
 
 .side-menu-toggle,
 .side-menu-item,
 .side-menu-profile {
-    min-width: 52px;
-    min-height: 52px;
+    min-width: 56px;
+    min-height: 50px;
     width: 100%;
     border: 0 !important;
     border-radius: 16px;
@@ -1974,11 +1980,12 @@ body[data-page="home"] {
 }
 
 .side-menu-nav {
-    margin-top: 28px;
+    margin-top: 24px;
+    padding-bottom: 15px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 14px;
+    gap: 12px;
 }
 
 .side-menu-button {
@@ -1987,9 +1994,9 @@ body[data-page="home"] {
 }
 
 .side-menu-icon {
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
     object-fit: contain;
     filter: brightness(0) invert(1);
     background: transparent !important;
@@ -2042,31 +2049,37 @@ body[data-page="home"] {
 }
 
 @media (max-width: 768px) {
-    body[data-page="home"] {
-        padding-left: 64px;
+    body.has-side-menu {
+        padding-left: 66px;
     }
 
     .side-menu {
-        width: 64px;
+        width: 66px;
         padding: 16px 8px;
     }
 
     .side-menu:hover,
     .side-menu:focus-within {
-        width: 196px;
+        width: 200px;
     }
 
     .side-menu-toggle,
     .side-menu-item,
     .side-menu-profile {
-        min-width: 48px;
-        min-height: 48px;
+        min-width: 50px;
+        min-height: 50px;
         border-radius: 14px;
-        padding: 0 12px;
-        gap: 14px;
+        padding: 0 10px;
+        gap: 12px;
+    }
+
+    .side-menu-icon {
+        width: 26px;
+        height: 26px;
+        flex-basis: 26px;
     }
 
     .side-menu-nav {
-        gap: 10px;
+        gap: 9px;
     }
 }
