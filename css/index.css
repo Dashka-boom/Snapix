@@ -2003,15 +2003,8 @@ body[data-page="home"] {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    overflow: hidden;
     transition: width 0.28s ease;
-}
-
-.side-menu::-webkit-scrollbar {
-    display: none;
 }
 
 .side-menu:hover,
