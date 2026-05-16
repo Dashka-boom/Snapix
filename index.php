@@ -444,8 +444,8 @@ if ($feedPosts) {
     </aside>
 
     <div class="home-feed-tabs" role="tablist" aria-label="Переключатель ленты">
-        <button type="button" class="home-feed-tab is-active" role="tab" aria-selected="true" data-feed-tab="for-you">Для вас</button>
-        <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-feed-tab="following">Подписки</button>
+        <span class="home-feed-tab is-active" role="tab" tabindex="0" aria-selected="true" data-feed-tab="for-you">Для вас</span>
+        <span class="home-feed-tab" role="tab" tabindex="-1" aria-selected="false" data-feed-tab="following">Подписки</span>
     </div>
 
     <main data-feed-content="for-you">
@@ -658,24 +658,37 @@ if ($feedPosts) {
         return;
     }
 
+    function activateTab(tab) {
+        if (tab.classList.contains('is-active')) {
+            return;
+        }
+
+        tabs.forEach(function (item) {
+            item.classList.remove('is-active');
+            item.setAttribute('aria-selected', 'false');
+            item.setAttribute('tabindex', '-1');
+        });
+
+        tab.classList.add('is-active');
+        tab.setAttribute('aria-selected', 'true');
+        tab.setAttribute('tabindex', '0');
+        feedContent.setAttribute('data-feed-content', tab.getAttribute('data-feed-tab') || 'for-you');
+        feedContent.classList.add('is-switching');
+        window.setTimeout(function () {
+            feedContent.classList.remove('is-switching');
+        }, 180);
+    }
+
     tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
-            if (tab.classList.contains('is-active')) {
-                return;
+            activateTab(tab);
+        });
+
+        tab.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                activateTab(tab);
             }
-
-            tabs.forEach(function (item) {
-                item.classList.remove('is-active');
-                item.setAttribute('aria-selected', 'false');
-            });
-
-            tab.classList.add('is-active');
-            tab.setAttribute('aria-selected', 'true');
-            feedContent.setAttribute('data-feed-content', tab.getAttribute('data-feed-tab') || 'for-you');
-            feedContent.classList.add('is-switching');
-            window.setTimeout(function () {
-                feedContent.classList.remove('is-switching');
-            }, 180);
         });
     });
 })();
