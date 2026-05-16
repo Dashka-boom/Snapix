@@ -2094,6 +2094,25 @@ body[data-page="home"] {
     margin-top: auto;
 }
 
+.side-menu-profile::after {
+    content: '•••';
+    margin-left: auto;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    line-height: 1;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.side-menu:hover .side-menu-profile::after,
+.side-menu:focus-within .side-menu-profile::after {
+    opacity: 1;
+    transform: translateX(0);
+}
+
 .side-menu-avatar {
     width: 44px;
     height: 44px;
