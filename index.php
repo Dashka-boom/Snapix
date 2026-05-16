@@ -442,7 +442,13 @@ if ($feedPosts) {
             <span class="side-menu-label side-menu-profile-name"><?php echo $user ? htmlspecialchars($user['login']) : 'Войти'; ?></span>
         </a>
     </aside>
-    <main>
+
+    <div class="home-feed-tabs" role="tablist" aria-label="Переключатель ленты">
+        <button type="button" class="home-feed-tab is-active" role="tab" aria-selected="true" data-feed-tab="for-you">Для вас</button>
+        <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-feed-tab="following">Подписки</button>
+    </div>
+
+    <main data-feed-content="for-you">
         <section class="feed-wrap">
             <?php if ($user && $notifications): ?>
                 <section class="card-surface" style="padding: 16px; margin-bottom: 16px;">
@@ -644,6 +650,47 @@ if ($feedPosts) {
 </div>
 <?php endif; ?>
 <script>
+(function () {
+    var tabs = document.querySelectorAll('.home-feed-tab');
+    var feedContent = document.querySelector('[data-feed-content]');
+
+    if (!tabs.length || !feedContent) {
+        return;
+    }
+
+    function activateTab(tab) {
+        if (tab.classList.contains('is-active')) {
+            return;
+        }
+
+        tabs.forEach(function (item) {
+            item.classList.remove('is-active');
+            item.setAttribute('aria-selected', 'false');
+        });
+
+        tab.classList.add('is-active');
+        tab.setAttribute('aria-selected', 'true');
+        feedContent.setAttribute('data-feed-content', tab.getAttribute('data-feed-tab') || 'for-you');
+        feedContent.classList.add('is-switching');
+        window.setTimeout(function () {
+            feedContent.classList.remove('is-switching');
+        }, 180);
+    }
+
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            activateTab(tab);
+        });
+
+        tab.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                activateTab(tab);
+            }
+        });
+    });
+})();
+
 document.querySelectorAll('.js-open-comments-modal').forEach(function (button) {
     button.addEventListener('click', function () {
         var modalId = button.getAttribute('data-modal');
