@@ -1914,11 +1914,11 @@ i,
 
 /* Collapsible left-side menu for the homepage */
 body[data-page="home"] {
-    padding-left: 88px;
+    padding-left: 76px;
 }
 
 .side-menu {
-    width: 88px;
+    width: 76px;
     height: 100vh;
     height: 100dvh;
     padding: 20px 12px;
@@ -1931,7 +1931,8 @@ body[data-page="home"] {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     transition: width 0.28s ease;
 }
 
@@ -1986,9 +1987,9 @@ body[data-page="home"] {
 }
 
 .side-menu-icon {
-    width: 32px;
-    height: 32px;
-    flex: 0 0 32px;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
     object-fit: contain;
     filter: brightness(0) invert(1);
     background: transparent !important;
@@ -2018,9 +2019,9 @@ body[data-page="home"] {
 }
 
 .side-menu-avatar {
-    width: 42px;
-    height: 42px;
-    flex: 0 0 42px;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.24);
     background: linear-gradient(135deg, #1f2937 0%, #68C5DB 100%);
@@ -2042,17 +2043,17 @@ body[data-page="home"] {
 
 @media (max-width: 768px) {
     body[data-page="home"] {
-        padding-left: 76px;
+        padding-left: 64px;
     }
 
     .side-menu {
-        width: 76px;
-        padding: 16px 10px;
+        width: 64px;
+        padding: 16px 8px;
     }
 
     .side-menu:hover,
     .side-menu:focus-within {
-        width: 204px;
+        width: 196px;
     }
 
     .side-menu-toggle,
