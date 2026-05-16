@@ -1916,7 +1916,7 @@ i,
 .home-feed-tabs {
     width: 100%;
     margin: 0;
-    padding: 8px 18px 4px;
+    padding: 8px 18px 10px;
     border: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0;
@@ -1958,7 +1958,7 @@ i,
     background: #68C5DB;
     position: absolute;
     left: 50%;
-    bottom: -4px;
+    bottom: -10px;
     opacity: 0;
     transform: translateX(-50%) scaleX(0.5);
     transition: opacity 0.2s ease, transform 0.2s ease;
@@ -2146,7 +2146,7 @@ body[data-page="home"] {
     .home-feed-tabs {
         width: 100%;
         margin-left: 0;
-        padding: 7px 14px 4px;
+        padding: 7px 14px 9px;
         gap: 22px;
     }
 
