@@ -1916,7 +1916,7 @@ i,
 .home-feed-tabs {
     width: calc(100% + 80px);
     margin: 0 0 0 -80px;
-    padding: 12px 18px;
+    padding: 8px 18px 4px;
     border: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0;
@@ -1935,7 +1935,7 @@ i,
 
 .home-feed-tab {
     min-width: 96px;
-    padding: 10px 0 12px;
+    padding: 14px 0 2px;
     border: 0 !important;
     border-radius: 0;
     background: transparent !important;
@@ -1958,7 +1958,7 @@ i,
     background: #68C5DB;
     position: absolute;
     left: 50%;
-    bottom: -12px;
+    bottom: -4px;
     opacity: 0;
     transform: translateX(-50%) scaleX(0.5);
     transition: opacity 0.2s ease, transform 0.2s ease;
@@ -2146,13 +2146,13 @@ body[data-page="home"] {
     .home-feed-tabs {
         width: calc(100% + 66px);
         margin-left: -66px;
-        padding: 10px 14px;
+        padding: 7px 14px 4px;
         gap: 22px;
     }
 
     .home-feed-tab {
         min-width: 84px;
-        padding: 9px 0 11px;
+        padding: 12px 0 2px;
         font-size: 13px;
     }
 
