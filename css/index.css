@@ -1914,8 +1914,8 @@ i,
 
 
 .home-feed-tabs {
-    width: calc(100% + 80px);
-    margin: 0 0 0 -80px;
+    width: 100%;
+    margin: 0;
     padding: 8px 18px 4px;
     border: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -2144,8 +2144,8 @@ body[data-page="home"] {
 
 
     .home-feed-tabs {
-        width: calc(100% + 66px);
-        margin-left: -66px;
+        width: 100%;
+        margin-left: 0;
         padding: 7px 14px 4px;
         gap: 22px;
     }
