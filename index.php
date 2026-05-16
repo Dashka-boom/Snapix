@@ -441,6 +441,11 @@ if ($feedPosts) {
             <?php endif; ?>
             <span class="side-menu-label side-menu-profile-name"><?php echo $user ? htmlspecialchars($user['login']) : 'Войти'; ?></span>
         </a>
+        <button type="button" class="side-menu-account-toggle" aria-label="Открыть меню аккаунта">•••</button>
+        <div class="side-menu-account-modal" role="dialog" aria-label="Меню аккаунта">
+            <a href="login.php">Поменять аккаунт</a>
+            <a href="logout.php">Выйти из учётной записи</a>
+        </div>
     </aside>
 
     <div class="home-feed-tabs" role="tablist" aria-label="Переключатель ленты">

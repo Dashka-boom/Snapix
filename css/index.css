@@ -2112,23 +2112,82 @@ body.has-side-menu {
     margin-top: auto;
 }
 
-.side-menu-profile::after {
-    content: '•••';
-    margin-left: auto;
-    color: #fff;
+.side-menu-account-toggle {
+    width: 38px;
+    height: 38px;
+    border: 0 !important;
+    border-radius: 999px;
+    background: transparent !important;
+    color: #fff !important;
+    font: inherit;
     font-size: 18px;
     font-weight: 700;
     letter-spacing: 2px;
     line-height: 1;
+    position: absolute;
+    right: 18px;
+    bottom: 27px;
     opacity: 0;
     transform: translateX(-8px);
-    transition: opacity 0.22s ease, transform 0.22s ease;
+    cursor: pointer;
+    transition: opacity 0.22s ease, transform 0.22s ease, background-color 0.2s ease;
+    pointer-events: none;
 }
 
-.side-menu:hover .side-menu-profile::after,
-.side-menu:focus-within .side-menu-profile::after {
+.side-menu:hover .side-menu-account-toggle,
+.side-menu:focus-within .side-menu-account-toggle {
     opacity: 1;
     transform: translateX(0);
+    pointer-events: auto;
+}
+
+.side-menu-account-toggle:hover,
+.side-menu-account-toggle:focus-visible {
+    background: rgba(255, 255, 255, 0.08) !important;
+    outline: none;
+}
+
+.side-menu-account-modal {
+    width: 190px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    background: rgba(31, 41, 55, 0.96);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+    display: grid;
+    gap: 4px;
+    position: absolute;
+    right: 12px;
+    bottom: 72px;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.side-menu-account-toggle:focus + .side-menu-account-modal,
+.side-menu-account-toggle:focus-visible + .side-menu-account-modal,
+.side-menu-account-modal:hover,
+.side-menu-account-modal:focus-within {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.side-menu-account-modal a {
+    padding: 10px 12px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-decoration: none;
+}
+
+.side-menu-account-modal a:hover,
+.side-menu-account-modal a:focus-visible {
+    background: rgba(255, 255, 255, 0.1);
+    outline: none;
 }
 
 .side-menu-avatar {
