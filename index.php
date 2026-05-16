@@ -409,11 +409,6 @@ if ($feedPosts) {
                     </div>
                 </section>
             <?php endif; ?>
-
-            <div class="section-heading">
-                <h1>Лента публикаций</h1>
-            </div>
-
             <?php if ($feedPosts): ?>
                 <div class="feed-list">
                     <?php foreach ($feedPosts as $post): ?>
