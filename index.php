@@ -464,9 +464,6 @@ if ($feedPosts) {
                 </section>
             <?php endif; ?>
 
-            <div class="section-heading">
-                <h1>Лента публикаций</h1>
-            </div>
 
             <?php if ($feedPosts): ?>
                 <div class="feed-list">
