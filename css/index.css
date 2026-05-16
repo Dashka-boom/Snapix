@@ -1918,7 +1918,7 @@ i,
     margin: 0 0 0 -80px;
     padding: 12px 18px;
     border: 0;
-    border-bottom: 1px solid rgba(104, 197, 219, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0;
     background: rgba(4, 6, 7, 0.45);
     backdrop-filter: blur(12px);
@@ -1938,8 +1938,8 @@ i,
     padding: 10px 0 12px;
     border: 0;
     border-radius: 999px;
-    background: #ffffff;
-    color: #040607;
+    background: transparent;
+    color: #ffffff;
     cursor: pointer;
     font: inherit;
     font-size: 14px;
@@ -1966,8 +1966,7 @@ i,
 .home-feed-tab:hover,
 .home-feed-tab:focus-visible,
 .home-feed-tab.is-active {
-    color: #040607;
-    box-shadow: 0 0 0 1px rgba(104, 197, 219, 0.28);
+    color: #ffffff;
     outline: none;
 }
 
