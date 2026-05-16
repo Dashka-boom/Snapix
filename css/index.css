@@ -1936,17 +1936,18 @@ i,
 .home-feed-tab {
     min-width: 96px;
     padding: 10px 0 12px;
-    border: 0;
+    border: 0 !important;
     border-radius: 999px;
-    background: transparent;
-    color: #ffffff;
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #ffffff !important;
     cursor: pointer;
     font: inherit;
     font-size: 14px;
     font-weight: 700;
     line-height: 1;
     position: relative;
-    transition: color 0.2s ease, box-shadow 0.2s ease;
+    transition: color 0.2s ease;
 }
 
 .home-feed-tab::after {
@@ -1966,7 +1967,10 @@ i,
 .home-feed-tab:hover,
 .home-feed-tab:focus-visible,
 .home-feed-tab.is-active {
-    color: #ffffff;
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
     outline: none;
 }
 
