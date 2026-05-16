@@ -454,6 +454,8 @@ $showFollowingPanel = $panel === 'following';
 <body data-page="profile" class="has-side-menu">
     <?php render_side_menu($user); ?>
 
+    <div class="page-glass-nav" aria-hidden="true"></div>
+
     <main class="profile-page">
         <section class="profile-cover card-surface<?php echo !empty($user['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($user['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['background_image']); ?>');"<?php endif; ?>></section>
 

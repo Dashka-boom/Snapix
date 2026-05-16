@@ -148,6 +148,8 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 <body data-page="chat" data-user-id="<?php echo (int) $currentUser['id']; ?>" data-active-chat-id="<?php echo (int) $activeChatId; ?>" class="has-side-menu">
     <?php render_side_menu($currentUser); ?>
 
+    <div class="page-glass-nav" aria-hidden="true"></div>
+
     <main class="chat-page">
         <section class="chat-shell card-surface">
             <aside class="chat-dialogs">

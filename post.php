@@ -51,6 +51,8 @@ if (!$post) {
 <body data-page="post" class="has-side-menu">
     <?php render_side_menu($currentUser); ?>
 
+    <div class="page-glass-nav" aria-hidden="true"></div>
+
     <main>
         <section class="feed-wrap">
             <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>">

@@ -1988,6 +1988,23 @@ main[data-feed-content].is-switching {
     transform: translateY(2px);
 }
 
+
+.page-glass-nav {
+    width: 100%;
+    min-height: 54px;
+    margin: 0;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
+    background: rgba(4, 6, 7, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 16px 36px rgba(4, 6, 7, 0.18);
+    position: sticky;
+    top: 0;
+    z-index: 120;
+}
+
 /* Collapsible left-side menu for the homepage */
 body[data-page="home"],
 body.has-side-menu {
@@ -2163,6 +2180,11 @@ body.has-side-menu {
         gap: 12px;
     }
 
+
+
+    .page-glass-nav {
+        min-height: 50px;
+    }
 
     .home-feed-tabs {
         width: 100%;

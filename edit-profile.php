@@ -202,6 +202,8 @@ $coverStyle = !empty($user['background_image'])
 <body data-page="edit-profile" class="has-side-menu">
     <?php render_side_menu($user); ?>
 
+    <div class="page-glass-nav" aria-hidden="true"></div>
+
     <main class="edit-profile-page">
         <section class="edit-preview-shell">
             <div class="edit-profile-cover" id="coverPreview" style="<?php echo $coverStyle; ?>">

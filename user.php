@@ -449,6 +449,8 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
 <body data-page="user-profile" class="has-side-menu">
     <?php render_side_menu($currentUser); ?>
 
+    <div class="page-glass-nav" aria-hidden="true"></div>
+
     <main class="profile-page">
         <div class="notification-popover" id="notificationPopover">
             <div class="notification-popover-header">

@@ -70,6 +70,8 @@ $reposts = $repostsStmt->fetchAll();
 <body class="has-side-menu">
     <?php render_side_menu($viewer); ?>
 
+    <div class="page-glass-nav" aria-hidden="true"></div>
+
     <main class="profile-page">
         <section class="profile-posts card-surface">
             <div class="section-heading">

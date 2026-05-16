@@ -114,6 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body data-page="create-post" class="has-side-menu">
     <?php render_side_menu($user); ?>
 
+    <div class="page-glass-nav" aria-hidden="true"></div>
+
     <main class="create-post-page">
         <section class="create-post-card card-surface">
             <h1>Создать публикацию</h1>
