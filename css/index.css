@@ -1937,15 +1937,15 @@ i,
     padding: 10px 0 12px;
     border: 0;
     border-radius: 999px;
-    background: transparent;
-    color: #ffffff;
+    background: #ffffff;
+    color: #040607;
     cursor: pointer;
     font: inherit;
     font-size: 14px;
     font-weight: 700;
     line-height: 1;
     position: relative;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .home-feed-tab::after {
@@ -1965,7 +1965,8 @@ i,
 .home-feed-tab:hover,
 .home-feed-tab:focus-visible,
 .home-feed-tab.is-active {
-    color: #ffffff;
+    color: #040607;
+    box-shadow: 0 0 0 1px rgba(104, 197, 219, 0.28);
     outline: none;
 }
 
@@ -2004,13 +2005,7 @@ body[data-page="home"] {
     align-items: stretch;
     overflow-x: hidden;
     overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
     transition: width 0.28s ease;
-}
-
-.side-menu::-webkit-scrollbar {
-    display: none;
 }
 
 .side-menu:hover,
