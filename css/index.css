@@ -1912,13 +1912,85 @@ i,
     filter: none !important;
 }
 
-/* Collapsible left-side menu */
-body.has-side-menu {
-    padding-left: 80px;
+
+.home-feed-tabs {
+    width: fit-content;
+    margin: 18px auto 0;
+    padding: 6px 8px;
+    border: 1px solid rgba(104, 197, 219, 0.2);
+    border-radius: 999px;
+    background: rgba(4, 6, 7, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 16px 36px rgba(4, 6, 7, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: sticky;
+    top: 14px;
+    z-index: 120;
+}
+
+.home-feed-tab {
+    min-width: 96px;
+    padding: 10px 18px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.78);
+    cursor: pointer;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    position: relative;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.home-feed-tab::after {
+    content: '';
+    width: 30px;
+    height: 2px;
+    border-radius: 999px;
+    background: #68C5DB;
+    position: absolute;
+    left: 50%;
+    bottom: 4px;
+    opacity: 0;
+    transform: translateX(-50%) scaleX(0.5);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.home-feed-tab:hover,
+.home-feed-tab:focus-visible,
+.home-feed-tab.is-active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+    outline: none;
+}
+
+.home-feed-tab.is-active::after {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1);
+}
+
+main[data-feed-content] {
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+main[data-feed-content].is-switching {
+    opacity: 0.72;
+    transform: translateY(2px);
+}
+
+/* Collapsible left-side menu for the homepage */
+body[data-page="home"] {
+    padding-left: 76px;
 }
 
 .side-menu {
-    width: 80px;
+    width: 76px;
     height: 100vh;
     height: 100dvh;
     padding: 20px 12px;
@@ -1933,25 +2005,19 @@ body.has-side-menu {
     align-items: stretch;
     overflow-x: hidden;
     overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
     transition: width 0.28s ease;
-}
-
-.side-menu::-webkit-scrollbar {
-    display: none;
 }
 
 .side-menu:hover,
 .side-menu:focus-within {
-    width: 222px;
+    width: 218px;
 }
 
 .side-menu-toggle,
 .side-menu-item,
 .side-menu-profile {
-    min-width: 56px;
-    min-height: 50px;
+    min-width: 52px;
+    min-height: 52px;
     width: 100%;
     border: 0 !important;
     border-radius: 16px;
@@ -1980,12 +2046,11 @@ body.has-side-menu {
 }
 
 .side-menu-nav {
-    margin-top: 24px;
-    padding-bottom: 15px;
+    margin-top: 28px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 14px;
 }
 
 .side-menu-button {
@@ -1994,9 +2059,9 @@ body.has-side-menu {
 }
 
 .side-menu-icon {
-    width: 28px;
-    height: 28px;
-    flex: 0 0 28px;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
     object-fit: contain;
     filter: brightness(0) invert(1);
     background: transparent !important;
@@ -2049,37 +2114,43 @@ body.has-side-menu {
 }
 
 @media (max-width: 768px) {
-    body.has-side-menu {
-        padding-left: 66px;
+    body[data-page="home"] {
+        padding-left: 64px;
     }
 
     .side-menu {
-        width: 66px;
+        width: 64px;
         padding: 16px 8px;
     }
 
     .side-menu:hover,
     .side-menu:focus-within {
-        width: 200px;
+        width: 196px;
     }
 
     .side-menu-toggle,
     .side-menu-item,
     .side-menu-profile {
-        min-width: 50px;
-        min-height: 50px;
+        min-width: 48px;
+        min-height: 48px;
         border-radius: 14px;
-        padding: 0 10px;
-        gap: 12px;
+        padding: 0 12px;
+        gap: 14px;
     }
 
-    .side-menu-icon {
-        width: 26px;
-        height: 26px;
-        flex-basis: 26px;
+
+    .home-feed-tabs {
+        margin-top: 14px;
+        padding: 5px 6px;
+    }
+
+    .home-feed-tab {
+        min-width: 84px;
+        padding: 9px 14px 11px;
+        font-size: 13px;
     }
 
     .side-menu-nav {
-        gap: 9px;
+        gap: 10px;
     }
 }

@@ -1,7 +1,6 @@
 <?php
 session_start();
 require './config/config.php';
-require_once './includes/side-menu.php';
 
 function profileLink(int $profileUserId, ?int $currentUserId): string
 {
@@ -161,8 +160,13 @@ $followerRemoved = isset($_GET['follower_removed']) && $_GET['follower_removed']
     <link rel="stylesheet" href="css/index.css">
     <title>Snapix</title>
 </head>
-<body data-page="connections" class="has-side-menu">
-    <?php render_side_menu($viewer); ?>
+<body data-page="connections">
+    <header class="profile-sticky-nav">
+        <div class="profile-nav-inner">
+            <a href="<?php echo $isOwnPage ? 'profile.php' : 'user.php?id=' . (int) $targetUser['id']; ?>" class="profile-nav-back" aria-label="Назад">←</a>
+            <div class="profile-nav-title">Snapix</div>
+        </div>
+    </header>
 
     <main class="profile-page">
         <section class="profile-posts card-surface">
