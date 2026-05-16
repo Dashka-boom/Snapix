@@ -396,7 +396,7 @@ if ($feedPosts) {
 
         <nav class="side-menu-nav" aria-label="Навигация по сайту">
             <a href="index.php" class="side-menu-item" aria-label="Главная">
-                <img src="icon/лого.png" alt="" class="side-menu-icon">
+                <img src="icon/logo.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Главная</span>
             </a>
             <a href="#" class="side-menu-item" aria-label="Clips">
