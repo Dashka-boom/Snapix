@@ -13,9 +13,7 @@ function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
 }
 
 $user = null;
-$pendingRequestsCount = 0;
 $notifications = [];
-$unreadMessagesCount = 0;
 $shareRecipients = [];
 
 if (isset($_SESSION['user_id'])) {
@@ -24,24 +22,9 @@ if (isset($_SESSION['user_id'])) {
     $user = $stmt->fetch();
 
     if ($user) {
-        $pendingStmt = $pdo->prepare("SELECT COUNT(*) FROM followers WHERE following_id = :id AND status = 'pending'");
-        $pendingStmt->execute(['id' => $user['id']]);
-        $pendingRequestsCount = (int) $pendingStmt->fetchColumn();
-
         $notificationsStmt = $pdo->prepare('SELECT id, title, message, created_at FROM user_notifications WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 5');
         $notificationsStmt->execute(['user_id' => $user['id']]);
         $notifications = $notificationsStmt->fetchAll();
-
-        $unreadMessagesStmt = $pdo->prepare('
-            SELECT COUNT(*)
-            FROM messages m
-            INNER JOIN chats c ON c.id = m.chat_id
-            WHERE (c.user_one_id = :user_id OR c.user_two_id = :user_id)
-              AND m.sender_id != :user_id
-              AND m.is_read = 0
-        ');
-        $unreadMessagesStmt->execute(['user_id' => $user['id']]);
-        $unreadMessagesCount = (int) $unreadMessagesStmt->fetchColumn();
 
         $shareRecipientsStmt = $pdo->prepare("
             SELECT
@@ -405,44 +388,60 @@ if ($feedPosts) {
     <title>Snapix</title>
 </head>
 <body data-page="home">
-    <header class="header">
-        <nav class="nav">
-            <a href="index.php" class="logo">Snapix</a>
+    <aside class="side-menu" aria-label="Основное меню">
+        <button type="button" class="side-menu-toggle" aria-label="Меню">
+            <img src="icon/menu.png" alt="" class="side-menu-icon">
+            <span class="side-menu-label">Меню</span>
+        </button>
 
-            <input type="text" class="search" placeholder="Поиск">
-
-            <div class="menu">
-                <a href="#">Reels</a>
-                <?php if ($user): ?>
-                    <a href="chat.php" class="notification-bell" aria-label="Открыть сообщения">
-                        <span class="notification-bell-icon"><?php echo snapix_icon('mail'); ?></span>
-                        <?php if ($unreadMessagesCount > 0): ?>
-                            <span class="notification-badge"><?php echo $unreadMessagesCount; ?></span>
-                        <?php endif; ?>
-                    </a>
-                    <a href="connections.php?view=requests" class="notification-bell" aria-label="Открыть заявки">
-                        <span class="notification-bell-icon"><?php echo snapix_icon('bell'); ?></span>
-                        <?php if ($pendingRequestsCount > 0): ?>
-                            <span class="notification-badge"><?php echo $pendingRequestsCount; ?></span>
-                        <?php endif; ?>
-                    </a>
-                    <a href="create-post.php" class="header-plus-btn" aria-label="Добавить публикацию">+</a>
-                    <a href="profile.php" class="user-avatar-link" aria-label="Открыть профиль">
-                        <?php if (!empty($user['avatar'])): ?>
-                            <span class="user-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></span>
-                        <?php else: ?>
-                            <span class="user-avatar"><?php echo htmlspecialchars(mb_substr($user['login'], 0, 1)); ?></span>
-                        <?php endif; ?>
-                    </a>
-                <?php else: ?>
-                    <div class="auth-actions">
-                        <a href="login.php">Войти</a>
-                        <a href="register.php" class="auth">Регистрация</a>
-                    </div>
-                <?php endif; ?>
-            </div>
+        <nav class="side-menu-nav" aria-label="Навигация по сайту">
+            <a href="index.php" class="side-menu-item" aria-label="Главная">
+                <img src="icon/лого.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Главная</span>
+            </a>
+            <a href="#" class="side-menu-item" aria-label="Clips">
+                <img src="icon/Group.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Clips</span>
+            </a>
+            <a href="connections.php?view=requests" class="side-menu-item" aria-label="Уведомления">
+                <img src="icon/notification.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Уведомления</span>
+            </a>
+            <a href="#" class="side-menu-item" aria-label="Поиск">
+                <img src="icon/search.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Поиск</span>
+            </a>
+            <a href="chat.php" class="side-menu-item" aria-label="Чат">
+                <img src="icon/chat.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Чат</span>
+            </a>
+            <a href="profile.php" class="side-menu-item" aria-label="Закладки">
+                <img src="icon/favourites.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Закладки</span>
+            </a>
+            <button type="button" class="side-menu-item side-menu-button" aria-label="Темная тема">
+                <img src="icon/dark theme.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Темная тема</span>
+            </button>
+            <a href="#" class="side-menu-item" aria-label="Интересное">
+                <img src="icon/new.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Интересное</span>
+            </a>
+            <a href="edit-profile.php" class="side-menu-item" aria-label="Настройки">
+                <img src="icon/settting.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Настройки</span>
+            </a>
         </nav>
-    </header>
+
+        <a href="<?php echo $user ? 'profile.php' : 'login.php'; ?>" class="side-menu-profile" aria-label="Профиль пользователя">
+            <?php if ($user && !empty($user['avatar'])): ?>
+                <span class="side-menu-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></span>
+            <?php else: ?>
+                <span class="side-menu-avatar"><?php echo $user ? htmlspecialchars(mb_substr($user['login'], 0, 1)) : 'S'; ?></span>
+            <?php endif; ?>
+            <span class="side-menu-label side-menu-profile-name"><?php echo $user ? htmlspecialchars($user['login']) : 'Войти'; ?></span>
+        </a>
+    </aside>
     <main>
         <section class="feed-wrap">
             <?php if ($user && $notifications): ?>
