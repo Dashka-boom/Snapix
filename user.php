@@ -1,6 +1,7 @@
 ﻿<?php
 session_start();
 require './config/config.php';
+require './includes/icons.php';
 
 function profileDestination(int $targetUserId, ?int $currentUserId): string
 {
@@ -453,13 +454,13 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 <a href="#">Reels</a>
                 <?php if ($currentUser): ?>
                     <a href="chat.php" class="notification-bell" aria-label="Открыть сообщения">
-                        <span class="notification-bell-icon">✉️</span>
+                        <span class="notification-bell-icon"><?php echo snapix_icon('mail'); ?></span>
                         <?php if ($unreadMessagesCount > 0): ?>
                             <span class="notification-badge"><?php echo $unreadMessagesCount; ?></span>
                         <?php endif; ?>
                     </a>
                     <a href="connections.php?view=requests" class="notification-bell" aria-label="Открыть заявки" data-notification-toggle>
-                        <span class="notification-bell-icon">&#128276;</span>
+                        <span class="notification-bell-icon"><?php echo snapix_icon('bell'); ?></span>
                         <?php if ($pendingRequestsCount > 0): ?>
                             <span class="notification-badge"><?php echo $pendingRequestsCount; ?></span>
                         <?php endif; ?>
@@ -642,7 +643,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                     <div class="feed-card-header">
                                         <div class="feed-header-main"><strong><?php echo htmlspecialchars($profileUser['login']); ?></strong></div>
                                         <div class="post-menu-wrap">
-                                            <button type="button" class="post-menu-toggle" data-post-menu="user-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией">&#8942;</button>
+                                            <button type="button" class="post-menu-toggle" data-post-menu="user-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-vertical'); ?></button>
                                             <div class="post-menu" id="user-post-menu-<?php echo (int) $post['id']; ?>">
                                                 <?php if ($currentUser): ?>
                                                     <form method="post"><input type="hidden" name="action" value="report_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit">Жалоба на пост</button></form>
@@ -657,19 +658,19 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
 
                                     <?php if ($currentUser): ?>
                                         <div class="feed-card-buttons" style="margin-top: 10px;">
-                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><span aria-hidden="true">&#9829;</span></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
-                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><span aria-hidden="true">&#128278;</span></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
-                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><span aria-hidden="true">&#128257;</span></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><span aria-hidden="true">&#9993;</span></button></div>
+                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><?php echo snapix_icon('heart'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><?php echo snapix_icon('message-circle'); ?></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><?php echo snapix_icon('bookmark'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><?php echo snapix_icon('repeat'); ?></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><?php echo snapix_icon('send'); ?></button></div>
                                         </div>
                                     <?php else: ?>
                                         <div class="feed-card-buttons" style="margin-top: 10px;">
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><span aria-hidden="true">&#9829;</span></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><span aria-hidden="true">&#128172;</span></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><span aria-hidden="true">&#128278;</span></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><span aria-hidden="true">&#128257;</span></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для отправки в сообщения"><span aria-hidden="true">&#9993;</span></a></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><?php echo snapix_icon('heart'); ?></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><?php echo snapix_icon('message-circle'); ?></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><?php echo snapix_icon('bookmark'); ?></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><?php echo snapix_icon('repeat'); ?></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для отправки в сообщения"><?php echo snapix_icon('send'); ?></a></div>
                                         </div>
                                     <?php endif; ?>
 
@@ -678,7 +679,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                         <div class="comments-modal-dialog">
                                             <div class="comments-modal-header">
                                                 <h3>Комментарии</h3>
-                                                <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Закрыть">&times;</button>
+                                                <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button>
                                             </div>
                                             <div class="comments-modal-body">
                                         <?php if ($postComments): ?>
@@ -719,7 +720,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             <div class="share-modal-dialog">
                 <div class="share-modal-header">
                     <h3>Отправить публикацию</h3>
-                    <button type="button" class="feed-action-btn feed-icon-btn js-close-share-modal" aria-label="Закрыть">&times;</button>
+                    <button type="button" class="feed-action-btn feed-icon-btn js-close-share-modal" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button>
                 </div>
                 <div class="share-modal-body">
                     <?php if ($shareRecipients): ?>
