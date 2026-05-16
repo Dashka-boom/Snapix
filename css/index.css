@@ -1914,11 +1914,12 @@ i,
 
 
 .home-feed-tabs {
-    width: min(975px, calc(100% - 40px));
-    margin: 18px auto 0;
-    padding: 8px 18px;
-    border: 1px solid rgba(104, 197, 219, 0.2);
-    border-radius: 999px;
+    width: calc(100% + 80px);
+    margin: 0 0 0 -80px;
+    padding: 12px 18px;
+    border: 0;
+    border-bottom: 1px solid rgba(104, 197, 219, 0.2);
+    border-radius: 0;
     background: rgba(4, 6, 7, 0.45);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -1928,7 +1929,7 @@ i,
     justify-content: center;
     gap: 34px;
     position: sticky;
-    top: 14px;
+    top: 0;
     z-index: 120;
 }
 
@@ -2140,9 +2141,9 @@ body[data-page="home"] {
 
 
     .home-feed-tabs {
-        width: min(100% - 24px, 620px);
-        margin-top: 14px;
-        padding: 7px 14px;
+        width: calc(100% + 66px);
+        margin-left: -66px;
+        padding: 10px 14px;
         gap: 22px;
     }
 
