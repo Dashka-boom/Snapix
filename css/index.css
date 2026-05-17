@@ -827,7 +827,7 @@ h2 {
     font: inherit;
     font-weight: 700;
     cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.16s ease;
     text-decoration: none;
 }
 
@@ -841,19 +841,19 @@ h2 {
 .feed-action-btn.is-active {
     background: #ffe7ec;
     border-color: #ff7d98;
-    color: #cc2f5a;
+    color: #ef4444;
 }
 
 .feed-action-btn-save.is-saved {
-    background: #eef7ff;
-    border-color: #67b7f7;
-    color: #0072cf;
+    background: #fff7d6;
+    border-color: #facc15;
+    color: #eab308;
 }
 
 .feed-action-btn-repost.is-reposted {
     background: #ecfdf5;
     border-color: #6ee7b7;
-    color: #0f766e;
+    color: #22c55e;
 }
 
 .feed-icon-btn {
@@ -1875,6 +1875,37 @@ button:hover,
     height: 22px;
     object-fit: contain;
     pointer-events: none;
+    transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
+}
+
+.feed-card-buttons .feed-action-btn.is-activating img {
+    animation: feed-action-pop 0.24s ease-out;
+}
+
+.feed-card-buttons .feed-action-btn.is-active img {
+    filter: brightness(0) saturate(100%) invert(34%) sepia(92%) saturate(2313%) hue-rotate(337deg) brightness(102%) contrast(91%);
+}
+
+.feed-card-buttons .feed-action-btn-save.is-saved img {
+    filter: brightness(0) saturate(100%) invert(77%) sepia(82%) saturate(749%) hue-rotate(358deg) brightness(99%) contrast(87%);
+}
+
+.feed-card-buttons .feed-action-btn-repost.is-reposted img {
+    filter: brightness(0) saturate(100%) invert(58%) sepia(88%) saturate(477%) hue-rotate(93deg) brightness(92%) contrast(91%);
+}
+
+@keyframes feed-action-pop {
+    0% {
+        transform: scale(1);
+    }
+
+    45% {
+        transform: scale(1.18);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 .feed-icon-btn,

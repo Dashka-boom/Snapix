@@ -1013,6 +1013,20 @@ $showFollowingPanel = $panel === 'following';
         }
     }
 
+    function animateActiveIcon(button, isActive) {
+        if (!button || !isActive) {
+            return;
+        }
+
+        button.classList.remove('is-activating');
+        void button.offsetWidth;
+        button.classList.add('is-activating');
+
+        window.setTimeout(function () {
+            button.classList.remove('is-activating');
+        }, 260);
+    }
+
     function updateActionState(form, data) {
         var actionInput = form.querySelector('input[name="action"]');
         var action = actionInput ? actionInput.value : '';
@@ -1023,6 +1037,7 @@ $showFollowingPanel = $panel === 'following';
         if (action === 'toggle_like') {
             if (button) {
                 button.classList.toggle('is-active', !!data.liked);
+                animateActiveIcon(button, !!data.liked);
             }
             setCount(countNode, data.likes_count);
         }
@@ -1030,6 +1045,7 @@ $showFollowingPanel = $panel === 'following';
         if (action === 'toggle_save') {
             if (button) {
                 button.classList.toggle('is-saved', !!data.saved);
+                animateActiveIcon(button, !!data.saved);
             }
             setCount(countNode, data.saves_count);
         }
@@ -1037,6 +1053,7 @@ $showFollowingPanel = $panel === 'following';
         if (action === 'add_repost') {
             if (button) {
                 button.classList.toggle('is-reposted', !!data.reposted);
+                animateActiveIcon(button, !!data.reposted);
             }
             setCount(countNode, data.reposts_count);
         }
