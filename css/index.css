@@ -590,9 +590,8 @@ h2 {
 
 .feed-card-header {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     align-items: center;
-    column-gap: 20px;
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
@@ -613,15 +612,15 @@ h2 {
     justify-self: end;
     flex: 0 0 auto;
     min-width: 34px;
-    margin-left: 0;
+    margin-left: auto;
 }
 
 .post-menu-toggle {
     width: 34px;
     height: 34px;
-    border: 1px solid #d8dfe8;
-    border-radius: 999px;
-    background: #fff;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     cursor: pointer;
     flex-shrink: 0;
     font-size: 18px;
@@ -707,8 +706,8 @@ h2 {
 }
 
 .feed-header-main > .feed-author-line {
-    flex: 0 1 auto;
-    width: auto;
+    flex: 1 1 auto;
+    width: 100%;
     overflow: visible;
     display: inline-flex;
     align-items: center;
@@ -2028,15 +2027,15 @@ i,
     justify-content: center;
     opacity: 1 !important;
     visibility: visible !important;
-    background-color: var(--home-panel) !important;
-    border: 1px solid var(--home-border) !important;
+    background-color: transparent !important;
+    border: 0 !important;
     color: var(--home-accent) !important;
 }
 
 .post-menu-toggle:hover,
 .post-menu-toggle:focus-visible {
-    background-color: var(--home-panel) !important;
-    border-color: var(--home-accent) !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
     color: var(--home-accent) !important;
     filter: none !important;
 }
