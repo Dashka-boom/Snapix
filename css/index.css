@@ -589,10 +589,10 @@ h2 {
 }
 
 .feed-card-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    column-gap: 20px;
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
@@ -610,9 +610,10 @@ h2 {
 
 .post-menu-wrap {
     position: relative;
+    justify-self: end;
     flex: 0 0 auto;
     min-width: 34px;
-    margin-left: 12px;
+    margin-left: 0;
 }
 
 .post-menu-toggle {
@@ -690,7 +691,7 @@ h2 {
     max-width: 100%;
     min-width: 0;
     overflow: hidden;
-    padding-right: 12px;
+    padding-right: 0;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -781,21 +782,27 @@ h2 {
 
 .feed-card-buttons {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 18px;
+    flex-wrap: nowrap;
 }
 
 .feed-action-item {
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
+    justify-content: flex-start;
+    gap: 4px;
 }
 
 .feed-action-count {
-    font-size: 14px;
-    color: #4b5563;
+    display: block;
+    width: 100%;
     min-width: 16px;
+    font-size: 14px;
+    line-height: 1;
+    color: #4b5563;
+    text-align: center;
 }
 
 .feed-card-stats {
@@ -1846,6 +1853,28 @@ button:hover,
     filter: brightness(0.92);
     box-shadow: none !important;
     transform: none !important;
+}
+
+.feed-card-buttons .feed-action-btn,
+.feed-card-buttons .feed-action-btn:hover,
+.feed-card-buttons .feed-action-btn:focus-visible,
+.feed-card-buttons .feed-action-btn.is-active,
+.feed-card-buttons .feed-action-btn-save.is-saved,
+.feed-card-buttons .feed-action-btn-repost.is-reposted {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
+.feed-card-buttons .feed-action-btn img {
+    display: block;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    pointer-events: none;
 }
 
 .feed-icon-btn,

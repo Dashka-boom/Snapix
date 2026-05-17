@@ -2,6 +2,7 @@
 session_start();
 require './config/config.php';
 require './includes/icons.php';
+require './includes/post-actions.php';
 
 function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
 {
@@ -55,6 +56,8 @@ $reportReasons = $reportReasonsStmt->fetchAll();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     $action = $_POST['action'] ?? '';
     $commentsPostId = 0;
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost'], true);
+    $ajaxExtra = [];
 
     if ($action === 'mark_notifications_read') {
         $markReadStmt = $pdo->prepare('UPDATE user_notifications SET is_read = 1 WHERE user_id = :user_id AND is_read = 0');
@@ -93,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
 
     $postId = (int) ($_POST['post_id'] ?? 0);
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
+    $postExists = false;
 
     if ($postId > 0) {
         $postExistsStmt = $pdo->prepare('SELECT id FROM posts WHERE id = :id AND is_deleted = 0');
@@ -110,12 +114,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
             if ($likeId) {
                 $deleteLikeStmt = $pdo->prepare('DELETE FROM likes WHERE id = :id');
                 $deleteLikeStmt->execute(['id' => $likeId]);
+                $ajaxExtra['liked'] = false;
             } else {
                 $insertLikeStmt = $pdo->prepare('INSERT INTO likes (user_id, post_id) VALUES (:user_id, :post_id)');
                 $insertLikeStmt->execute([
                     'user_id' => $user['id'],
                     'post_id' => $postId,
                 ]);
+                $ajaxExtra['liked'] = true;
             }
         }
 
@@ -130,12 +136,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
             if ($saveId) {
                 $deleteSaveStmt = $pdo->prepare('DELETE FROM saved_posts WHERE id = :id');
                 $deleteSaveStmt->execute(['id' => $saveId]);
+                $ajaxExtra['saved'] = false;
             } else {
                 $insertSaveStmt = $pdo->prepare('INSERT INTO saved_posts (user_id, post_id) VALUES (:user_id, :post_id)');
                 $insertSaveStmt->execute([
                     'user_id' => $user['id'],
                     'post_id' => $postId,
                 ]);
+                $ajaxExtra['saved'] = true;
             }
         }
 
@@ -150,6 +158,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                     'comment_text' => mb_substr($commentText, 0, 1000),
                 ]);
                 $commentsPostId = $postId;
+                $ajaxExtra['comment'] = [
+                    'login' => (string) $user['login'],
+                    'profile_url' => buildProfileUrl((int) $user['id'], (int) $user['id']),
+                    'text' => mb_substr($commentText, 0, 1000),
+                ];
+            } elseif ($isAjaxPostAction) {
+                snapix_send_post_action_error('empty_comment');
             }
         }
 
@@ -177,17 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 $isRepostedNow = false;
             }
 
-            if (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest') {
-                $repostsCountStmt = $pdo->prepare('SELECT COUNT(*) FROM reposts WHERE post_id = :post_id');
-                $repostsCountStmt->execute(['post_id' => $postId]);
-                header('Content-Type: application/json; charset=utf-8');
-                echo json_encode([
-                    'ok' => true,
-                    'reposted' => $isRepostedNow,
-                    'reposts_count' => (int) $repostsCountStmt->fetchColumn(),
-                ]);
-                exit;
-            }
+            $ajaxExtra['reposted'] = $isRepostedNow;
         }
 
         if ($postExists && $action === 'delete_post' && $ownerId === (int) $user['id']) {
@@ -245,6 +250,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 'reason_text' => 'Жалоба на пользователя через пост #' . $postId,
             ]);
         }
+    }
+
+    if ($isAjaxPostAction) {
+        if ($postId <= 0 || !$postExists) {
+            snapix_send_post_action_error('post_not_found', 404);
+        }
+
+        snapix_send_post_action_json($pdo, $postId, (int) $user['id'], $ajaxExtra);
     }
 
     if ($commentsPostId > 0) {
@@ -400,7 +413,7 @@ if ($feedPosts) {
                 <span class="side-menu-label">Главная</span>
             </a>
             <a href="#" class="side-menu-item" aria-label="Clips">
-                <img src="icon/dark theme/clips.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/Clips.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Clips</span>
             </a>
             <a href="connections.php?view=requests" class="side-menu-item" aria-label="Уведомления">
@@ -536,13 +549,13 @@ if ($feedPosts) {
                                                 <form method="post" class="inline-action-form">
                                                     <input type="hidden" name="action" value="toggle_like">
                                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                    <button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><?php echo snapix_icon('heart'); ?></button>
+                                                    <button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt=""></button>
                                                 </form>
                                                 <span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span>
                                             </div>
 
                                             <div class="feed-action-item">
-                                                <button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><?php echo snapix_icon('message-circle'); ?></button>
+                                                <button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button>
                                                 <span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span>
                                             </div>
 
@@ -550,7 +563,7 @@ if ($feedPosts) {
                                                 <form method="post" class="inline-action-form">
                                                     <input type="hidden" name="action" value="toggle_save">
                                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                    <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><?php echo snapix_icon('bookmark'); ?></button>
+                                                    <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt=""></button>
                                                 </form>
                                                 <span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span>
                                             </div>
@@ -559,22 +572,22 @@ if ($feedPosts) {
                                                 <form method="post" class="inline-action-form">
                                                     <input type="hidden" name="action" value="add_repost">
                                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                    <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><?php echo snapix_icon('repeat'); ?></button>
+                                                    <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt=""></button>
                                                 </form>
                                                 <span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span>
                                             </div>
 
                                             <div class="feed-action-item">
-                                                <button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><?php echo snapix_icon('send'); ?></button>
+                                                <button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><img src="icon/dark theme/share.png" alt=""></button>
                                             </div>
                                         </div>
                                     <?php else: ?>
                                         <div class="feed-card-buttons">
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><?php echo snapix_icon('heart'); ?></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><?php echo snapix_icon('message-circle'); ?></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><?php echo snapix_icon('bookmark'); ?></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><?php echo snapix_icon('repeat'); ?></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для отправки в сообщения"><?php echo snapix_icon('send'); ?></a></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><img src="icon/dark theme/like.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><img src="icon/dark theme/repost.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для отправки в сообщения"><img src="icon/dark theme/share.png" alt=""></a></div>
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -726,39 +739,132 @@ document.querySelectorAll('.post-menu-toggle').forEach(function (button) {
     });
 });
 
-document.querySelectorAll('form.inline-action-form input[name="action"][value="add_repost"]').forEach(function (actionInput) {
-    var form = actionInput.closest('form.inline-action-form');
-    if (!form) {
-        return;
-    }
-    form.addEventListener('submit', function (event) {
-        event.preventDefault();
+(function () {
+    function sendPostActionForm(form) {
         var formData = new FormData(form);
-        fetch(form.getAttribute('action') || window.location.href, {
+        return fetch(form.getAttribute('action') || window.location.href, {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Accept': 'application/json'
             },
             body: new URLSearchParams(formData).toString()
-        })
-        .then(function (response) { return response.json(); })
-        .then(function (data) {
-            if (!data || !data.ok) {
-                return;
+        }).then(function (response) {
+            return response.json();
+        });
+    }
+
+    function setCount(node, value) {
+        if (node && typeof value !== 'undefined') {
+            node.textContent = String(Number(value || 0));
+        }
+    }
+
+    function updateActionState(form, data) {
+        var actionInput = form.querySelector('input[name="action"]');
+        var action = actionInput ? actionInput.value : '';
+        var item = form.closest('.feed-action-item');
+        var button = form.querySelector('.feed-action-btn');
+        var countNode = item ? item.querySelector('.feed-action-count') : null;
+
+        if (action === 'toggle_like') {
+            if (button) {
+                button.classList.toggle('is-active', !!data.liked);
             }
-            var button = form.querySelector('.feed-action-btn-repost');
-            var countNode = form.parentElement ? form.parentElement.querySelector('.feed-action-count') : null;
+            setCount(countNode, data.likes_count);
+        }
+
+        if (action === 'toggle_save') {
+            if (button) {
+                button.classList.toggle('is-saved', !!data.saved);
+            }
+            setCount(countNode, data.saves_count);
+        }
+
+        if (action === 'add_repost') {
             if (button) {
                 button.classList.toggle('is-reposted', !!data.reposted);
             }
-            if (countNode) {
-                countNode.textContent = String(Number(data.reposts_count || 0));
-            }
+            setCount(countNode, data.reposts_count);
+        }
+    }
+
+    document.querySelectorAll('form.inline-action-form').forEach(function (form) {
+        var actionInput = form.querySelector('input[name="action"]');
+        var action = actionInput ? actionInput.value : '';
+
+        if (['toggle_like', 'toggle_save', 'add_repost'].indexOf(action) === -1) {
+            return;
+        }
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            sendPostActionForm(form)
+                .then(function (data) {
+                    if (!data || !data.ok) {
+                        return;
+                    }
+                    updateActionState(form, data);
+                })
+                .catch(function () {});
         });
     });
-});
+
+    document.querySelectorAll('form.comments-modal-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            sendPostActionForm(form)
+                .then(function (data) {
+                    if (!data || !data.ok) {
+                        return;
+                    }
+
+                    var textarea = form.querySelector('textarea[name="comment_text"]');
+                    var modal = form.closest('.comments-modal');
+                    var body = modal ? modal.querySelector('.comments-modal-body') : null;
+
+                    if (body && data.comment) {
+                        var empty = body.querySelector('.comments-empty');
+                        if (empty) {
+                            empty.remove();
+                        }
+
+                        var item = document.createElement('div');
+                        item.className = 'comment-item';
+
+                        var author = document.createElement('a');
+                        author.className = 'comment-author';
+                        author.href = data.comment.profile_url || 'profile.php';
+
+                        var strong = document.createElement('strong');
+                        strong.textContent = data.comment.login || '';
+                        author.appendChild(strong);
+
+                        var text = document.createElement('p');
+                        text.textContent = data.comment.text || '';
+
+                        item.appendChild(author);
+                        item.appendChild(text);
+                        body.insertBefore(item, body.firstChild);
+                    }
+
+                    if (textarea) {
+                        textarea.value = '';
+                    }
+
+                    if (modal && modal.id) {
+                        document.querySelectorAll('.js-open-comments-modal[data-modal="' + modal.id + '"]').forEach(function (button) {
+                            var countNode = button.closest('.feed-action-item') ? button.closest('.feed-action-item').querySelector('.feed-action-count') : null;
+                            setCount(countNode, data.comments_count);
+                        });
+                    }
+                })
+                .catch(function () {});
+        });
+    });
+})();
 
 document.addEventListener('click', function (event) {
     document.querySelectorAll('.post-menu').forEach(function (menu) {
