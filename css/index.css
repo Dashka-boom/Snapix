@@ -1863,6 +1863,14 @@ button:hover,
     filter: none !important;
 }
 
+.feed-card-buttons .feed-action-btn img {
+    display: block;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
 .feed-icon-btn,
 .post-menu-toggle,
 .chat-message-menu-trigger,
