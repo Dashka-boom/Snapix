@@ -1849,6 +1849,20 @@ button:hover,
     transform: none !important;
 }
 
+.feed-card-buttons .feed-action-btn,
+.feed-card-buttons .feed-action-btn:hover,
+.feed-card-buttons .feed-action-btn:focus-visible,
+.feed-card-buttons .feed-action-btn.is-active,
+.feed-card-buttons .feed-action-btn-save.is-saved,
+.feed-card-buttons .feed-action-btn-repost.is-reposted {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
 .feed-icon-btn,
 .post-menu-toggle,
 .chat-message-menu-trigger,
