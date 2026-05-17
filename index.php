@@ -400,7 +400,7 @@ if ($feedPosts) {
                 <span class="side-menu-label">Главная</span>
             </a>
             <a href="#" class="side-menu-item" aria-label="Clips">
-                <img src="icon/dark theme/clips.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/Clips.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Clips</span>
             </a>
             <a href="connections.php?view=requests" class="side-menu-item" aria-label="Уведомления">
