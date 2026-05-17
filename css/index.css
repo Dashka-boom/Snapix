@@ -612,6 +612,7 @@ h2 {
     position: relative;
     flex: 0 0 auto;
     min-width: 34px;
+    margin-left: 12px;
 }
 
 .post-menu-toggle {
@@ -682,15 +683,22 @@ h2 {
 }
 
 .feed-header-main > strong,
-.feed-header-main strong,
 .feed-author-name {
     display: block;
     flex: 1 1 auto;
+    box-sizing: border-box;
     max-width: 100%;
     min-width: 0;
     overflow: hidden;
+    padding-right: 12px;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.feed-author-name strong {
+    overflow: visible;
+    text-overflow: inherit;
+    white-space: inherit;
 }
 
 .feed-author-avatar {
