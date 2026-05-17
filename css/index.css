@@ -593,14 +593,16 @@ h2 {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    width: 100%;
     min-width: 0;
+    box-sizing: border-box;
     padding: 16px;
 }
 
 .feed-header-main {
     display: flex;
     align-items: center;
-    flex: 1 1 auto;
+    flex: 1 1 0;
     gap: 10px;
     min-width: 0;
     overflow: hidden;
@@ -609,6 +611,7 @@ h2 {
 .post-menu-wrap {
     position: relative;
     flex: 0 0 auto;
+    min-width: 34px;
 }
 
 .post-menu-toggle {
@@ -678,9 +681,12 @@ h2 {
     overflow: hidden;
 }
 
+.feed-header-main > strong,
 .feed-header-main strong,
 .feed-author-name {
     display: block;
+    flex: 1 1 auto;
+    max-width: 100%;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
