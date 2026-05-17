@@ -589,10 +589,10 @@ h2 {
 }
 
 .feed-card-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    column-gap: 20px;
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
@@ -610,9 +610,10 @@ h2 {
 
 .post-menu-wrap {
     position: relative;
+    justify-self: end;
     flex: 0 0 auto;
     min-width: 34px;
-    margin-left: 12px;
+    margin-left: 0;
 }
 
 .post-menu-toggle {
@@ -690,7 +691,7 @@ h2 {
     max-width: 100%;
     min-width: 0;
     overflow: hidden;
-    padding-right: 12px;
+    padding-right: 0;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
