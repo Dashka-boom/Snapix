@@ -250,6 +250,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 'reason_text' => 'Жалоба на пользователя через пост #' . $postId,
             ]);
         }
+
+        if ($postExists && $action === 'block_user' && $ownerId > 0 && $ownerId !== (int) $user['id']) {
+            $blockUserStmt = $pdo->prepare('
+                INSERT IGNORE INTO user_blocks (blocker_user_id, blocked_user_id)
+                VALUES (:blocker_user_id, :blocked_user_id)
+            ');
+            $blockUserStmt->execute([
+                'blocker_user_id' => (int) $user['id'],
+                'blocked_user_id' => $ownerId,
+            ]);
+        }
     }
 
     if ($isAjaxPostAction) {
@@ -268,6 +279,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     header('Location: index.php');
     exit;
 }
+
+$currentUserId = (int) ($user['id'] ?? 0);
 
 $feedStmt = $pdo->query('
     SELECT
@@ -321,16 +334,36 @@ $feedStmt = $pdo->query('
             SELECT COUNT(*)
             FROM pinned_posts
             WHERE pinned_posts.post_id = posts.id
-              AND pinned_posts.user_id = ' . (int) ($user['id'] ?? 0) . '
-        ) AS is_pinned
+              AND pinned_posts.user_id = ' . $currentUserId . '
+        ) AS is_pinned,
+        EXISTS(
+            SELECT 1
+            FROM followers current_follow
+            WHERE current_follow.follower_id = ' . $currentUserId . '
+              AND current_follow.following_id = posts.user_id
+              AND current_follow.status = \'accepted\'
+        ) AS is_following_author,
+        EXISTS(
+            SELECT 1
+            FROM followers author_follow
+            WHERE author_follow.follower_id = posts.user_id
+              AND author_follow.following_id = ' . $currentUserId . '
+              AND author_follow.status = \'accepted\'
+        ) AS is_author_follower
     FROM posts
     INNER JOIN users ON users.id = posts.user_id
     LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
     WHERE posts.is_deleted = 0
+      AND posts.user_id <> ' . $currentUserId . '
       AND posts.id NOT IN (
           SELECT hidden_posts.post_id
           FROM hidden_posts
-          WHERE hidden_posts.user_id = ' . (int) ($user['id'] ?? 0) . '
+          WHERE hidden_posts.user_id = ' . $currentUserId . '
+      )
+      AND posts.user_id NOT IN (
+          SELECT user_blocks.blocked_user_id
+          FROM user_blocks
+          WHERE user_blocks.blocker_user_id = ' . $currentUserId . '
       )
     ORDER BY posts.created_at DESC
     LIMIT 40
@@ -412,7 +445,7 @@ if ($feedPosts) {
                 <img src="icon/logo.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Главная</span>
             </a>
-            <a href="#" class="side-menu-item" aria-label="Clips">
+            <a href="clips.php" class="side-menu-item" aria-label="Clips">
                 <img src="icon/dark theme/Clips.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Clips</span>
             </a>
@@ -495,7 +528,8 @@ if ($feedPosts) {
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                         <?php $authorProfileUrl = buildProfileUrl((int) $post['user_id'], $user ? (int) $user['id'] : null); ?>
-                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>">
+                        <?php $feedScope = (int) $post['is_following_author'] > 0 ? 'following' : 'for-you'; ?>
+                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
                             <header class="feed-card-header">
                                 <div class="feed-header-main">
                                     <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-avatar-link" aria-label="Открыть профиль <?php echo htmlspecialchars($post['login']); ?>">
@@ -505,27 +539,68 @@ if ($feedPosts) {
                                             <?php endif; ?>
                                         </div>
                                     </a>
-                                    <div>
+                                    <div class="feed-author-line">
                                         <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-name">
                                             <strong><?php echo htmlspecialchars($post['login']); ?></strong>
                                         </a>
-                                    </div>
-                                </div>
-                                <div class="post-menu-wrap">
-                                    <button type="button" class="post-menu-toggle" data-post-menu="post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-vertical'); ?></button>
-                                    <div class="post-menu" id="post-menu-<?php echo (int) $post['id']; ?>">
-                                        <?php if ($user && (int) $post['user_id'] === (int) $user['id']): ?>
-                                            <form method="post"><input type="hidden" name="action" value="delete_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $post['user_id']; ?>"><button type="submit">Удалить пост</button></form>
-                                            <a href="edit-post.php?id=<?php echo (int) $post['id']; ?>">Редактировать пост</a>
-                                            <form method="post"><input type="hidden" name="action" value="pin_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $post['user_id']; ?>"><button type="submit"><?php echo (int) $post['is_pinned'] > 0 ? 'Уже закреплено' : 'Закрепить пост в личном профиле'; ?></button></form>
-                                            <a href="post-insights.php?post_id=<?php echo (int) $post['id']; ?>">Кто посмотрел пост</a>
-                                        <?php elseif ($user): ?>
-                                            <form method="post"><input type="hidden" name="action" value="report_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $post['user_id']; ?>"><button type="submit">Жалоба на пост</button></form>
-                                            <form method="post"><input type="hidden" name="action" value="report_post_user"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $post['user_id']; ?>"><button type="submit">Жалоба на пользователя</button></form>
-                                            <form method="post"><input type="hidden" name="action" value="hide_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $post['user_id']; ?>"><button type="submit">Мне не интересна эта публикация</button></form>
-                                        <?php else: ?>
-                                            <a href="login.php">Войти, чтобы управлять публикацией</a>
-                                        <?php endif; ?>
+                                        <div class="post-menu-wrap">
+                                            <button type="button" class="post-menu-toggle" data-post-menu="post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-vertical'); ?></button>
+                                            <div class="post-menu" id="post-menu-<?php echo (int) $post['id']; ?>">
+                                                <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="post-menu-item">
+                                                    <img src="icon/dark theme/об аккаунте.png" alt="">
+                                                    <span>Об аккаунте</span>
+                                                </a>
+                                                <?php if ($user): ?>
+                                                    <form method="post">
+                                                        <input type="hidden" name="action" value="hide_post">
+                                                        <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                        <input type="hidden" name="owner_id" value="<?php echo (int) $post['user_id']; ?>">
+                                                        <button type="submit" class="post-menu-item">
+                                                            <img src="icon/dark theme/dislike.png" alt="">
+                                                            <span>Мне не интересно</span>
+                                                        </button>
+                                                    </form>
+                                                    <form method="post">
+                                                        <input type="hidden" name="action" value="block_user">
+                                                        <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                        <input type="hidden" name="owner_id" value="<?php echo (int) $post['user_id']; ?>">
+                                                        <button type="submit" class="post-menu-item">
+                                                            <img src="icon/dark theme/stop.png" alt="">
+                                                            <span>Добавить <?php echo htmlspecialchars($post['login']); ?> в чёрный список</span>
+                                                        </button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <a href="login.php" class="post-menu-item">
+                                                        <img src="icon/dark theme/dislike.png" alt="">
+                                                        <span>Мне не интересно</span>
+                                                    </a>
+                                                    <a href="login.php" class="post-menu-item">
+                                                        <img src="icon/dark theme/stop.png" alt="">
+                                                        <span>Добавить <?php echo htmlspecialchars($post['login']); ?> в чёрный список</span>
+                                                    </a>
+                                                <?php endif; ?>
+                                                <button type="button" class="post-menu-item js-copy-post-link" data-post-url="<?php echo htmlspecialchars('post.php?id=' . (int) $post['id'], ENT_QUOTES); ?>">
+                                                    <img src="icon/dark theme/copy.png" alt="">
+                                                    <span>Поделиться</span>
+                                                </button>
+                                                <?php if ($user): ?>
+                                                    <form method="post">
+                                                        <input type="hidden" name="action" value="report_post">
+                                                        <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                        <input type="hidden" name="owner_id" value="<?php echo (int) $post['user_id']; ?>">
+                                                        <button type="submit" class="post-menu-item post-menu-item-danger">
+                                                            <img src="icon/complaint.png" alt="">
+                                                            <span>Пожаловаться</span>
+                                                        </button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <a href="login.php" class="post-menu-item post-menu-item-danger">
+                                                        <img src="icon/complaint.png" alt="">
+                                                        <span>Пожаловаться</span>
+                                                    </a>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </header>
@@ -631,6 +706,8 @@ if ($feedPosts) {
                         </article>
                     <?php endforeach; ?>
                 </div>
+                <p class="empty-state feed-tab-empty is-hidden" data-feed-empty="for-you">В разделе «Для вас» пока нет новых публикаций.</p>
+                <p class="empty-state feed-tab-empty is-hidden" data-feed-empty="following">В подписках пока нет публикаций.</p>
             <?php else: ?>
                 <p class="empty-state">Лента публикаций пустая. Добавьте первую публикацию.</p>
             <?php endif; ?>
@@ -671,9 +748,28 @@ if ($feedPosts) {
 (function () {
     var tabs = document.querySelectorAll('.home-feed-tab');
     var feedContent = document.querySelector('[data-feed-content]');
+    var feedCards = document.querySelectorAll('[data-feed-scope]');
+    var emptyStates = document.querySelectorAll('[data-feed-empty]');
 
     if (!tabs.length || !feedContent) {
         return;
+    }
+
+    function updateFeedVisibility(scope) {
+        var visibleCount = 0;
+
+        feedCards.forEach(function (card) {
+            var isVisible = card.getAttribute('data-feed-scope') === scope;
+            card.classList.toggle('is-hidden', !isVisible);
+
+            if (isVisible) {
+                visibleCount += 1;
+            }
+        });
+
+        emptyStates.forEach(function (emptyState) {
+            emptyState.classList.toggle('is-hidden', emptyState.getAttribute('data-feed-empty') !== scope || visibleCount > 0);
+        });
     }
 
     function activateTab(tab) {
@@ -688,7 +784,9 @@ if ($feedPosts) {
 
         tab.classList.add('is-active');
         tab.setAttribute('aria-selected', 'true');
-        feedContent.setAttribute('data-feed-content', tab.getAttribute('data-feed-tab') || 'for-you');
+        var scope = tab.getAttribute('data-feed-tab') || 'for-you';
+        feedContent.setAttribute('data-feed-content', scope);
+        updateFeedVisibility(scope);
         feedContent.classList.add('is-switching');
         window.setTimeout(function () {
             feedContent.classList.remove('is-switching');
@@ -707,6 +805,8 @@ if ($feedPosts) {
             }
         });
     });
+
+    updateFeedVisibility(feedContent.getAttribute('data-feed-content') || 'for-you');
 })();
 
 document.querySelectorAll('.js-open-comments-modal').forEach(function (button) {
@@ -888,6 +988,56 @@ document.addEventListener('click', function (event) {
         var wrap = menu.closest('.post-menu-wrap');
         if (wrap && !wrap.contains(event.target)) {
             menu.classList.remove('is-open');
+        }
+    });
+});
+
+document.querySelectorAll('.js-copy-post-link').forEach(function (button) {
+    button.addEventListener('click', function () {
+        var postUrl = button.getAttribute('data-post-url') || '';
+        var absoluteUrl = new URL(postUrl, window.location.href).toString();
+        var label = button.querySelector('span');
+        var defaultText = label ? label.textContent : '';
+
+        function markCopied() {
+            if (label) {
+                label.textContent = 'Ссылка скопирована';
+                window.setTimeout(function () {
+                    label.textContent = defaultText;
+                }, 1400);
+            }
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(absoluteUrl).then(markCopied).catch(function () {});
+            return;
+        }
+
+        var field = document.createElement('textarea');
+        field.value = absoluteUrl;
+        field.setAttribute('readonly', 'readonly');
+        field.style.position = 'fixed';
+        field.style.opacity = '0';
+        document.body.appendChild(field);
+        field.select();
+        try {
+            document.execCommand('copy');
+            markCopied();
+        } catch (error) {}
+        field.remove();
+    });
+});
+
+document.querySelectorAll('.js-post-menu-feedback').forEach(function (button) {
+    button.addEventListener('click', function () {
+        var label = button.querySelector('span');
+        var defaultText = label ? label.textContent : '';
+
+        if (label) {
+            label.textContent = button.getAttribute('data-feedback') || 'Готово';
+            window.setTimeout(function () {
+                label.textContent = defaultText;
+            }, 1600);
         }
     });
 });

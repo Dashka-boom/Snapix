@@ -16,7 +16,7 @@ function render_side_menu(?array $sideMenuUser = null): void
                 <img src="icon/logo.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Главная</span>
             </a>
-            <a href="#" class="side-menu-item" aria-label="Clips">
+            <a href="clips.php" class="side-menu-item" aria-label="Clips">
                 <img src="icon/dark theme/Clips.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Clips</span>
             </a>

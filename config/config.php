@@ -89,6 +89,21 @@ try {
     ");
 
     $pdo->exec("
+        CREATE TABLE IF NOT EXISTS user_blocks (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            blocker_user_id BIGINT UNSIGNED NOT NULL,
+            blocked_user_id BIGINT UNSIGNED NOT NULL,
+            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_user_blocks_pair (blocker_user_id, blocked_user_id),
+            KEY idx_user_blocks_blocker (blocker_user_id),
+            KEY idx_user_blocks_blocked (blocked_user_id),
+            CONSTRAINT fk_user_blocks_blocker FOREIGN KEY (blocker_user_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_user_blocks_blocked FOREIGN KEY (blocked_user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    ");
+
+    $pdo->exec("
         INSERT INTO moderation_reasons (code, label) VALUES
             ('spam', 'Спам'),
             ('abuse', 'Оскорбления'),
