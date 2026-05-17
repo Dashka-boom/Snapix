@@ -78,7 +78,6 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
     <section class="notifications-drawer" id="notificationsDrawer" aria-label="Уведомления" aria-hidden="true">
         <header class="notifications-drawer-header">
             <div>
-                <p class="notifications-drawer-eyebrow">Snapix</p>
                 <h2>Уведомления</h2>
             </div>
             <button type="button" class="notifications-drawer-close" data-notifications-close aria-label="Закрыть уведомления">×</button>
