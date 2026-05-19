@@ -449,8 +449,8 @@ if ($feedPosts) {
     </aside>
 
     <div class="home-feed-tabs" role="tablist" aria-label="Переключатель ленты">
-        <button type="button" class="home-feed-tab is-active" role="tab" aria-selected="true" data-feed-tab="for-you">Для вас</button>
-        <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-feed-tab="following">Подписки</button>
+        <span class="home-feed-tab is-active" role="tab" tabindex="0" aria-selected="true" data-feed-tab="for-you">Для вас</span>
+        <span class="home-feed-tab" role="tab" tabindex="-1" aria-selected="false" data-feed-tab="following">Подписки</span>
     </div>
 
     <main data-feed-content="for-you">
@@ -671,10 +671,12 @@ if ($feedPosts) {
         tabs.forEach(function (item) {
             item.classList.remove('is-active');
             item.setAttribute('aria-selected', 'false');
+            item.setAttribute('tabindex', '-1');
         });
 
         tab.classList.add('is-active');
         tab.setAttribute('aria-selected', 'true');
+        tab.setAttribute('tabindex', '0');
         feedContent.setAttribute('data-feed-content', tab.getAttribute('data-feed-tab') || 'for-you');
         feedContent.classList.add('is-switching');
         window.setTimeout(function () {
