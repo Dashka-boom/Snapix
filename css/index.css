@@ -1471,14 +1471,7 @@ h2 {
 .empty-state {
     padding: 22px 20px;
     border-radius: 18px;
-    background: #f8fafc;
-    border: 1px dashed #ccd7e2;
-}
-
-.feed-tab-empty[data-feed-empty="for-you"] {
-    background: transparent !important;
-    border: 0 !important;
-    color: #4b5563 !important;
+    background: #0d0f11;
 }
 
 .edit-profile-page {
