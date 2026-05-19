@@ -612,20 +612,24 @@ h2 {
     position: relative;
     justify-self: end;
     flex: 0 0 auto;
-    min-width: 34px;
-    margin-left: 0;
+    min-width: 24px;
+    margin-left: 12px;
 }
 
 .post-menu-toggle {
-    width: 34px;
-    height: 34px;
-    border: 1px solid #d8dfe8;
-    border-radius: 999px;
-    background: #fff;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     cursor: pointer;
     flex-shrink: 0;
-    font-size: 18px;
+    font-size: 0;
     line-height: 1;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .post-menu {
@@ -2049,17 +2053,24 @@ i,
     justify-content: center;
     opacity: 1 !important;
     visibility: visible !important;
-    background-color: var(--home-panel) !important;
-    border: 1px solid var(--home-border) !important;
-    color: var(--home-accent) !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    color: #fff !important;
+    box-shadow: none !important;
 }
 
 .post-menu-toggle:hover,
 .post-menu-toggle:focus-visible {
-    background-color: var(--home-panel) !important;
-    border-color: var(--home-accent) !important;
-    color: var(--home-accent) !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: #fff !important;
     filter: none !important;
+}
+
+.post-menu-toggle .snapix-icon-more-horizontal {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
 }
 
 .post-menu {

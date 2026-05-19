@@ -686,7 +686,7 @@ $showFollowingPanel = $panel === 'following';
                                 <div class="feed-card-header">
                                     <div class="feed-header-main"><strong><?php echo htmlspecialchars($user['login']); ?></strong></div>
                                     <div class="post-menu-wrap">
-                                        <button type="button" class="post-menu-toggle" data-post-menu="profile-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-vertical'); ?></button>
+                                        <button type="button" class="post-menu-toggle" data-post-menu="profile-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-horizontal'); ?></button>
                                         <div class="post-menu" id="profile-post-menu-<?php echo (int) $post['id']; ?>">
                                             <form method="post"><input type="hidden" name="action" value="delete_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $user['id']; ?>"><button type="submit">Удалить пост</button></form>
                                             <a href="edit-post.php?id=<?php echo (int) $post['id']; ?>">Редактировать пост</a>
@@ -833,7 +833,7 @@ $showFollowingPanel = $panel === 'following';
                                 <div class="feed-card-header">
                                     <div class="feed-header-main"><strong><?php echo htmlspecialchars($post['author_login']); ?></strong></div>
                                     <div class="post-menu-wrap">
-                                        <button type="button" class="post-menu-toggle" data-post-menu="profile-saved-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-vertical'); ?></button>
+                                        <button type="button" class="post-menu-toggle" data-post-menu="profile-saved-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-horizontal'); ?></button>
                                         <div class="post-menu" id="profile-saved-post-menu-<?php echo (int) $post['id']; ?>">
                                             <?php if ((int) $post['author_user_id'] === (int) $user['id']): ?>
                                                 <form method="post"><input type="hidden" name="action" value="delete_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $user['id']; ?>"><button type="submit">Удалить пост</button></form>
