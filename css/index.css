@@ -630,8 +630,8 @@ h2 {
 
 .post-menu {
     position: absolute;
-    right: -8px;
-    bottom: calc(100% + 10px);
+    left: -246px;
+    top: calc(100% + 10px);
     min-width: 280px;
     background: #fff;
     border: 1px solid #d8dfe8;
@@ -640,11 +640,26 @@ h2 {
     padding: 8px;
     display: none;
     z-index: 40;
+    transform: translateY(-8px);
+    opacity: 0;
 }
 
 .post-menu.is-open {
     display: grid;
     gap: 4px;
+    animation: post-menu-enter 180ms ease-out forwards;
+}
+
+@keyframes post-menu-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .post-menu a,
@@ -1475,6 +1490,12 @@ h2 {
     border: 1px dashed #ccd7e2;
 }
 
+.feed-tab-empty[data-feed-empty="for-you"] {
+    background: transparent !important;
+    border: 0 !important;
+    color: #4b5563 !important;
+}
+
 .edit-profile-page {
     display: grid;
     place-items: start center;
@@ -2042,7 +2063,7 @@ i,
 }
 
 .post-menu {
-    background: #0b0f11 !important;
+    background: #040607 !important;
     border-color: rgba(104, 197, 219, 0.2) !important;
     box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38) !important;
 }
@@ -2051,12 +2072,12 @@ i,
     content: '';
     width: 12px;
     height: 12px;
-    background: #0b0f11;
-    border-right: 1px solid rgba(104, 197, 219, 0.2);
-    border-bottom: 1px solid rgba(104, 197, 219, 0.2);
+    background: #040607;
+    border-left: 1px solid rgba(104, 197, 219, 0.2);
+    border-top: 1px solid rgba(104, 197, 219, 0.2);
     position: absolute;
-    right: 18px;
-    bottom: -7px;
+    left: 18px;
+    top: -7px;
     transform: rotate(45deg);
 }
 
