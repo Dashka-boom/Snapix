@@ -18,6 +18,7 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
         'comments' => [],
         'reposts' => [],
         'saved' => [],
+        'complaints' => [],
     ];
 
     if (!$sideMenuUser || !isset($pdo)) {
@@ -49,6 +50,16 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
     $savedStmt->execute(['user_id' => $userId]);
     $empty['saved'] = $savedStmt->fetchAll();
 
+    $complaintsStmt = $pdo->prepare("
+        SELECT user_notifications.id, user_notifications.title, user_notifications.message, user_notifications.created_at
+        FROM user_notifications
+        WHERE user_notifications.user_id = :user_id
+        ORDER BY user_notifications.created_at DESC
+        LIMIT 30
+    ");
+    $complaintsStmt->execute(['user_id' => $userId]);
+    $empty['complaints'] = $complaintsStmt->fetchAll();
+
     return $empty;
 }
 
@@ -73,11 +84,13 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
         'comments' => 'Комментарии',
         'reposts' => 'Репосты',
         'saved' => 'Избранные',
+        'complaints' => 'Жалобы',
     ];
     ?>
     <section class="notifications-drawer" id="notificationsDrawer" aria-label="Уведомления" aria-hidden="true">
         <header class="notifications-drawer-header">
             <div>
+                <p class="notifications-drawer-eyebrow">Snapix</p>
                 <h2>Уведомления</h2>
             </div>
             <button type="button" class="notifications-drawer-close" data-notifications-close aria-label="Закрыть уведомления">×</button>
@@ -155,6 +168,24 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
                     </div>
                 <?php endforeach; ?>
 
+
+                <div class="notifications-drawer-panel" data-notification-panel="complaints">
+                    <?php if ($notifications['complaints']): ?>
+                        <div class="notifications-drawer-list">
+                            <?php foreach ($notifications['complaints'] as $complaint): ?>
+                                <article class="notifications-drawer-item">
+                                    <div class="notifications-drawer-copy">
+                                        <p class="notifications-drawer-login"><?php echo htmlspecialchars((string) ($complaint['title'] ?? 'Жалоба')); ?></p>
+                                        <p><?php echo nl2br(htmlspecialchars((string) ($complaint['message'] ?? ''))); ?></p>
+                                    </div>
+                                </article>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="notifications-drawer-empty">Жалоб пока нет.</p>
+                    <?php endif; ?>
+                </div>
+
                 <div class="notifications-drawer-panel" data-notification-panel="comments">
                     <?php if ($notifications['comments']): ?>
                         <div class="notifications-drawer-list">
@@ -184,6 +215,8 @@ function render_side_menu(?array $sideMenuUser = null): void
     $profileUrl = $sideMenuUser ? 'profile.php' : 'login.php';
     $profileName = $sideMenuUser ? (string) ($sideMenuUser['login'] ?? 'Профиль') : 'Войти';
     $avatar = $sideMenuUser['avatar'] ?? '';
+    $clipsUrl = $sideMenuUser ? 'clips.php' : 'login.php';
+    $notificationsUrl = $sideMenuUser ? 'connections.php?view=requests' : 'login.php';
     ?>
     <aside class="side-menu" aria-label="Основное меню">
         <button type="button" class="side-menu-toggle" aria-label="Меню">
@@ -196,11 +229,11 @@ function render_side_menu(?array $sideMenuUser = null): void
                 <img src="icon/logo.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Главная</span>
             </a>
-            <a href="clips.php" class="side-menu-item" aria-label="Clips">
+            <a href="<?php echo htmlspecialchars($clipsUrl, ENT_QUOTES); ?>" class="side-menu-item" aria-label="Clips">
                 <img src="icon/dark theme/Clips.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Clips</span>
             </a>
-            <a href="connections.php?view=requests" class="side-menu-item" aria-label="Уведомления" data-notifications-trigger aria-controls="notificationsDrawer" aria-expanded="false">
+            <a href="<?php echo htmlspecialchars($notificationsUrl, ENT_QUOTES); ?>" class="side-menu-item" aria-label="Уведомления"<?php if ($sideMenuUser): ?> data-notifications-trigger aria-controls="notificationsDrawer" aria-expanded="false"<?php endif; ?>>
                 <img src="icon/dark theme/notification.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Уведомления</span>
             </a>
@@ -238,11 +271,13 @@ function render_side_menu(?array $sideMenuUser = null): void
             <?php endif; ?>
             <span class="side-menu-label side-menu-profile-name"><?php echo htmlspecialchars($profileName); ?></span>
         </a>
-        <button type="button" class="side-menu-account-toggle" aria-label="Открыть меню аккаунта">•••</button>
-        <div class="side-menu-account-modal" role="dialog" aria-label="Меню аккаунта">
-            <a href="login.php">Поменять аккаунт</a>
-            <a href="logout.php">Выйти из учётной записи</a>
-        </div>
+        <?php if ($sideMenuUser): ?>
+            <button type="button" class="side-menu-account-toggle" aria-label="Открыть меню аккаунта">•••</button>
+            <div class="side-menu-account-modal" role="dialog" aria-label="Меню аккаунта">
+                <a href="login.php">Поменять аккаунт</a>
+                <a href="logout.php">Выйти из учётной записи</a>
+            </div>
+        <?php endif; ?>
     </aside>
     <?php render_notifications_drawer($sideMenuUser); ?>
     <script src="js/notifications-drawer.js" defer></script>

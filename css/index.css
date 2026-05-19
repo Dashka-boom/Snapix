@@ -812,10 +812,23 @@ h2 {
 }
 
 .feed-card-buttons {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: nowrap;
+}
+
+.feed-card-buttons-group {
     display: flex;
     align-items: flex-start;
     gap: 18px;
     flex-wrap: nowrap;
+}
+
+.feed-card-buttons-right {
+    margin-left: auto;
 }
 
 .feed-action-item {
