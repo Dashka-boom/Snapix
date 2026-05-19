@@ -3,6 +3,7 @@ session_start();
 require './config/config.php';
 require './includes/icons.php';
 require './includes/post-actions.php';
+require_once './includes/side-menu.php';
 
 function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
 {
@@ -434,65 +435,7 @@ if ($feedPosts) {
     <title>Snapix</title>
 </head>
 <body data-page="home">
-    <aside class="side-menu" aria-label="Основное меню">
-        <button type="button" class="side-menu-toggle" aria-label="Меню">
-            <img src="icon/dark theme/menu.png" alt="" class="side-menu-icon">
-            <span class="side-menu-label">Меню</span>
-        </button>
-
-        <nav class="side-menu-nav" aria-label="Навигация по сайту">
-            <a href="index.php" class="side-menu-item" aria-label="Главная">
-                <img src="icon/logo.png" alt="" class="side-menu-icon">
-                <span class="side-menu-label">Главная</span>
-            </a>
-            <a href="clips.php" class="side-menu-item" aria-label="Clips">
-                <img src="icon/dark theme/Clips.png" alt="" class="side-menu-icon">
-                <span class="side-menu-label">Clips</span>
-            </a>
-            <a href="connections.php?view=requests" class="side-menu-item" aria-label="Уведомления">
-                <img src="icon/dark theme/notification.png" alt="" class="side-menu-icon">
-                <span class="side-menu-label">Уведомления</span>
-            </a>
-            <a href="#" class="side-menu-item" aria-label="Поиск">
-                <img src="icon/dark theme/search.png" alt="" class="side-menu-icon">
-                <span class="side-menu-label">Поиск</span>
-            </a>
-            <a href="chat.php" class="side-menu-item" aria-label="Чат">
-                <img src="icon/dark theme/chat.png" alt="" class="side-menu-icon">
-                <span class="side-menu-label">Чат</span>
-            </a>
-            <a href="profile.php" class="side-menu-item" aria-label="Закладки">
-                <img src="icon/dark theme/favourites.png" alt="" class="side-menu-icon">
-                <span class="side-menu-label">Закладки</span>
-            </a>
-            <button type="button" class="side-menu-item side-menu-button" aria-label="Темная тема">
-                <img src="icon/dark theme/dark theme.png" alt="" class="side-menu-icon">
-                <span class="side-menu-label">Темная тема</span>
-            </button>
-            <a href="#" class="side-menu-item" aria-label="Интересное">
-                <img src="icon/dark theme/new.png" alt="" class="side-menu-icon">
-                <span class="side-menu-label">Интересное</span>
-            </a>
-            <a href="edit-profile.php" class="side-menu-item" aria-label="Настройки">
-                <img src="icon/dark theme/settings.png" alt="" class="side-menu-icon">
-                <span class="side-menu-label">Настройки</span>
-            </a>
-        </nav>
-
-        <a href="<?php echo $user ? 'profile.php' : 'login.php'; ?>" class="side-menu-profile" aria-label="Профиль пользователя">
-            <?php if ($user && !empty($user['avatar'])): ?>
-                <span class="side-menu-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></span>
-            <?php else: ?>
-                <span class="side-menu-avatar"><?php echo $user ? htmlspecialchars(mb_substr($user['login'], 0, 1)) : 'S'; ?></span>
-            <?php endif; ?>
-            <span class="side-menu-label side-menu-profile-name"><?php echo $user ? htmlspecialchars($user['login']) : 'Войти'; ?></span>
-        </a>
-        <button type="button" class="side-menu-account-toggle" aria-label="Открыть меню аккаунта">•••</button>
-        <div class="side-menu-account-modal" role="dialog" aria-label="Меню аккаунта">
-            <a href="login.php">Поменять аккаунт</a>
-            <a href="logout.php">Выйти из учётной записи</a>
-        </div>
-    </aside>
+    <?php render_side_menu($user); ?>
 
     <div class="home-feed-tabs" role="tablist" aria-label="Переключатель ленты">
         <button type="button" class="home-feed-tab is-active" role="tab" aria-selected="true" data-feed-tab="for-you">Для вас</button>
@@ -620,49 +563,57 @@ if ($feedPosts) {
 
                                     <?php if ($user): ?>
                                         <div class="feed-card-buttons">
-                                            <div class="feed-action-item">
-                                                <form method="post" class="inline-action-form">
-                                                    <input type="hidden" name="action" value="toggle_like">
-                                                    <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                    <button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt=""></button>
-                                                </form>
-                                                <span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span>
+                                            <div class="feed-card-buttons-group feed-card-buttons-left">
+                                                <div class="feed-action-item">
+                                                    <form method="post" class="inline-action-form">
+                                                        <input type="hidden" name="action" value="toggle_like">
+                                                        <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                        <button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt=""></button>
+                                                    </form>
+                                                    <span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span>
+                                                </div>
+
+                                                <div class="feed-action-item">
+                                                    <button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button>
+                                                    <span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span>
+                                                </div>
+
+                                                <div class="feed-action-item">
+                                                    <form method="post" class="inline-action-form">
+                                                        <input type="hidden" name="action" value="add_repost">
+                                                        <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                        <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt=""></button>
+                                                    </form>
+                                                    <span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span>
+                                                </div>
                                             </div>
 
-                                            <div class="feed-action-item">
-                                                <button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button>
-                                                <span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span>
-                                            </div>
+                                            <div class="feed-card-buttons-group feed-card-buttons-right">
+                                                <div class="feed-action-item">
+                                                    <form method="post" class="inline-action-form">
+                                                        <input type="hidden" name="action" value="toggle_save">
+                                                        <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                        <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt=""></button>
+                                                    </form>
+                                                    <span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span>
+                                                </div>
 
-                                            <div class="feed-action-item">
-                                                <form method="post" class="inline-action-form">
-                                                    <input type="hidden" name="action" value="toggle_save">
-                                                    <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                    <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt=""></button>
-                                                </form>
-                                                <span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span>
-                                            </div>
-
-                                            <div class="feed-action-item">
-                                                <form method="post" class="inline-action-form">
-                                                    <input type="hidden" name="action" value="add_repost">
-                                                    <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                    <button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt=""></button>
-                                                </form>
-                                                <span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span>
-                                            </div>
-
-                                            <div class="feed-action-item">
-                                                <button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><img src="icon/dark theme/share.png" alt=""></button>
+                                                <div class="feed-action-item">
+                                                    <button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><img src="icon/dark theme/share.png" alt=""></button>
+                                                </div>
                                             </div>
                                         </div>
                                     <?php else: ?>
                                         <div class="feed-card-buttons">
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><img src="icon/dark theme/like.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><img src="icon/dark theme/repost.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для отправки в сообщения"><img src="icon/dark theme/share.png" alt=""></a></div>
+                                            <div class="feed-card-buttons-group feed-card-buttons-left">
+                                                <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><img src="icon/dark theme/like.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                                <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
+                                                <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><img src="icon/dark theme/repost.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                            </div>
+                                            <div class="feed-card-buttons-group feed-card-buttons-right">
+                                                <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                                <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для отправки в сообщения"><img src="icon/dark theme/share.png" alt=""></a></div>
+                                            </div>
                                         </div>
                                     <?php endif; ?>
                                 </div>
