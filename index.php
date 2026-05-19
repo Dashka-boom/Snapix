@@ -470,7 +470,7 @@ if ($feedPosts) {
                     <?php foreach ($feedPosts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                        <?php $authorProfileUrl = buildProfileUrl((int) $post['user_id'], $user ? (int) $user['id'] : null); ?>
+                        <?php $authorProfileUrl = $user ? buildProfileUrl((int) $post['user_id'], (int) $user['id']) : 'login.php'; ?>
                         <?php $feedScope = (int) $post['is_following_author'] > 0 ? 'following' : 'for-you'; ?>
                         <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
                             <header class="feed-card-header">
