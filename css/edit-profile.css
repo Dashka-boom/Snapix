@@ -316,3 +316,63 @@
 .summary-copy h1,.summary-copy p,.status,.field label{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
 .field input,.field textarea,.field select{background:#000!important;color:#fff!important;border:1px solid transparent!important;background-image:linear-gradient(#000,#000),linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;background-origin:border-box!important;background-clip:padding-box,border-box!important}
 .upload-trigger,.primary-link,.secondary-link{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;color:#111!important;border:0!important}
+
+/* Final unified Snapix edit-profile palette */
+:root {
+    --snapix-bg: #040607;
+    --snapix-accent: #68C5DB;
+    --snapix-text: #ffffff;
+}
+
+.edit-profile-page,
+.edit-preview-shell,
+.edit-preview-summary,
+.form-card,
+.edit-profile-cover,
+.edit-avatar-shell,
+.edit-avatar {
+    background: var(--snapix-bg) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
+    box-shadow: none !important;
+}
+
+.summary-copy h1,
+.summary-copy p,
+.status,
+.field label,
+.checkbox-field,
+a {
+    color: var(--snapix-text) !important;
+}
+
+a:hover {
+    color: var(--snapix-accent) !important;
+}
+
+.field input,
+.field textarea,
+.field select {
+    background: var(--snapix-bg) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
+}
+
+.upload-trigger,
+.primary-link,
+.secondary-link {
+    background: var(--snapix-accent) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.upload-trigger:hover,
+.primary-link:hover,
+.secondary-link:hover {
+    background: var(--snapix-accent) !important;
+    filter: brightness(0.95);
+    box-shadow: none !important;
+    transform: none !important;
+}
