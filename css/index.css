@@ -2066,6 +2066,10 @@ body.has-side-menu {
     transition: width 0.28s ease;
 }
 
+.side-menu::-webkit-scrollbar {
+    display: none;
+}
+
 .side-menu:hover,
 .side-menu:focus-within {
     width: 222px;
