@@ -215,6 +215,8 @@ function render_side_menu(?array $sideMenuUser = null): void
     $profileUrl = $sideMenuUser ? 'profile.php' : 'login.php';
     $profileName = $sideMenuUser ? (string) ($sideMenuUser['login'] ?? 'Профиль') : 'Войти';
     $avatar = $sideMenuUser['avatar'] ?? '';
+    $clipsUrl = $sideMenuUser ? 'clips.php' : 'login.php';
+    $notificationsUrl = $sideMenuUser ? 'connections.php?view=requests' : 'login.php';
     ?>
     <aside class="side-menu" aria-label="Основное меню">
         <button type="button" class="side-menu-toggle" aria-label="Меню">
@@ -227,11 +229,11 @@ function render_side_menu(?array $sideMenuUser = null): void
                 <img src="icon/logo.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Главная</span>
             </a>
-            <a href="clips.php" class="side-menu-item" aria-label="Clips">
+            <a href="<?php echo htmlspecialchars($clipsUrl, ENT_QUOTES); ?>" class="side-menu-item" aria-label="Clips">
                 <img src="icon/dark theme/Clips.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Clips</span>
             </a>
-            <a href="connections.php?view=requests" class="side-menu-item" aria-label="Уведомления" data-notifications-trigger aria-controls="notificationsDrawer" aria-expanded="false">
+            <a href="<?php echo htmlspecialchars($notificationsUrl, ENT_QUOTES); ?>" class="side-menu-item" aria-label="Уведомления"<?php if ($sideMenuUser): ?> data-notifications-trigger aria-controls="notificationsDrawer" aria-expanded="false"<?php endif; ?>>
                 <img src="icon/dark theme/notification.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Уведомления</span>
             </a>
