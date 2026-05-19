@@ -18,6 +18,7 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
         'comments' => [],
         'reposts' => [],
         'saved' => [],
+        'complaints' => [],
     ];
 
     if (!$sideMenuUser || !isset($pdo)) {
@@ -49,6 +50,16 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
     $savedStmt->execute(['user_id' => $userId]);
     $empty['saved'] = $savedStmt->fetchAll();
 
+    $complaintsStmt = $pdo->prepare("
+        SELECT user_notifications.id, user_notifications.title, user_notifications.message, user_notifications.created_at
+        FROM user_notifications
+        WHERE user_notifications.user_id = :user_id
+        ORDER BY user_notifications.created_at DESC
+        LIMIT 30
+    ");
+    $complaintsStmt->execute(['user_id' => $userId]);
+    $empty['complaints'] = $complaintsStmt->fetchAll();
+
     return $empty;
 }
 
@@ -73,6 +84,7 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
         'comments' => 'Комментарии',
         'reposts' => 'Репосты',
         'saved' => 'Избранные',
+        'complaints' => 'Жалобы',
     ];
     ?>
     <section class="notifications-drawer" id="notificationsDrawer" aria-label="Уведомления" aria-hidden="true">
@@ -155,6 +167,24 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
+
+
+                <div class="notifications-drawer-panel" data-notification-panel="complaints">
+                    <?php if ($notifications['complaints']): ?>
+                        <div class="notifications-drawer-list">
+                            <?php foreach ($notifications['complaints'] as $complaint): ?>
+                                <article class="notifications-drawer-item">
+                                    <div class="notifications-drawer-copy">
+                                        <p class="notifications-drawer-login"><?php echo htmlspecialchars((string) ($complaint['title'] ?? 'Жалоба')); ?></p>
+                                        <p><?php echo nl2br(htmlspecialchars((string) ($complaint['message'] ?? ''))); ?></p>
+                                    </div>
+                                </article>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="notifications-drawer-empty">Жалоб пока нет.</p>
+                    <?php endif; ?>
+                </div>
 
                 <div class="notifications-drawer-panel" data-notification-panel="comments">
                     <?php if ($notifications['comments']): ?>
