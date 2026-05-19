@@ -110,11 +110,11 @@ function getDialogs(PDO $pdo, int $userId): array
 
 function getMessages(PDO $pdo, int $chatId, int $userId): array
 {
-    $markReadStmt = $pdo->prepare('UPDATE messages SET is_read = 1 WHERE chat_id = :chat_id AND sender_id != :user_id AND is_read = 0');
-    $markReadStmt->execute([
-        'chat_id' => $chatId,
-        'user_id' => $userId,
-    ]);
+   $markReadStmt = $pdo->prepare('UPDATE messages SET is_read = 1 WHERE chat_id = :chat_id AND sender_id != :user_id AND is_read = 0');
+$markReadStmt->execute([
+    'chat_id' => $chatId,
+    'user_id' => $userId,
+]);
 
     $messagesStmt = $pdo->prepare('
         SELECT
@@ -348,12 +348,18 @@ if ($action === 'send') {
         exit;
     }
 
+    // проверка reply
     if ($replyToMessageId > 0) {
-        $replyExistsStmt = $pdo->prepare('SELECT id FROM messages WHERE id = :message_id AND chat_id = :chat_id LIMIT 1');
+        $replyExistsStmt = $pdo->prepare('
+            SELECT id FROM messages 
+            WHERE id = :message_id AND chat_id = :chat_id 
+            LIMIT 1
+        ');
         $replyExistsStmt->execute([
             'message_id' => $replyToMessageId,
             'chat_id' => $chatId,
         ]);
+
         if (!$replyExistsStmt->fetchColumn()) {
             $replyToMessageId = 0;
         }
@@ -382,7 +388,8 @@ if ($action === 'send') {
         ]);
         exit;
     }
-}
+    }
+
 
 if ($action === 'edit' && $chatBelongsToUser) {
     $messageId = (int) ($_POST['message_id'] ?? 0);
