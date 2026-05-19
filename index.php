@@ -488,7 +488,7 @@ if ($feedPosts) {
                                         </a>
                                         <?php if ($user): ?>
                                         <div class="post-menu-wrap">
-                                            <button type="button" class="post-menu-toggle" data-post-menu="post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-vertical'); ?></button>
+                                            <button type="button" class="post-menu-toggle" data-post-menu="post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-horizontal'); ?></button>
                                             <div class="post-menu" id="post-menu-<?php echo (int) $post['id']; ?>">
                                                 <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="post-menu-item">
                                                     <img src="icon/dark theme/об аккаунте.png" alt="">

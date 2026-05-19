@@ -624,7 +624,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                     <div class="feed-card-header">
                                         <div class="feed-header-main"><strong><?php echo htmlspecialchars($profileUser['login']); ?></strong></div>
                                         <div class="post-menu-wrap">
-                                            <button type="button" class="post-menu-toggle" data-post-menu="user-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-vertical'); ?></button>
+                                            <button type="button" class="post-menu-toggle" data-post-menu="user-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-horizontal'); ?></button>
                                             <div class="post-menu" id="user-post-menu-<?php echo (int) $post['id']; ?>">
                                                 <?php if ($currentUser): ?>
                                                     <form method="post"><input type="hidden" name="action" value="report_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit">Жалоба на пост</button></form>
