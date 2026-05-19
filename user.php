@@ -805,7 +805,10 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 fetch(form.getAttribute('action') || window.location.href, {
                     method: 'POST',
                     credentials: 'same-origin',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
                     body: params.toString(),
                 })
                 .then((response) => response.json())

@@ -688,7 +688,10 @@ document.querySelectorAll('form.inline-action-form input[name="action"][value="a
         fetch(form.getAttribute('action') || window.location.href, {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
             body: new URLSearchParams(formData).toString()
         })
         .then(function (response) { return response.json(); })

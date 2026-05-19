@@ -265,7 +265,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var socketReady = false;
     var socketConnecting = false;
     var socketUrlIndex = 0;
-    var socketUrls = ['ws://127.0.0.1:8090'];
+    var socketUrls = ['ws://' + window.location.hostname + ':8090'];
     var fallbackTimeoutId = null;
     var reactionEmojis = ['❤️', '😂', '👍', '🔥', '😢', '😮'];
     var activeReactionMessageId = 0;
@@ -520,6 +520,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             })
                 .then(function (response) { return response.json(); })
                 .then(function (data) {
+                console.log('SEND RESPONSE:', data);
                     if (data.ok) {
                         messageInput.value = '';
                         clearReply();
@@ -814,17 +815,24 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         fallbackTimeoutId = null;
     }
 
-    function notifySocketAboutNewMessage(messageId) {
-        if (!socketReady || !socket || socket.readyState !== WebSocket.OPEN || !activeChatId) {
-            return;
-        }
+ function notifySocketAboutNewMessage(messageId) {
+    console.log('WS TRY SEND', messageId, socket, socket?.readyState);
 
-        socket.send(JSON.stringify({
-            type: 'new_message',
-            chat_id: activeChatId,
-            message_id: Number(messageId || 0)
-        }));
+    if (!activeChatId) return;
+
+    var payload = JSON.stringify({
+        type: 'new_message',
+        chat_id: activeChatId,
+        message_id: Number(messageId || 0)
+    });
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        console.log('WS SENT');
+        socket.send(payload);
+    } else {
+        console.log('WS NOT READY');
     }
+}
 
     function initWebSocket() {
         if (!window.WebSocket || !activeChatId) {
@@ -862,6 +870,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         }
 
         socket.addEventListener('open', function () {
+            console.log('WS OPEN');
             opened = true;
             socketConnecting = false;
             socketReady = true;
