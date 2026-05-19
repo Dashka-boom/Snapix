@@ -557,141 +557,101 @@
     }
 }
 
-/* Unified Snapix chat theme */
+.chat-shell,.chat-thread,.chat-dialogs,.chat-thread-header,.chat-pinned{background:#2d2d30;color:#f4f4f5}
+.chat-dialogs,.chat-thread-header,.chat-pinned{border-color:#434349}
+.dialog-item{color:#f4f4f5}
+.dialog-item:hover,.dialog-item.is-active{background:#35353a}
+.dialog-avatar,.chat-shared-avatar{background:#3b3b40;color:#fad330}
+.dialog-content small,.chat-message time,.chat-shared-caption{color:#a1a1aa}
+.chat-message.is-mine,.chat-message-row.is-mine .chat-message{background:#fad330;color:#1f1f1f}
+.chat-message.is-theirs,.chat-message-row.is-theirs .chat-message{background:#3a3a3f;color:#f4f4f5}
+.chat-shared-card{background:#2f2f34;border-color:#4b4b52;color:#f4f4f5}
+.chat-shared-post,.chat-shared-author{color:#fad330}
+.chat-message-menu-trigger,.chat-reaction-trigger{color:#fff}
+
+.chat-shell,.chat-thread,.chat-dialogs,.chat-thread-header,.chat-pinned{background:#161322;color:#f5f3ff}
+.chat-dialogs,.chat-thread-header,.chat-pinned{border-color:#34284f}
+.dialog-item:hover,.dialog-item.is-active{background:#221a35}
+.dialog-avatar,.chat-shared-avatar{background:#2a2140;color:#d7bfff}
+.chat-message.is-mine,.chat-message-row.is-mine .chat-message{background:#3b2039;color:#f7f2ff}
+.chat-message.is-theirs,.chat-message-row.is-theirs .chat-message{background:#241c36;color:#f5f3ff}
+.chat-shared-card{background:#1a1628;border-color:#3b2d5c;color:#f5f3ff}
+.chat-shared-post,.chat-shared-author{color:#c8a7ff}
+.dialog-content small,.chat-message time,.chat-shared-caption,.chat-empty,.chat-placeholder{color:#b7b1cc}
+
+.chat-shell,.chat-thread,.chat-dialogs,.chat-thread-header,.chat-pinned,.chat-forward-dialog{background:#2a2227!important;color:#fff!important}
+.chat-dialogs,.chat-thread-header,.chat-pinned,.chat-forward-user,.chat-shared-card{border-color:#3a3137!important}
+.dialog-item,.chat-shared-card{color:#fff!important}
+.dialog-item:hover,.dialog-item.is-active{background:#1f191d!important}
+.dialog-content small,.chat-message time,.chat-shared-caption,.chat-empty,.chat-placeholder{color:#b3b3b3!important}
+.chat-message.is-mine,.chat-message-row.is-mine .chat-message{background:#6926be!important;color:#fff!important}
+.chat-message.is-theirs,.chat-message-row.is-theirs .chat-message{background:#1f191d!important;color:#fff!important}
+.chat-message-menu-trigger,.chat-reaction-trigger,.chat-shared-post,.chat-shared-author{color:#6926be!important}
+
+.chat-shell,.chat-thread,.chat-dialogs,.chat-thread-header,.chat-pinned,.chat-forward-dialog{background:#2a2328!important;color:#fff!important}
+.chat-dialogs,.chat-thread-header,.chat-pinned,.chat-forward-user,.chat-shared-card{border-color:#3a3338!important}
+.dialog-item,.chat-shared-card{color:#fff!important}
+.dialog-item:hover,.dialog-item.is-active{background:#1f1a20!important}
+.dialog-content small,.chat-message time,.chat-shared-caption,.chat-empty,.chat-placeholder{color:#b3b3b3!important}
+.chat-message.is-mine,.chat-message-row.is-mine .chat-message{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;color:#111!important}
+.chat-message.is-theirs,.chat-message-row.is-theirs .chat-message{background:#1a1619!important;color:#fff!important}
+.chat-message-menu-trigger,.chat-reaction-trigger{color:#fff!important}
+.chat-shared-post,.chat-shared-author,.chat-reaction.is-active{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb);-webkit-background-clip:text;background-clip:text;color:transparent!important}
+
+.chat-shell,.chat-thread,.chat-dialogs,.chat-thread-header,.chat-pinned,.chat-forward-dialog,.chat-shared-card,.chat-forward-user{background:#000!important;border-color:#000!important;color:#fff!important}
+.dialog-item:hover,.dialog-item.is-active{background:#000!important}
+.chat-message.is-mine,.chat-message-row.is-mine .chat-message{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;color:#111!important}
+.chat-message.is-theirs,.chat-message-row.is-theirs .chat-message{background:#000!important;color:#fff!important;border:1px solid transparent!important;background-image:linear-gradient(#000,#000),linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;background-origin:border-box!important;background-clip:padding-box,border-box!important}
+.chat-message-menu-trigger,.chat-reaction-trigger,.chat-shared-post,.chat-shared-author,.dialog-content small,.chat-message time,.chat-shared-caption,.chat-empty,.chat-placeholder{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
+
+/* Final unified Snapix chat palette */
 :root {
-    --home-bg: #040607;
-    --home-surface: #040607;
-    --home-header: #040607;
-    --home-accent: #68C5DB;
-    --home-text: #ffffff;
-    --home-secondary-text: #aeb8bc;
-    --home-border: rgba(104, 197, 219, 0.2);
-    --home-panel: #0b0f11;
-    --home-message-other: #111517;
+    --snapix-bg: #040607;
+    --snapix-accent: #68C5DB;
+    --snapix-text: #ffffff;
 }
 
-html,
-body,
-.chat-shell {
-    background-color: var(--home-bg) !important;
-    color: var(--home-text) !important;
-}
-
-.chat-dialogs,
+.chat-shell,
 .chat-thread,
+.chat-dialogs,
 .chat-thread-header,
 .chat-pinned,
 .chat-forward-dialog,
 .chat-shared-card,
 .chat-forward-user,
-.dialog-item {
-    background-color: var(--home-panel) !important;
-    border-color: var(--home-border) !important;
-    color: var(--home-text) !important;
+.dialog-item,
+.chat-message.is-theirs,
+.chat-message-row.is-theirs .chat-message {
+    background: var(--snapix-bg) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
     box-shadow: none !important;
-}
-
-.chat-dialogs {
-    border-right: 1px solid var(--home-border) !important;
-}
-
-.chat-thread-header,
-.chat-pinned {
-    border-bottom: 1px solid var(--home-border) !important;
-}
-
-.dialog-item + .dialog-item,
-.chat-forward-user + .chat-forward-user {
-    border-top: 1px solid var(--home-border) !important;
 }
 
 .chat-message.is-mine,
-.chat-message-row.is-mine .chat-message {
-    background: var(--home-accent) !important;
-    border-color: var(--home-accent) !important;
-    color: var(--home-bg) !important;
-    box-shadow: none !important;
-}
-
-.chat-message.is-theirs,
-.chat-message-row.is-theirs .chat-message {
-    background: var(--home-message-other) !important;
-    border: 1px solid var(--home-border) !important;
-    color: var(--home-text) !important;
-    box-shadow: none !important;
-}
-
+.chat-message-row.is-mine .chat-message,
 .dialog-item:hover,
 .dialog-item.is-active {
-    background-color: var(--home-message-other) !important;
-    color: var(--home-text) !important;
+    background: var(--snapix-accent) !important;
+    border-color: var(--snapix-accent) !important;
+    color: var(--snapix-text) !important;
 }
 
 .dialog-content small,
 .chat-message time,
 .chat-shared-caption,
 .chat-empty,
-.chat-placeholder {
-    color: var(--home-secondary-text) !important;
-}
-
+.chat-placeholder,
 .chat-message-menu-trigger,
 .chat-reaction-trigger,
 .chat-shared-post,
 .chat-shared-author,
 a {
-    color: var(--home-text) !important;
+    color: var(--snapix-text) !important;
 }
 
 a:hover,
 .chat-message-menu-trigger:hover,
 .chat-reaction-trigger:hover {
-    color: var(--home-accent) !important;
-}
-
-button,
-[type="submit"] {
-    background-color: var(--home-accent) !important;
-    border-color: var(--home-accent) !important;
-    color: var(--home-bg) !important;
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-@media (max-width: 900px) {
-    .chat-dialogs {
-        border-bottom: 1px solid var(--home-border) !important;
-    }
-}
-
-/* Unified theme chat refinements */
-.chat-message-menu,
-.chat-reaction-panel,
-.chat-reaction-panel::after,
-.chat-forward-modal-card,
-.chat-reaction-badge,
-.chat-reply-chip,
-.chat-shared-avatar {
-    background: var(--home-panel) !important;
-    border-color: var(--home-border) !important;
-    color: var(--home-text) !important;
-    box-shadow: none !important;
-}
-
-.chat-message-menu-item,
-.chat-forward-head button {
-    background: transparent !important;
-    color: var(--home-text) !important;
-}
-
-.chat-message-menu-item:hover,
-.chat-reaction-badge.is-active {
-    background: var(--home-message-other) !important;
-    border-color: var(--home-accent) !important;
-    color: var(--home-text) !important;
-}
-
-.chat-forward-modal {
-    background: rgba(0, 0, 0, 0.45) !important;
-    backdrop-filter: blur(3px);
+    color: var(--snapix-accent) !important;
 }
