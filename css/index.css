@@ -1475,6 +1475,12 @@ h2 {
     border: 1px dashed #ccd7e2;
 }
 
+.feed-tab-empty[data-feed-empty="for-you"] {
+    background: transparent !important;
+    border: 0 !important;
+    color: #4b5563 !important;
+}
+
 .edit-profile-page {
     display: grid;
     place-items: start center;
