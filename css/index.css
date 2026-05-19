@@ -593,19 +593,26 @@ h2 {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     padding: 16px;
 }
 
 .feed-header-main {
     display: flex;
     align-items: center;
+    flex: 1 1 0;
     gap: 10px;
     min-width: 0;
+    overflow: hidden;
 }
 
 .post-menu-wrap {
     position: relative;
     flex: 0 0 auto;
+    min-width: 34px;
+    margin-left: 12px;
 }
 
 .post-menu-toggle {
@@ -615,6 +622,7 @@ h2 {
     border-radius: 999px;
     background: #fff;
     cursor: pointer;
+    flex-shrink: 0;
     font-size: 18px;
     line-height: 1;
 }
@@ -662,6 +670,35 @@ h2 {
 .comment-author,
 .saved-post-author {
     text-decoration: none;
+}
+
+.feed-author-avatar-link {
+    flex: 0 0 auto;
+}
+
+.feed-header-main > div {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.feed-header-main > strong,
+.feed-author-name {
+    display: block;
+    flex: 1 1 auto;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding-right: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.feed-author-name strong {
+    overflow: visible;
+    text-overflow: inherit;
+    white-space: inherit;
 }
 
 .feed-author-avatar {
@@ -1912,8 +1949,102 @@ i,
     filter: none !important;
 }
 
+
+.home-feed-tabs {
+    width: 100%;
+    margin: 0;
+    padding: 8px 18px 18px;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
+    background: rgba(4, 6, 7, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 16px 36px rgba(4, 6, 7, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 34px;
+    position: sticky;
+    top: 0;
+    z-index: 120;
+}
+
+.home-feed-tab {
+    min-width: 96px;
+    padding: 14px 0 2px;
+    border: 0 !important;
+    border-radius: 0;
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #ffffff !important;
+    cursor: pointer;
+    font: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    position: relative;
+    transition: color 0.2s ease;
+}
+
+.home-feed-tab::after {
+    content: '';
+    width: 30px;
+    height: 2px;
+    border-radius: 999px;
+    background: #68C5DB;
+    position: absolute;
+    left: 50%;
+    bottom: -18px;
+    opacity: 0;
+    transform: translateX(-50%) scaleX(0.5);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.home-feed-tab:hover,
+.home-feed-tab:focus-visible,
+.home-feed-tab.is-active {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+    outline: none;
+}
+
+.home-feed-tab.is-active::after {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1);
+}
+
+main[data-feed-content] {
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+main[data-feed-content].is-switching {
+    opacity: 0.72;
+    transform: translateY(2px);
+}
+
+
+.page-glass-nav {
+    width: 100%;
+    min-height: 54px;
+    margin: 0;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
+    background: rgba(4, 6, 7, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 16px 36px rgba(4, 6, 7, 0.18);
+    position: sticky;
+    top: 0;
+    z-index: 120;
+}
+
 /* Collapsible left-side menu for the homepage */
-body[data-page="home"] {
+body[data-page="home"],
+body.has-side-menu {
     padding-left: 80px;
 }
 
@@ -1931,10 +2062,7 @@ body[data-page="home"] {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    overflow: hidden;
     transition: width 0.28s ease;
 }
 
@@ -1981,6 +2109,7 @@ body[data-page="home"] {
 
 .side-menu-nav {
     margin-top: 24px;
+    padding-bottom: 15px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -2024,10 +2153,88 @@ body[data-page="home"] {
     margin-top: auto;
 }
 
+.side-menu-account-toggle {
+    width: 38px;
+    height: 38px;
+    border: 0 !important;
+    border-radius: 999px;
+    background: transparent !important;
+    color: #fff !important;
+    font: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    line-height: 1;
+    position: absolute;
+    right: 18px;
+    bottom: 27px;
+    opacity: 0;
+    transform: translateX(-8px);
+    cursor: pointer;
+    transition: opacity 0.22s ease, transform 0.22s ease, background-color 0.2s ease;
+    pointer-events: none;
+}
+
+.side-menu:hover .side-menu-account-toggle,
+.side-menu:focus-within .side-menu-account-toggle {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.side-menu-account-toggle:hover,
+.side-menu-account-toggle:focus-visible {
+    background: rgba(255, 255, 255, 0.08) !important;
+    outline: none;
+}
+
+.side-menu-account-modal {
+    width: 190px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    background: rgba(31, 41, 55, 0.96);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+    display: grid;
+    gap: 4px;
+    position: absolute;
+    right: 12px;
+    bottom: 72px;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.side-menu-account-toggle:focus + .side-menu-account-modal,
+.side-menu-account-toggle:focus-visible + .side-menu-account-modal,
+.side-menu-account-modal:hover,
+.side-menu-account-modal:focus-within {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.side-menu-account-modal a {
+    padding: 10px 12px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-decoration: none;
+}
+
+.side-menu-account-modal a:hover,
+.side-menu-account-modal a:focus-visible {
+    background: rgba(255, 255, 255, 0.1);
+    outline: none;
+}
+
 .side-menu-avatar {
-    width: 36px;
-    height: 36px;
-    flex: 0 0 36px;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.24);
     background: linear-gradient(135deg, #1f2937 0%, #68C5DB 100%);
@@ -2037,7 +2244,7 @@ body[data-page="home"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     overflow: hidden;
 }
@@ -2048,7 +2255,8 @@ body[data-page="home"] {
 }
 
 @media (max-width: 768px) {
-    body[data-page="home"] {
+    body[data-page="home"],
+    body.has-side-menu {
         padding-left: 66px;
     }
 
@@ -2070,6 +2278,25 @@ body[data-page="home"] {
         border-radius: 14px;
         padding: 0 10px;
         gap: 12px;
+    }
+
+
+
+    .page-glass-nav {
+        min-height: 50px;
+    }
+
+    .home-feed-tabs {
+        width: 100%;
+        margin-left: 0;
+        padding: 7px 14px 16px;
+        gap: 22px;
+    }
+
+    .home-feed-tab {
+        min-width: 84px;
+        padding: 12px 0 2px;
+        font-size: 18px;
     }
 
     .side-menu-icon {

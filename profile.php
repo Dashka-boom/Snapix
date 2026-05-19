@@ -1,6 +1,7 @@
 <?php
 session_start();
 require './config/config.php';
+require_once './includes/side-menu.php';
 require './includes/icons.php';
 
 function buildProfileUrl(int $profileUserId, int $currentUserId): string
@@ -450,35 +451,10 @@ $showFollowingPanel = $panel === 'following';
     <link rel="stylesheet" href="css/index.css">
     <title>Snapix</title>
 </head>
-<body data-page="profile">
-    <header class="header">
-        <nav class="nav">
-            <a href="index.php" class="logo">Snapix</a>
-            <input type="text" class="search" placeholder="Поиск">
-            <div class="menu">
-                <a href="#">Reels</a>
-                <a href="chat.php" class="notification-bell" aria-label="Открыть сообщения">
-                    <span class="notification-bell-icon"><?php echo snapix_icon('mail'); ?></span>
-                    <?php if ($unreadMessagesCount > 0): ?>
-                        <span class="notification-badge"><?php echo $unreadMessagesCount; ?></span>
-                    <?php endif; ?>
-                </a>
-                <a href="connections.php?view=requests" class="notification-bell" data-notification-toggle aria-label="Открыть заявки">
-                    <span class="notification-bell-icon"><?php echo snapix_icon('bell'); ?></span>
-                    <?php if ($pendingRequestsCount > 0): ?>
-                        <span class="notification-badge"><?php echo $pendingRequestsCount; ?></span>
-                    <?php endif; ?>
-                </a>
-                <a href="profile.php" class="user-avatar-link" aria-label="Открыть профиль">
-                    <?php if (!empty($user['avatar'])): ?>
-                        <span class="user-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></span>
-                    <?php else: ?>
-                        <span class="user-avatar"><?php echo htmlspecialchars(mb_substr($user['login'], 0, 1)); ?></span>
-                    <?php endif; ?>
-                </a>
-            </div>
-        </nav>
-    </header>
+<body data-page="profile" class="has-side-menu">
+    <?php render_side_menu($user); ?>
+
+    <div class="page-glass-nav" aria-hidden="true"></div>
 
     <main class="profile-page">
         <section class="profile-cover card-surface<?php echo !empty($user['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($user['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['background_image']); ?>');"<?php endif; ?>></section>

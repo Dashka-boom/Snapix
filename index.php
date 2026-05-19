@@ -390,7 +390,7 @@ if ($feedPosts) {
 <body data-page="home">
     <aside class="side-menu" aria-label="Основное меню">
         <button type="button" class="side-menu-toggle" aria-label="Меню">
-            <img src="icon/menu.png" alt="" class="side-menu-icon">
+            <img src="icon/dark theme/menu.png" alt="" class="side-menu-icon">
             <span class="side-menu-label">Меню</span>
         </button>
 
@@ -400,35 +400,35 @@ if ($feedPosts) {
                 <span class="side-menu-label">Главная</span>
             </a>
             <a href="#" class="side-menu-item" aria-label="Clips">
-                <img src="icon/Group.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/clips.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Clips</span>
             </a>
             <a href="connections.php?view=requests" class="side-menu-item" aria-label="Уведомления">
-                <img src="icon/notification.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/notification.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Уведомления</span>
             </a>
             <a href="#" class="side-menu-item" aria-label="Поиск">
-                <img src="icon/search.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/search.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Поиск</span>
             </a>
             <a href="chat.php" class="side-menu-item" aria-label="Чат">
-                <img src="icon/chat.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/chat.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Чат</span>
             </a>
             <a href="profile.php" class="side-menu-item" aria-label="Закладки">
-                <img src="icon/favourites.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/favourites.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Закладки</span>
             </a>
             <button type="button" class="side-menu-item side-menu-button" aria-label="Темная тема">
-                <img src="icon/dark theme.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/dark theme.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Темная тема</span>
             </button>
             <a href="#" class="side-menu-item" aria-label="Интересное">
-                <img src="icon/new.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/new.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Интересное</span>
             </a>
             <a href="edit-profile.php" class="side-menu-item" aria-label="Настройки">
-                <img src="icon/settting.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/settings.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Настройки</span>
             </a>
         </nav>
@@ -441,8 +441,19 @@ if ($feedPosts) {
             <?php endif; ?>
             <span class="side-menu-label side-menu-profile-name"><?php echo $user ? htmlspecialchars($user['login']) : 'Войти'; ?></span>
         </a>
+        <button type="button" class="side-menu-account-toggle" aria-label="Открыть меню аккаунта">•••</button>
+        <div class="side-menu-account-modal" role="dialog" aria-label="Меню аккаунта">
+            <a href="login.php">Поменять аккаунт</a>
+            <a href="logout.php">Выйти из учётной записи</a>
+        </div>
     </aside>
-    <main>
+
+    <div class="home-feed-tabs" role="tablist" aria-label="Переключатель ленты">
+        <button type="button" class="home-feed-tab is-active" role="tab" aria-selected="true" data-feed-tab="for-you">Для вас</button>
+        <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-feed-tab="following">Подписки</button>
+    </div>
+
+    <main data-feed-content="for-you">
         <section class="feed-wrap">
             <?php if ($user && $notifications): ?>
                 <section class="card-surface" style="padding: 16px; margin-bottom: 16px;">
@@ -644,6 +655,47 @@ if ($feedPosts) {
 </div>
 <?php endif; ?>
 <script>
+(function () {
+    var tabs = document.querySelectorAll('.home-feed-tab');
+    var feedContent = document.querySelector('[data-feed-content]');
+
+    if (!tabs.length || !feedContent) {
+        return;
+    }
+
+    function activateTab(tab) {
+        if (tab.classList.contains('is-active')) {
+            return;
+        }
+
+        tabs.forEach(function (item) {
+            item.classList.remove('is-active');
+            item.setAttribute('aria-selected', 'false');
+        });
+
+        tab.classList.add('is-active');
+        tab.setAttribute('aria-selected', 'true');
+        feedContent.setAttribute('data-feed-content', tab.getAttribute('data-feed-tab') || 'for-you');
+        feedContent.classList.add('is-switching');
+        window.setTimeout(function () {
+            feedContent.classList.remove('is-switching');
+        }, 180);
+    }
+
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            activateTab(tab);
+        });
+
+        tab.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                activateTab(tab);
+            }
+        });
+    });
+})();
+
 document.querySelectorAll('.js-open-comments-modal').forEach(function (button) {
     button.addEventListener('click', function () {
         var modalId = button.getAttribute('data-modal');
