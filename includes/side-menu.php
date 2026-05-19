@@ -271,11 +271,13 @@ function render_side_menu(?array $sideMenuUser = null): void
             <?php endif; ?>
             <span class="side-menu-label side-menu-profile-name"><?php echo htmlspecialchars($profileName); ?></span>
         </a>
-        <button type="button" class="side-menu-account-toggle" aria-label="Открыть меню аккаунта">•••</button>
-        <div class="side-menu-account-modal" role="dialog" aria-label="Меню аккаунта">
-            <a href="login.php">Поменять аккаунт</a>
-            <a href="logout.php">Выйти из учётной записи</a>
-        </div>
+        <?php if ($sideMenuUser): ?>
+            <button type="button" class="side-menu-account-toggle" aria-label="Открыть меню аккаунта">•••</button>
+            <div class="side-menu-account-modal" role="dialog" aria-label="Меню аккаунта">
+                <a href="login.php">Поменять аккаунт</a>
+                <a href="logout.php">Выйти из учётной записи</a>
+            </div>
+        <?php endif; ?>
     </aside>
     <?php render_notifications_drawer($sideMenuUser); ?>
     <script src="js/notifications-drawer.js" defer></script>
