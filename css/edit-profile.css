@@ -278,136 +278,52 @@
             justify-content: center;
         }
     }
-.edit-preview-shell,.edit-preview-summary,.form-card{background:#303035;border-color:#45454d;color:#f4f4f5}
-.edit-profile-cover{background:linear-gradient(135deg,#2a2a2f,#242426)}
-.summary-copy h1,.field label{color:#f4f4f5}
-.summary-copy p,.status{color:#a1a1aa}
-.field input,.field textarea,.field select{background:#2b2b2f;border-color:#4b4b52;color:#f4f4f5}
-.field input:focus,.field textarea:focus,.field select:focus{border-color:#fad330;box-shadow:0 0 0 3px rgba(250,211,48,.2)}
-.checkbox-field input{accent-color:#fad330}
-.upload-trigger{background:rgba(250,211,48,.9);color:#1f1f1f}
 
-.edit-preview-shell,.edit-preview-summary,.form-card{background:#1c182a;border-color:#33274e;color:#f5f3ff}
-.edit-profile-cover{background:linear-gradient(135deg,#171227,#0e0c13)}
-.summary-copy h1,.field label{color:#f5f3ff}.summary-copy p,.status{color:#b7b1cc}
-.field input,.field textarea,.field select{background:#151124;border-color:#3b2d5e;color:#f5f3ff}
-.field input:focus,.field textarea:focus,.field select:focus{border-color:#8c59d8;box-shadow:0 0 0 3px rgba(100,39,181,.35)}
-.upload-trigger{background:#3b2039;color:#f7f2ff}
-
-.edit-preview-shell,.edit-preview-summary,.form-card{background:#2a2227!important;border-color:#3a3137!important;box-shadow:none!important;color:#fff!important}
-.edit-profile-cover{background:#1f191d!important}
-.summary-copy h1,.field label{color:#fff!important}
-.summary-copy p,.status{color:#b3b3b3!important}
-.field input,.field textarea,.field select{background:#1f191d!important;border-color:#3a3137!important;color:#fff!important}
-.field input:focus,.field textarea:focus,.field select:focus{border-color:#6926be!important;box-shadow:none!important}
-.upload-trigger,.primary-link,.secondary-link{background:#6926be!important;color:#fff!important}
-.upload-trigger:hover,.primary-link:hover,.secondary-link:hover{background:#7a35d1!important;transform:none!important;box-shadow:none!important}
-
-.edit-preview-shell,.edit-preview-summary,.form-card{background:#2a2328!important;border-color:#3a3338!important;box-shadow:none!important;color:#fff!important}
-.edit-profile-cover{background:#1a1619!important}
-.summary-copy h1,.field label{color:#fff!important}
-.summary-copy p,.status{color:#b3b3b3!important}
-.field input,.field textarea,.field select{background:#151215!important;border-color:#3a3338!important;color:#fff!important}
-.field input:focus,.field textarea:focus,.field select:focus{border:1px solid transparent!important;background:linear-gradient(#151215,#151215) padding-box,linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb) border-box!important;box-shadow:none!important}
-.upload-trigger,.primary-link,.secondary-link{background:#1f1a20!important;color:#fff!important;border:1px solid #4a404a!important}
-.upload-trigger:hover,.primary-link:hover,.secondary-link:hover{border:1px solid transparent!important;background:linear-gradient(#201a22,#201a22) padding-box,linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb) border-box!important;box-shadow:0 0 10px rgba(194,233,251,.16)!important;transform:none!important}
-
-.edit-preview-shell,.edit-preview-summary,.form-card,.edit-profile-cover{background:#000!important;border-color:#000!important;color:#fff!important}
-.summary-copy h1,.summary-copy p,.status,.field label{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}
-.field input,.field textarea,.field select{background:#000!important;color:#fff!important;border:1px solid transparent!important;background-image:linear-gradient(#000,#000),linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;background-origin:border-box!important;background-clip:padding-box,border-box!important}
-.upload-trigger,.primary-link,.secondary-link{background:linear-gradient(135deg,#a18cd1,#fbc2eb,#fad0c4,#a1c4fd,#c2e9fb)!important;color:#111!important;border:0!important}
-
-/* Final unified Snapix edit-profile palette */
-:root {
-    --snapix-bg: #040607;
-    --snapix-accent: #68C5DB;
-    --snapix-text: #ffffff;
-}
-
-.edit-profile-page,
-.edit-preview-shell,
-.edit-preview-summary,
-.form-card,
-.edit-profile-cover,
-.edit-avatar-shell,
-.edit-avatar {
-    background: var(--snapix-bg) !important;
-    border-color: var(--snapix-accent) !important;
-    color: var(--snapix-text) !important;
-    box-shadow: none !important;
-}
-
-.summary-copy h1,
-.summary-copy p,
-.status,
-.field label,
-.checkbox-field,
-a {
-    color: var(--snapix-text) !important;
-}
-
-a:hover {
-    color: var(--snapix-accent) !important;
-}
-
-.field input,
-.field textarea,
-.field select {
-    background: var(--snapix-bg) !important;
-    border-color: var(--snapix-accent) !important;
-    color: var(--snapix-text) !important;
-}
-
-.upload-trigger,
-.primary-link,
-.secondary-link {
-    background: var(--snapix-accent) !important;
-    border-color: var(--snapix-accent) !important;
-    color: var(--snapix-text) !important;
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-.upload-trigger:hover,
-.primary-link:hover,
-.secondary-link:hover {
-    background: var(--snapix-accent) !important;
-    filter: brightness(0.95);
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-/* Final requested palette for edit-profile pages */
+/* Unified Snapix edit-profile theme */
 :root {
     --home-bg: #040607;
     --home-surface: #040607;
     --home-header: #040607;
     --home-accent: #68C5DB;
     --home-text: #ffffff;
+    --home-secondary-text: #aeb8bc;
+    --home-border: rgba(104, 197, 219, 0.2);
+    --home-panel: #0b0f11;
 }
 
 html,
 body,
-.edit-profile-page,
+.edit-profile-page {
+    background-color: var(--home-bg) !important;
+    color: var(--home-text) !important;
+}
+
 .edit-preview-shell,
 .edit-preview-summary,
 .form-card,
-.edit-profile-cover,
 .edit-avatar-shell,
 .edit-avatar {
-    background: var(--home-bg) !important;
-    border-color: var(--home-accent) !important;
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
     color: var(--home-text) !important;
     box-shadow: none !important;
 }
 
+.edit-profile-cover {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
+}
+
 .summary-copy h1,
-.summary-copy p,
-.status,
 .field label,
 .checkbox-field,
 a {
     color: var(--home-text) !important;
+}
+
+.summary-copy p,
+.status {
+    color: var(--home-secondary-text) !important;
 }
 
 a:hover {
@@ -417,15 +333,23 @@ a:hover {
 .field input,
 .field textarea,
 .field select {
-    background: var(--home-surface) !important;
-    border-color: var(--home-accent) !important;
+    background-color: var(--home-bg) !important;
+    border-color: var(--home-border) !important;
     color: var(--home-text) !important;
+    box-shadow: none !important;
 }
 
 .field input::placeholder,
 .field textarea::placeholder {
-    color: var(--home-text) !important;
-    opacity: 0.75;
+    color: var(--home-secondary-text) !important;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+    border-color: var(--home-accent) !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 .upload-trigger,
@@ -433,9 +357,9 @@ a:hover {
 .secondary-link,
 button,
 [type="submit"] {
-    background: var(--home-accent) !important;
+    background-color: var(--home-accent) !important;
     border-color: var(--home-accent) !important;
-    color: var(--home-text) !important;
+    color: var(--home-bg) !important;
     box-shadow: none !important;
     transform: none !important;
 }
@@ -445,9 +369,19 @@ button,
 .secondary-link:hover,
 button:hover,
 [type="submit"]:hover {
-    background: var(--home-accent) !important;
-    color: var(--home-text) !important;
-    filter: brightness(0.95);
+    background-color: var(--home-accent) !important;
+    color: var(--home-bg) !important;
+    filter: brightness(0.92);
     box-shadow: none !important;
     transform: none !important;
+}
+
+/* Unified theme edit-profile refinements */
+.edit-profile-cover::after {
+    background: rgba(4, 6, 7, 0.35) !important;
+}
+
+.upload-trigger svg {
+    color: var(--home-bg) !important;
+    fill: currentColor;
 }

@@ -1593,310 +1593,23 @@ h2 {
     }
 }
 
-/* Final clean home dark theme */
+/* Unified Snapix dark theme */
 :root {
     --home-bg: #040607;
     --home-surface: #040607;
     --home-header: #040607;
     --home-accent: #68C5DB;
     --home-text: #ffffff;
-}
-
-html:has(body[data-page="home"]),
-body[data-page="home"] {
-    min-height: 100%;
-    background: var(--home-bg) !important;
-    color: var(--home-text) !important;
-}
-
-body[data-page="home"]::before,
-body[data-page="home"]::after {
-    content: none !important;
-    display: none !important;
-}
-
-body[data-page="home"] .header,
-body[data-page="home"] .nav {
-    background: var(--home-header) !important;
-    color: var(--home-text) !important;
-}
-
-body[data-page="home"] main,
-body[data-page="home"] .feed-wrap,
-body[data-page="home"] .feed-list,
-body[data-page="home"] .section-heading,
-body[data-page="home"] .comments-modal-overlay,
-body[data-page="home"] .share-modal-overlay {
-    background: var(--home-bg) !important;
-    color: var(--home-text) !important;
-}
-
-body[data-page="home"] .card-surface,
-body[data-page="home"] .feed-card,
-body[data-page="home"] .comments-modal-dialog,
-body[data-page="home"] .share-modal-content,
-body[data-page="home"] .notification-popover,
-body[data-page="home"] .notification-popover-item,
-body[data-page="home"] .post-menu,
-body[data-page="home"] .comment-item {
-    background: var(--home-surface) !important;
-    border: 1px solid var(--home-accent) !important;
-    color: var(--home-text) !important;
-    box-shadow: none !important;
-}
-
-body[data-page="home"] h1,
-body[data-page="home"] h2,
-body[data-page="home"] h3,
-body[data-page="home"] p,
-body[data-page="home"] small,
-body[data-page="home"] label,
-body[data-page="home"] span,
-body[data-page="home"] strong,
-body[data-page="home"] .logo,
-body[data-page="home"] a,
-body[data-page="home"] .menu a,
-body[data-page="home"] .feed-author-name,
-body[data-page="home"] .comment-author,
-body[data-page="home"] .feed-card-caption,
-body[data-page="home"] .feed-action-count,
-body[data-page="home"] .comments-empty,
-body[data-page="home"] .empty-state,
-body[data-page="home"] .notification-popover-empty {
-    color: var(--home-text) !important;
-}
-
-body[data-page="home"] input,
-body[data-page="home"] textarea,
-body[data-page="home"] select,
-body[data-page="home"] .search {
-    background: var(--home-surface) !important;
-    border-color: rgba(255, 255, 255, 0.18) !important;
-    color: var(--home-text) !important;
-}
-
-body[data-page="home"] input::placeholder,
-body[data-page="home"] textarea::placeholder,
-body[data-page="home"] .search::placeholder {
-    color: var(--home-text) !important;
-    opacity: 0.75;
-}
-
-body[data-page="home"] input:focus,
-body[data-page="home"] textarea:focus,
-body[data-page="home"] select:focus,
-body[data-page="home"] .search:focus {
-    border-color: var(--home-accent) !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
-
-body[data-page="home"] button,
-body[data-page="home"] [type="submit"],
-body[data-page="home"] .auth,
-body[data-page="home"] .primary-link,
-body[data-page="home"] .secondary-link,
-body[data-page="home"] .feed-action-btn,
-body[data-page="home"] .header-plus-btn,
-body[data-page="home"] .notification-bell,
-body[data-page="home"] .notification-badge,
-body[data-page="home"] .feed-icon-btn.is-active,
-body[data-page="home"] .feed-action-btn-save.is-saved,
-body[data-page="home"] .feed-action-btn-repost.is-reposted {
-    background: var(--home-accent) !important;
-    border-color: var(--home-accent) !important;
-    color: var(--home-text) !important;
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-body[data-page="home"] button:hover,
-body[data-page="home"] [type="submit"]:hover,
-body[data-page="home"] .auth:hover,
-body[data-page="home"] .primary-link:hover,
-body[data-page="home"] .secondary-link:hover,
-body[data-page="home"] .feed-action-btn:hover,
-body[data-page="home"] .header-plus-btn:hover,
-body[data-page="home"] .notification-bell:hover {
-    background: var(--home-accent) !important;
-    border-color: var(--home-accent) !important;
-    color: var(--home-text) !important;
-    filter: brightness(0.95);
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-body[data-page="home"] svg,
-body[data-page="home"] i,
-body[data-page="home"] .notification-bell-icon {
-    color: var(--home-text) !important;
-    fill: currentColor;
-}
-
-/* Logo hover accent */
-.logo:hover,
-.logo:focus-visible,
-body[data-page="home"] .logo:hover,
-body[data-page="home"] .logo:focus-visible {
-    color: #68C5DB !important;
-}
-
-/* Final unified Snapix palette for all index.css pages */
-:root {
-    --snapix-bg: #040607;
-    --snapix-surface: #040607;
-    --snapix-accent: #68C5DB;
-    --snapix-text: #ffffff;
+    --home-secondary-text: #aeb8bc;
+    --home-border: rgba(104, 197, 219, 0.2);
+    --home-panel: #0b0f11;
+    --home-message-other: #111517;
 }
 
 html,
 body,
 body[data-page] {
-    background: var(--snapix-bg) !important;
-    color: var(--snapix-text) !important;
-}
-
-body::before,
-body::after {
-    content: none !important;
-    display: none !important;
-}
-
-.header,
-.nav,
-main,
-.card-surface,
-.feed-card,
-.comments-modal-dialog,
-.share-modal-content,
-.notification-popover,
-.notification-popover-item,
-.post-menu,
-.comment-item,
-.profile-header,
-.profile-tabs,
-.profile-tab-content,
-.request-card,
-.connections-card,
-.post-detail-card {
-    background: var(--snapix-surface) !important;
-    color: var(--snapix-text) !important;
-    border-color: var(--snapix-accent) !important;
-    box-shadow: none !important;
-}
-
-h1,
-h2,
-h3,
-p,
-small,
-label,
-span,
-strong,
-a,
-.logo,
-.menu a,
-.feed-author-name,
-.comment-author,
-.feed-card-caption,
-.feed-action-count,
-.comments-empty,
-.empty-state,
-.notification-popover-empty,
-.profile-meta,
-.profile-bio {
-    color: var(--snapix-text) !important;
-}
-
-.logo:hover,
-.logo:focus-visible,
-.menu a:hover,
-.menu a:focus-visible,
-a:hover,
-a:focus-visible {
-    color: var(--snapix-accent) !important;
-}
-
-input,
-textarea,
-select,
-.search {
-    background: var(--snapix-bg) !important;
-    border-color: var(--snapix-accent) !important;
-    color: var(--snapix-text) !important;
-}
-
-input::placeholder,
-textarea::placeholder,
-.search::placeholder {
-    color: var(--snapix-text) !important;
-    opacity: 0.75;
-}
-
-button,
-[type="submit"],
-.auth,
-.primary-link,
-.secondary-link,
-.feed-action-btn,
-.header-plus-btn,
-.notification-bell,
-.notification-badge,
-.feed-icon-btn.is-active,
-.feed-action-btn-save.is-saved,
-.feed-action-btn-repost.is-reposted {
-    background: var(--snapix-accent) !important;
-    border-color: var(--snapix-accent) !important;
-    color: var(--snapix-text) !important;
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-button:hover,
-[type="submit"]:hover,
-.auth:hover,
-.primary-link:hover,
-.secondary-link:hover,
-.feed-action-btn:hover,
-.header-plus-btn:hover,
-.notification-bell:hover {
-    background: var(--snapix-accent) !important;
-    border-color: var(--snapix-accent) !important;
-    color: var(--snapix-text) !important;
-    filter: brightness(0.95);
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-svg,
-i,
-.notification-bell-icon {
-    color: var(--snapix-text) !important;
-    fill: currentColor;
-}
-
-/* Final requested palette: apply --home colors to every index.css page */
-:root {
-    --home-bg: #040607;
-    --home-surface: #040607;
-    --home-header: #040607;
-    --home-accent: #68C5DB;
-    --home-text: #ffffff;
-}
-
-html,
-body,
-body[data-page],
-main,
-.feed-wrap,
-.feed-list,
-.profile-page,
-.post-page,
-.connections-page,
-.create-post-page,
-.edit-post-page,
-.insights-page {
-    background: var(--home-bg) !important;
+    background-color: var(--home-bg) !important;
     color: var(--home-text) !important;
 }
 
@@ -1910,13 +1623,30 @@ body::after {
 .nav,
 .profile-sticky-nav,
 .profile-nav-inner {
-    background: var(--home-header) !important;
+    background-color: var(--home-header) !important;
+    border-color: var(--home-border) !important;
     color: var(--home-text) !important;
-    border-color: var(--home-accent) !important;
+    box-shadow: none !important;
 }
 
-.card-surface,
+main,
+.feed-wrap,
+.feed-list,
+.section-heading,
+.profile-page,
+.post-page,
+.connections-page,
+.create-post-page,
+.edit-post-page,
+.insights-page {
+    background-color: var(--home-bg) !important;
+    color: var(--home-text) !important;
+}
+
+.card-surface:not(.profile-cover),
 .feed-card,
+.post-detail-card,
+.post-card,
 .comments-modal-dialog,
 .share-modal-content,
 .notification-popover,
@@ -1926,19 +1656,52 @@ body::after {
 .profile-header,
 .profile-tabs,
 .profile-tab-content,
-.profile-card,
-.profile-post-card,
-.post-detail-card,
 .request-card,
 .connections-card,
 .create-post-card,
 .edit-post-card,
 .insights-card,
 .reels-card {
-    background: var(--home-surface) !important;
+    background-color: var(--home-panel) !important;
+    border: 1px solid var(--home-border) !important;
     color: var(--home-text) !important;
-    border-color: var(--home-accent) !important;
     box-shadow: none !important;
+}
+
+.profile-cover {
+    background-color: var(--home-panel) !important;
+    border: 1px solid var(--home-border) !important;
+    box-shadow: none !important;
+}
+
+.profile-cover.has-image {
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+.profile-cover.has-image::after {
+    background: rgba(4, 6, 7, 0.35) !important;
+}
+
+.profile-metrics,
+.profile-metric,
+.profile-avatar-shell,
+.profile-avatar,
+.user-avatar,
+.feed-author-avatar,
+.request-avatar,
+.share-recipient-avatar {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
+    color: var(--home-text) !important;
+    box-shadow: none !important;
+}
+
+.profile-metric strong,
+.profile-metric-link:hover strong,
+.profile-metric-link:focus-visible strong {
+    color: var(--home-accent) !important;
 }
 
 h1,
@@ -1959,12 +1722,20 @@ a,
 .comments-empty,
 .empty-state,
 .notification-popover-empty,
-.profile-meta,
-.profile-bio,
 .profile-username,
 .profile-display-name,
 .profile-nav-title {
     color: var(--home-text) !important;
+}
+
+.profile-meta,
+.profile-bio,
+.page-eyebrow,
+.post-date,
+.comment-date,
+.notification-popover-empty,
+.feed-card-time {
+    color: var(--home-secondary-text) !important;
 }
 
 .logo:hover,
@@ -1972,7 +1743,9 @@ a,
 a:hover,
 a:focus-visible,
 .menu a:hover,
-.menu a:focus-visible {
+.menu a:focus-visible,
+.feed-author-name:hover,
+.comment-author:hover {
     color: var(--home-accent) !important;
 }
 
@@ -1980,16 +1753,26 @@ input,
 textarea,
 select,
 .search {
-    background: var(--home-surface) !important;
-    border-color: var(--home-accent) !important;
+    background-color: var(--home-panel) !important;
+    border: 1px solid var(--home-border) !important;
     color: var(--home-text) !important;
+    box-shadow: none !important;
 }
 
 input::placeholder,
 textarea::placeholder,
 .search::placeholder {
-    color: var(--home-text) !important;
-    opacity: 0.75;
+    color: var(--home-secondary-text) !important;
+    opacity: 1;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.search:focus {
+    border-color: var(--home-accent) !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 button,
@@ -2003,9 +1786,9 @@ button,
 .notification-badge,
 .profile-edit-btn,
 .profile-nav-back {
-    background: var(--home-accent) !important;
-    border-color: var(--home-accent) !important;
-    color: var(--home-text) !important;
+    background-color: var(--home-accent) !important;
+    border: 1px solid var(--home-accent) !important;
+    color: var(--home-bg) !important;
     box-shadow: none !important;
     transform: none !important;
 }
@@ -2020,17 +1803,111 @@ button:hover,
 .notification-bell:hover,
 .profile-edit-btn:hover,
 .profile-nav-back:hover {
-    background: var(--home-accent) !important;
+    background-color: var(--home-accent) !important;
     border-color: var(--home-accent) !important;
-    color: var(--home-text) !important;
-    filter: brightness(0.95);
+    color: var(--home-bg) !important;
+    filter: brightness(0.92);
     box-shadow: none !important;
     transform: none !important;
 }
 
+.feed-icon-btn,
+.post-menu-toggle,
+.chat-message-menu-trigger,
+.chat-reaction-trigger,
 svg,
 i,
 .notification-bell-icon {
-    color: var(--home-text) !important;
+    color: var(--home-accent) !important;
     fill: currentColor;
+}
+
+.comments-modal-overlay,
+.share-modal-overlay {
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(3px);
+}
+
+.comments-modal,
+.share-modal {
+    background: transparent !important;
+}
+
+.feed-card-media,
+.feed-card-media img,
+.feed-card-media video,
+.post-card-media {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
+}
+
+/* Unified theme refinements for modals, posts, and profile */
+.home-hero,
+.legal-hero,
+.profile-post-tab,
+.profile-post-tab.is-active,
+.post-card,
+.post-card-media,
+.post-card-actions,
+.share-modal-dialog,
+.share-modal-header,
+.share-modal-body,
+.comments-modal-header,
+.comments-modal-body,
+.comments-modal-form,
+.comment-form textarea,
+.profile-quick-actions,
+.profile-section,
+.profile-metric {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-border) !important;
+    color: var(--home-text) !important;
+    box-shadow: none !important;
+}
+
+.comments-modal-dialog,
+.share-modal-dialog {
+    background-color: var(--home-bg) !important;
+    border: 1px solid var(--home-border) !important;
+}
+
+.comments-modal-header,
+.comments-modal-form,
+.share-modal-header {
+    border-color: var(--home-border) !important;
+}
+
+.post-card-btn-delete,
+.post-card-btn-edit,
+.profile-post-tab.is-active {
+    background-color: var(--home-accent) !important;
+    border-color: var(--home-accent) !important;
+    color: var(--home-bg) !important;
+}
+
+.profile-cover.has-image {
+    background-color: var(--home-panel) !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+/* Keep post three-dot menu icon visible */
+.post-menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    opacity: 1 !important;
+    visibility: visible !important;
+    background-color: var(--home-panel) !important;
+    border: 1px solid var(--home-border) !important;
+    color: var(--home-accent) !important;
+}
+
+.post-menu-toggle:hover,
+.post-menu-toggle:focus-visible {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-accent) !important;
+    color: var(--home-accent) !important;
+    filter: none !important;
 }
