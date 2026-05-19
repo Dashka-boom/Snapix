@@ -543,6 +543,9 @@ if ($feedPosts) {
                                         <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-name">
                                             <strong><?php echo htmlspecialchars($post['login']); ?></strong>
                                         </a>
+
+                                    </div>
+                                </div>
                                         <div class="post-menu-wrap">
                                             <button type="button" class="post-menu-toggle" data-post-menu="post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-horizontal'); ?></button>
                                             <div class="post-menu" id="post-menu-<?php echo (int) $post['id']; ?>">
@@ -601,8 +604,6 @@ if ($feedPosts) {
                                                 <?php endif; ?>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
                             </header>
 
                             <div class="feed-card-media">
