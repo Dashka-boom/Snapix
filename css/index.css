@@ -3296,3 +3296,67 @@ body.has-side-menu {
 .clips-comments-form textarea:focus { outline:none; border-color:#68C5DB; }
 
 @keyframes clips-comments-fade-in { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
+
+.clips-comments-modal {
+    left: auto !important;
+    right: 96px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: min(390px, calc(100vw - 210px));
+    max-height: min(78vh, 760px);
+}
+
+.clips-comments-modal-header {
+    grid-template-columns: 28px 1fr 28px;
+    display: grid;
+    align-items: center;
+}
+
+.clips-comments-close {
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+}
+
+.clips-comments-modal-header h3 {
+    text-align: center;
+    font-size: 20px;
+}
+
+.clips-comments-header-spacer { width: 28px; height: 1px; }
+
+.clips-comments-modal-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(104, 197, 219, 0.35) #040607;
+}
+
+.clips-comments-modal-body::-webkit-scrollbar { width: 8px; }
+.clips-comments-modal-body::-webkit-scrollbar-track { background: #040607; }
+.clips-comments-modal-body::-webkit-scrollbar-thumb { background: rgba(104, 197, 219, 0.35); border-radius: 99px; }
+
+.clips-comment-item {
+    padding: 12px 2px;
+    border-top: 1px solid rgba(104, 197, 219, 0.2);
+    border-bottom: 1px solid rgba(104, 197, 219, 0.2);
+    display: grid;
+    gap: 8px;
+}
+
+.clips-comment-top { display:flex; justify-content:space-between; gap:10px; }
+.clips-comment-meta-left { display:flex; gap:10px; align-items:flex-start; }
+.clips-comment-avatar { width:34px; height:34px; border-radius:50%; background:#111517; border:1px solid rgba(104,197,219,.25); display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:700; background-size:cover; background-position:center; }
+.clips-comment-date { display:block; font-size:12px; color:rgba(255,255,255,0.6); margin-top:2px; }
+.clips-comment-meta-right { display:grid; justify-items:center; gap:3px; min-width:44px; }
+.clips-comment-menu-btn { border:0; background:transparent; color:#fff; font-size:14px; letter-spacing:1px; cursor:pointer; }
+.clips-comment-like-btn { border:0; background:transparent; cursor:pointer; padding:0; }
+.clips-comment-like-btn img { width:18px; height:18px; filter: brightness(0) invert(1); }
+.clips-comment-like-btn.is-liked img { filter: brightness(0) saturate(100%) invert(34%) sepia(92%) saturate(2313%) hue-rotate(337deg) brightness(102%) contrast(91%); }
+.clips-comment-like-count { font-size:11px; color:rgba(255,255,255,0.7); line-height:1; }
+.clips-comment-item p { margin:0; color:#fff; word-break:break-word; }
+.clips-comment-replies-toggle { border:0; background:transparent; color:rgba(255,255,255,0.6); padding:0; text-align:left; cursor:pointer; text-decoration:none; }
+.clips-comment-replies-toggle:hover { color:rgba(255,255,255,0.82); }
+.clips-comment-reply { color:rgba(255,255,255,0.7); font-size:13px; }
+
+@media (max-width: 1100px) {
+    .clips-comments-modal { right: 84px; width: min(350px, calc(100vw - 170px)); }
+}

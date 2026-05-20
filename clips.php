@@ -23,7 +23,7 @@ function clips_extract_hashtags(string $caption): array
 
 function clips_fetch_comments(PDO $pdo, int $postId, ?int $currentUserId): array
 {
-    $stmt = $pdo->prepare('\n        SELECT comments.comment_text, comments.created_at, users.id AS user_id, users.login\n        FROM comments\n        INNER JOIN users ON users.id = comments.user_id\n        WHERE comments.post_id = :post_id AND comments.is_deleted = 0\n        ORDER BY comments.created_at DESC, comments.id DESC\n        LIMIT 80\n    ');
+    $stmt = $pdo->prepare('\n        SELECT comments.comment_text, comments.created_at, users.id AS user_id, users.login, users.avatar\n        FROM comments\n        INNER JOIN users ON users.id = comments.user_id\n        WHERE comments.post_id = :post_id AND comments.is_deleted = 0\n        ORDER BY comments.created_at DESC, comments.id DESC\n        LIMIT 80\n    ');
     $stmt->execute(['post_id' => $postId]);
     $rows = $stmt->fetchAll() ?: [];
     $comments = [];
@@ -33,6 +33,10 @@ function clips_fetch_comments(PDO $pdo, int $postId, ?int $currentUserId): array
             'text' => (string) ($row['comment_text'] ?? ''),
             'login' => (string) ($row['login'] ?? ''),
             'profile_url' => clips_build_profile_url((int) ($row['user_id'] ?? 0), $currentUserId),
+            'avatar' => (string) ($row['avatar'] ?? ''),
+            'created_at' => (string) ($row['created_at'] ?? ''),
+            'likes_count' => 0,
+            'replies_count' => 1,
         ];
     }
 
@@ -443,15 +447,16 @@ foreach ($clipsRows as $clip) {
 
                 <div class="clips-comments-modal" data-clips-comments-modal>
                     <div class="clips-comments-modal-header">
-                        <h3>Комментарии</h3>
                         <button type="button" class="clips-comments-close" data-clips-comments-close aria-label="Закрыть">×</button>
+                        <h3>Комментарии</h3>
+                        <span class="clips-comments-header-spacer" aria-hidden="true"></span>
                     </div>
                     <div class="clips-comments-modal-body" data-clips-comments-list>
                         <p class="comments-empty">Загрузка...</p>
                     </div>
                     <?php if ($user): ?>
                         <form class="clips-comments-form" data-clips-comments-form>
-                            <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea>
+                            <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Добавьте комментарий..."></textarea>
                             <button type="submit" class="primary-link">Отправить</button>
                         </form>
                     <?php endif; ?>
@@ -640,26 +645,57 @@ foreach ($clipsRows as $clip) {
             });
         }
 
+        function formatCommentDate(value) {
+            var date = parseDate(value);
+            if (!Number.isFinite(date.getTime())) {
+                return '';
+            }
+            return pad(date.getDate()) + '.' + pad(date.getMonth() + 1) + '.' + String(date.getFullYear()).slice(-2);
+        }
+
         function renderComments(items) {
             if (!commentsList) { return; }
             if (!items.length) {
                 commentsList.innerHTML = '<p class="comments-empty">Пока нет комментариев.</p>';
                 return;
             }
-            commentsList.innerHTML = items.map(function (comment) {
-                return '<div class="comment-item"><a class="comment-author" href="' + escapeHtml(comment.profile_url || '#') + '"><strong>' + escapeHtml(comment.login || '') + '</strong></a><p>' + escapeHtml(comment.text || '') + '</p></div>';
+            commentsList.innerHTML = items.map(function (comment, index) {
+                var avatar = comment.avatar ? '<span class="clips-comment-avatar has-avatar" style="background-image:url(\'' + escapeHtml(comment.avatar) + '\')"></span>' : '<span class="clips-comment-avatar">' + escapeHtml((comment.login || 'S').slice(0,1)) + '</span>';
+                return '<article class="clips-comment-item" data-comment-index="' + index + '">' +
+                    '<div class="clips-comment-top">' +
+                        '<div class="clips-comment-meta-left">' + avatar + '<div><a href="' + escapeHtml(comment.profile_url || '#') + '" class="comment-author"><strong>' + escapeHtml(comment.login || '') + '</strong></a><span class="clips-comment-date">' + escapeHtml(formatCommentDate(comment.created_at || '')) + '</span></div></div>' +
+                        '<div class="clips-comment-meta-right"><button type="button" class="clips-comment-menu-btn" aria-label="Меню">•••</button><button type="button" class="clips-comment-like-btn" aria-label="Лайк комментария"><img src="icon/dark theme/like.png" alt=""></button><span class="clips-comment-like-count">' + escapeHtml(comment.likes_count || 0) + '</span></div>' +
+                    '</div>' +
+                    '<p>' + escapeHtml(comment.text || '') + '</p>' +
+                    '<button type="button" class="clips-comment-replies-toggle" data-open="0">Смотреть ответы (' + escapeHtml(comment.replies_count || 1) + ')</button>' +
+                    '<div class="clips-comment-replies" hidden><p class="clips-comment-reply">Ответы пока недоступны.</p></div>' +
+                '</article>';
             }).join('');
         }
+
+        commentsList.addEventListener('click', function (event) {
+            var likeBtn = event.target.closest('.clips-comment-like-btn');
+            if (likeBtn) {
+                var count = likeBtn.parentElement.querySelector('.clips-comment-like-count');
+                var liked = likeBtn.classList.toggle('is-liked');
+                var value = Number(count.textContent || 0);
+                count.textContent = String(Math.max(0, value + (liked ? 1 : -1)));
+                return;
+            }
+            var toggle = event.target.closest('.clips-comment-replies-toggle');
+            if (toggle) {
+                var replies = toggle.nextElementSibling;
+                var isOpen = toggle.getAttribute('data-open') === '1';
+                toggle.setAttribute('data-open', isOpen ? '0' : '1');
+                toggle.textContent = isOpen ? 'Смотреть ответы (1)' : 'Скрыть ответы';
+                if (replies) { replies.hidden = isOpen; }
+            }
+        });
 
         function openCommentsModal(triggerButton) {
             if (!commentsModal) { return; }
             var clip = clips[currentIndex];
             commentsModal.classList.add('is-open');
-            if (triggerButton) {
-                var rect = triggerButton.getBoundingClientRect();
-                commentsModal.style.top = Math.max(16, rect.top - 12) + 'px';
-                commentsModal.style.left = (rect.right + 12) + 'px';
-            }
             commentsList.innerHTML = '<p class="comments-empty">Загрузка...</p>';
             sendClipAction('get_comments').then(function (data) {
                 if (data && data.ok) { renderComments(data.comments || []); }
@@ -673,6 +709,10 @@ foreach ($clipsRows as $clip) {
         commentLinks.forEach(function (link) {
             link.addEventListener('click', function (event) {
                 event.preventDefault();
+                if (commentsModal && commentsModal.classList.contains('is-open')) {
+                    closeCommentsModal();
+                    return;
+                }
                 openCommentsModal(link);
             });
         });
