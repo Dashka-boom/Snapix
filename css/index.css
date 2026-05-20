@@ -2884,7 +2884,7 @@ body.has-side-menu {
 
 /* Notifications drawer / flyout panel */
 .notifications-drawer {
-    width: min(520px, calc(100vw - 96px));
+    width: min(680px, calc(100vw - 96px));
     height: calc(100vh - 32px);
     height: calc(100dvh - 32px);
     max-height: 920px;
@@ -3180,7 +3180,7 @@ body.has-side-menu {
 
 @media (max-width: 768px) {
     .notifications-drawer {
-        width: min(430px, calc(100vw - 66px));
+        width: min(520px, calc(100vw - 66px));
         height: 100dvh;
         top: 0;
         left: 66px;
