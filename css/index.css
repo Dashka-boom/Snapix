@@ -2314,8 +2314,18 @@ body[data-page="clips"].has-side-menu {
 
 .clips-post-menu {
     right: 0;
+    top: auto;
     bottom: calc(100% + 10px);
     min-width: 290px;
+}
+
+.clips-post-menu::after {
+    top: auto;
+    bottom: -7px;
+    border-top: 0;
+    border-right: 0;
+    border-left: 1px solid rgba(104, 197, 219, 0.2);
+    border-bottom: 1px solid rgba(104, 197, 219, 0.2);
 }
 
 .clips-avatar {
@@ -3334,4 +3344,54 @@ body.has-side-menu {
 @media (max-width: 980px) {
     .clips-shell.comments-open { grid-template-columns: minmax(0, 1fr) 70px; grid-template-rows: 1fr auto auto; }
     .clips-comments-modal { grid-column: 1 / -1; grid-row: 3; width: min(620px, calc(100vw - 100px)); height: 46vh; max-height: 46vh; justify-self: center; }
+}
+
+/* Minimal comment action controls (no turquoise chips) */
+.clips-comments-modal .clips-comment-menu-btn,
+.clips-comments-modal .clips-comment-like-btn,
+.clips-comments-modal .clips-comment-replies-toggle {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.clips-comments-modal .clips-comment-menu-btn:hover,
+.clips-comments-modal .clips-comment-menu-btn:focus-visible,
+.clips-comments-modal .clips-comment-like-btn:hover,
+.clips-comments-modal .clips-comment-like-btn:focus-visible,
+.clips-comments-modal .clips-comment-replies-toggle:hover,
+.clips-comments-modal .clips-comment-replies-toggle:focus-visible {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    outline: none !important;
+}
+
+.clips-comments-modal .clips-comment-menu-btn {
+    color: #fff !important;
+}
+
+.clips-comments-modal .clips-comment-like-btn img {
+    filter: brightness(0) invert(1) !important;
+}
+
+.clips-comments-modal .clips-comment-like-count {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.clips-comments-modal .clips-comment-replies-toggle {
+    color: rgba(255, 255, 255, 0.6) !important;
+    text-decoration: none !important;
+}
+
+.clips-comments-modal .clips-comment-replies-toggle:hover,
+.clips-comments-modal .clips-comment-replies-toggle:focus-visible {
+    color: rgba(255, 255, 255, 0.82) !important;
 }
