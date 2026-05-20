@@ -3107,6 +3107,16 @@ body.has-side-menu {
     color: #68C5DB !important;
 }
 
+.notifications-drawer-title {
+    margin: 0;
+    width: 100%;
+    color: #ffffff !important;
+    font-weight: 800;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 .notifications-drawer-copy p,
 .notifications-drawer-empty {
     margin: 0;
