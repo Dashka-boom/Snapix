@@ -2213,7 +2213,7 @@ body[data-page="clips"] {
 }
 
 body[data-page="clips"].has-side-menu {
-    padding-left: 0;
+    padding-right: 250px;
 }
 
 .clips-page {
