@@ -23,20 +23,39 @@ function clips_extract_hashtags(string $caption): array
 
 function clips_fetch_comments(PDO $pdo, int $postId, ?int $currentUserId): array
 {
-    $stmt = $pdo->prepare('\n        SELECT comments.comment_text, comments.created_at, users.id AS user_id, users.login, users.avatar\n        FROM comments\n        INNER JOIN users ON users.id = comments.user_id\n        WHERE comments.post_id = :post_id AND comments.is_deleted = 0\n        ORDER BY comments.created_at DESC, comments.id DESC\n        LIMIT 80\n    ');
-    $stmt->execute(['post_id' => $postId]);
+    $stmt = $pdo->prepare("
+        SELECT 
+            comments.id,
+            comments.comment_text,
+            comments.created_at,
+            users.id AS user_id,
+            users.login,
+            users.avatar
+        FROM comments
+        INNER JOIN users ON users.id = comments.user_id
+        WHERE comments.post_id = :post_id 
+          AND comments.is_deleted = 0
+        ORDER BY comments.created_at DESC, comments.id DESC
+        LIMIT 80
+    ");
+
+    $stmt->execute([
+        'post_id' => $postId
+    ]);
+
     $rows = $stmt->fetchAll() ?: [];
     $comments = [];
 
     foreach ($rows as $row) {
         $comments[] = [
+            'id' => (int) ($row['id'] ?? 0),
             'text' => (string) ($row['comment_text'] ?? ''),
             'login' => (string) ($row['login'] ?? ''),
             'profile_url' => clips_build_profile_url((int) ($row['user_id'] ?? 0), $currentUserId),
             'avatar' => (string) ($row['avatar'] ?? ''),
             'created_at' => (string) ($row['created_at'] ?? ''),
             'likes_count' => 0,
-            'replies_count' => 1,
+            'replies_count' => 0,
         ];
     }
 
