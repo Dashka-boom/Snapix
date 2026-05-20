@@ -2212,6 +2212,10 @@ body[data-page="clips"] {
     overflow: hidden;
 }
 
+body[data-page="clips"].has-side-menu {
+    padding-left: 0;
+}
+
 .clips-page {
     width: 100%;
     max-width: none;
