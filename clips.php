@@ -497,6 +497,7 @@ foreach ($clipsRows as $clip) {
         var commentsModal = document.querySelector('[data-clips-comments-modal]');
         var commentsList = document.querySelector('[data-clips-comments-list]');
         var commentsForm = document.querySelector('[data-clips-comments-form]');
+        var isCommentsSubmitting = false;
         var counts = {
             likes: document.querySelector('[data-clips-count="likes"]'),
             comments: document.querySelector('[data-clips-count="comments"]'),
@@ -682,13 +683,29 @@ foreach ($clipsRows as $clip) {
         if (commentsForm) {
             commentsForm.addEventListener('submit', function (event) {
                 event.preventDefault();
+
+                if (isCommentsSubmitting) {
+                    return;
+                }
+
                 var textarea = commentsForm.querySelector('textarea[name="comment_text"]');
-                if (!textarea || !textarea.value.trim()) { return; }
+                var submitButton = commentsForm.querySelector('button[type="submit"]');
+                var textValue = textarea ? textarea.value.trim() : '';
+
+                if (!textarea || !textValue) {
+                    return;
+                }
+
+                isCommentsSubmitting = true;
+                if (submitButton) {
+                    submitButton.disabled = true;
+                }
+
                 var clip = clips[currentIndex];
                 var formData = new URLSearchParams();
                 formData.set('action', 'add_comment');
                 formData.set('post_id', clip.id);
-                formData.set('comment_text', textarea.value);
+                formData.set('comment_text', textValue);
                 fetch('clips.php', { method:'POST', credentials:'same-origin', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','Accept':'application/json'}, body: formData.toString() })
                     .then(function (response) { return response.json(); })
                     .then(function (data) {
@@ -698,7 +715,13 @@ foreach ($clipsRows as $clip) {
                         clips[currentIndex].counts.comments = Number(data.comments_count || 0);
                         openCommentsModal();
                     })
-                    .catch(function () {});
+                    .catch(function () {})
+                    .finally(function () {
+                        isCommentsSubmitting = false;
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                        }
+                    });
             });
         }
 
