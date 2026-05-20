@@ -22,6 +22,28 @@ $viewerId = (int) $_SESSION['user_id'];
 $action = $_POST['action'] ?? '';
 $requestId = (int) ($_POST['request_id'] ?? 0);
 
+if ($action === 'mark_moderation_notification_read') {
+    $notificationId = (int) ($_POST['notification_id'] ?? 0);
+    if ($notificationId <= 0) {
+        snapix_json_response(['success' => false, 'message' => 'Некорректное уведомление.'], 400);
+    }
+
+    $stmt = $pdo->prepare("
+        UPDATE user_notifications
+        SET is_read = 1
+        WHERE id = :id AND user_id = :user_id AND is_read = 0
+    " );
+    $stmt->execute([
+        'id' => $notificationId,
+        'user_id' => $viewerId,
+    ]);
+
+    snapix_json_response([
+        'success' => true,
+        'message' => 'Уведомление помечено прочитанным.',
+    ]);
+}
+
 if (!in_array($action, ['accept_follow_request', 'decline_follow_request'], true) || $requestId <= 0) {
     snapix_json_response(['success' => false, 'message' => 'Некорректная заявка.'], 400);
 }
