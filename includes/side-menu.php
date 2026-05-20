@@ -63,6 +63,35 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
     return $empty;
 }
 
+
+function snapix_side_fetch_unread_moderation_notification(?array $sideMenuUser): ?array
+{
+    global $pdo;
+
+    if (!$sideMenuUser || !isset($pdo)) {
+        return null;
+    }
+
+    $userId = (int) ($sideMenuUser['id'] ?? 0);
+    if ($userId <= 0) {
+        return null;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT id, title, message, created_at
+        FROM user_notifications
+        WHERE user_id = :user_id
+          AND is_read = 0
+          AND title = 'Комментарий удалён'
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
+    $stmt->execute(['user_id' => $userId]);
+    $notification = $stmt->fetch();
+
+    return $notification ?: null;
+}
+
 function snapix_side_render_avatar(array $item, int $viewerId): void
 {
     $login = (string) ($item['login'] ?? 'Пользователь');
@@ -172,9 +201,9 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
                     <?php if ($notifications['complaints']): ?>
                         <div class="notifications-drawer-list">
                             <?php foreach ($notifications['complaints'] as $complaint): ?>
-                                <article class="notifications-drawer-item">
+                                <article class="notifications-drawer-item notifications-drawer-item-complaint">
                                     <div class="notifications-drawer-copy">
-                                        <p class="notifications-drawer-login"><?php echo htmlspecialchars((string) ($complaint['title'] ?? 'Жалоба')); ?></p>
+                                        <p class="notifications-drawer-title"><?php echo htmlspecialchars((string) ($complaint['title'] ?? 'Жалоба')); ?></p>
                                         <p><?php echo nl2br(htmlspecialchars((string) ($complaint['message'] ?? ''))); ?></p>
                                     </div>
                                 </article>
@@ -279,6 +308,22 @@ function render_side_menu(?array $sideMenuUser = null): void
         <?php endif; ?>
     </aside>
     <?php render_notifications_drawer($sideMenuUser); ?>
+
+    <?php $moderationAlert = snapix_side_fetch_unread_moderation_notification($sideMenuUser); ?>
+    <?php if ($moderationAlert): ?>
+        <div class="moderation-alert-backdrop is-open" data-moderation-alert-backdrop></div>
+        <section class="moderation-alert-modal is-open" data-moderation-alert data-notification-id="<?php echo (int) $moderationAlert['id']; ?>" aria-label="Предупреждение модерации" role="dialog" aria-modal="true">
+            <header class="moderation-alert-header">
+                <h2><?php echo htmlspecialchars((string) ($moderationAlert['title'] ?? 'Комментарий удалён')); ?></h2>
+            </header>
+            <div class="moderation-alert-body">
+                <p><?php echo nl2br(htmlspecialchars((string) ($moderationAlert['message'] ?? ''))); ?></p>
+            </div>
+            <button type="button" class="moderation-alert-action" data-moderation-alert-close>Понятно</button>
+        </section>
+    <?php endif; ?>
+
     <script src="js/notifications-drawer.js" defer></script>
+    <script src="js/moderation-alert.js" defer></script>
     <?php
 }
