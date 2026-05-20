@@ -20,6 +20,25 @@ function clips_extract_hashtags(string $caption): array
     return array_values(array_unique($matches[0] ?? []));
 }
 
+
+function clips_fetch_comments(PDO $pdo, int $postId, ?int $currentUserId): array
+{
+    $stmt = $pdo->prepare('\n        SELECT comments.comment_text, comments.created_at, users.id AS user_id, users.login\n        FROM comments\n        INNER JOIN users ON users.id = comments.user_id\n        WHERE comments.post_id = :post_id AND comments.is_deleted = 0\n        ORDER BY comments.created_at DESC, comments.id DESC\n        LIMIT 80\n    ');
+    $stmt->execute(['post_id' => $postId]);
+    $rows = $stmt->fetchAll() ?: [];
+    $comments = [];
+
+    foreach ($rows as $row) {
+        $comments[] = [
+            'text' => (string) ($row['comment_text'] ?? ''),
+            'login' => (string) ($row['login'] ?? ''),
+            'profile_url' => clips_build_profile_url((int) ($row['user_id'] ?? 0), $currentUserId),
+        ];
+    }
+
+    return $comments;
+}
+
 $user = null;
 
 if (isset($_SESSION['user_id'])) {
@@ -158,6 +177,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'reason_text' => 'Жалоба на clips #' . $postId,
         ]);
         $ajaxExtra['reported'] = true;
+    }
+
+    if ($action === 'get_comments') {
+        if ($postId <= 0 || !$postExists) {
+            snapix_send_post_action_error('post_not_found', 404);
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'comments' => clips_fetch_comments($pdo, $postId, $user ? (int) $user['id'] : null),
+        ]);
+        exit;
+    }
+
+    if ($action === 'add_comment') {
+        if (!$user) {
+            snapix_send_post_action_error('login_required', 401);
+        }
+
+        if ($postId <= 0 || !$postExists) {
+            snapix_send_post_action_error('post_not_found', 404);
+        }
+
+        $commentText = trim((string) ($_POST['comment_text'] ?? ''));
+
+        if ($commentText === '') {
+            snapix_send_post_action_error('empty_comment', 422);
+        }
+
+        $insertCommentStmt = $pdo->prepare('INSERT INTO comments (user_id, post_id, comment_text) VALUES (:user_id, :post_id, :comment_text)');
+        $insertCommentStmt->execute([
+            'user_id' => (int) $user['id'],
+            'post_id' => $postId,
+            'comment_text' => mb_substr($commentText, 0, 1000),
+        ]);
+
+        $comment = [
+            'text' => mb_substr($commentText, 0, 1000),
+            'login' => (string) $user['login'],
+            'profile_url' => clips_build_profile_url((int) $user['id'], (int) $user['id']),
+        ];
+
+        snapix_send_post_action_json($pdo, $postId, (int) $user['id'], ['comment' => $comment]);
     }
 
     if ($isAjaxPostAction) {
@@ -377,6 +440,23 @@ foreach ($clipsRows as $clip) {
                     <?php endif; ?>
                 </div>
 
+
+                <div class="clips-comments-modal" data-clips-comments-modal>
+                    <div class="clips-comments-modal-header">
+                        <h3>Комментарии</h3>
+                        <button type="button" class="clips-comments-close" data-clips-comments-close aria-label="Закрыть">×</button>
+                    </div>
+                    <div class="clips-comments-modal-body" data-clips-comments-list>
+                        <p class="comments-empty">Загрузка...</p>
+                    </div>
+                    <?php if ($user): ?>
+                        <form class="clips-comments-form" data-clips-comments-form>
+                            <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea>
+                            <button type="submit" class="primary-link">Отправить</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+
                 <div class="clips-nav" aria-label="Навигация Clips">
                     <button type="button" class="clips-nav-btn" data-clips-prev aria-label="Предыдущий clips">↑</button>
                     <button type="button" class="clips-nav-btn" data-clips-next aria-label="Следующий clips">↓</button>
@@ -414,6 +494,9 @@ foreach ($clipsRows as $clip) {
         var clipsBlockLabel = document.querySelector('[data-clips-block-label]');
         var clipsCopyLink = document.querySelector('[data-clips-copy-link]');
         var commentLinks = document.querySelectorAll('[data-clips-comment-link]');
+        var commentsModal = document.querySelector('[data-clips-comments-modal]');
+        var commentsList = document.querySelector('[data-clips-comments-list]');
+        var commentsForm = document.querySelector('[data-clips-comments-form]');
         var counts = {
             likes: document.querySelector('[data-clips-count="likes"]'),
             comments: document.querySelector('[data-clips-count="comments"]'),
@@ -529,9 +612,6 @@ foreach ($clipsRows as $clip) {
                     buttons.save.classList.toggle('is-saved', !!clip.state.saved);
                 }
 
-                commentLinks.forEach(function (link) {
-                    link.href = 'index.php?comments_post=' + clip.id + '#post-' + clip.id;
-                });
                 if (clipsMenuAccount) {
                     clipsMenuAccount.href = clip.author.profileUrl;
                 }
@@ -552,7 +632,77 @@ foreach ($clipsRows as $clip) {
             }
 
             currentIndex = nextIndex;
-            renderClip(currentIndex);
+    
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, function (char) {
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]);
+            });
+        }
+
+        function renderComments(items) {
+            if (!commentsList) { return; }
+            if (!items.length) {
+                commentsList.innerHTML = '<p class="comments-empty">Пока нет комментариев.</p>';
+                return;
+            }
+            commentsList.innerHTML = items.map(function (comment) {
+                return '<div class="comment-item"><a class="comment-author" href="' + escapeHtml(comment.profile_url || '#') + '"><strong>' + escapeHtml(comment.login || '') + '</strong></a><p>' + escapeHtml(comment.text || '') + '</p></div>';
+            }).join('');
+        }
+
+        function openCommentsModal(triggerButton) {
+            if (!commentsModal) { return; }
+            var clip = clips[currentIndex];
+            commentsModal.classList.add('is-open');
+            if (triggerButton) {
+                var rect = triggerButton.getBoundingClientRect();
+                commentsModal.style.top = Math.max(16, rect.top - 12) + 'px';
+                commentsModal.style.left = (rect.right + 12) + 'px';
+            }
+            commentsList.innerHTML = '<p class="comments-empty">Загрузка...</p>';
+            sendClipAction('get_comments').then(function (data) {
+                if (data && data.ok) { renderComments(data.comments || []); }
+            }).catch(function () {});
+        }
+
+        function closeCommentsModal() {
+            if (commentsModal) { commentsModal.classList.remove('is-open'); }
+        }
+
+        commentLinks.forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                openCommentsModal(link);
+            });
+        });
+
+        var commentsClose = document.querySelector('[data-clips-comments-close]');
+        if (commentsClose) { commentsClose.addEventListener('click', closeCommentsModal); }
+
+        if (commentsForm) {
+            commentsForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                var textarea = commentsForm.querySelector('textarea[name="comment_text"]');
+                if (!textarea || !textarea.value.trim()) { return; }
+                var clip = clips[currentIndex];
+                var formData = new URLSearchParams();
+                formData.set('action', 'add_comment');
+                formData.set('post_id', clip.id);
+                formData.set('comment_text', textarea.value);
+                fetch('clips.php', { method:'POST', credentials:'same-origin', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','Accept':'application/json'}, body: formData.toString() })
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        if (!data || !data.ok) { return; }
+                        textarea.value = '';
+                        counts.comments.textContent = formatCount(data.comments_count);
+                        clips[currentIndex].counts.comments = Number(data.comments_count || 0);
+                        openCommentsModal();
+                    })
+                    .catch(function () {});
+            });
+        }
+
+        renderClip(currentIndex);
         }
 
         function navigateClip(direction) {

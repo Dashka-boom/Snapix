@@ -3269,3 +3269,30 @@ body.has-side-menu {
     border-color: #68C5DB;
     color: #ffffff;
 }
+
+.clips-comments-modal {
+    width: min(360px, calc(100vw - 24px));
+    max-height: 72vh;
+    border: 1px solid rgba(104, 197, 219, 0.2);
+    border-radius: 18px;
+    background: #040607;
+    color: #fff;
+    position: fixed;
+    z-index: 230;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    animation: clips-comments-fade-in 0.18s ease;
+}
+
+.clips-comments-modal.is-open { display: flex; }
+.clips-comments-modal-header { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid rgba(104,197,219,0.2); }
+.clips-comments-modal-header h3 { margin:0; font-size:16px; color:#fff; }
+.clips-comments-close { border:0; background:transparent; color:#68C5DB; font-size:24px; cursor:pointer; }
+.clips-comments-modal-body { padding:12px 14px; overflow:auto; display:grid; gap:10px; }
+.clips-comments-form { padding:10px 14px 14px; border-top:1px solid rgba(104,197,219,0.2); display:grid; gap:8px; }
+.clips-comments-form textarea { width:100%; border:1px solid rgba(104,197,219,0.2); background:rgba(4,6,7,0.95); color:#fff; border-radius:12px; padding:10px; resize:vertical; }
+.clips-comments-form textarea:focus { outline:none; border-color:#68C5DB; }
+
+@keyframes clips-comments-fade-in { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
