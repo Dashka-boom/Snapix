@@ -2884,7 +2884,7 @@ body.has-side-menu {
 
 /* Notifications drawer / flyout panel */
 .notifications-drawer {
-    width: min(680px, calc(100vw - 96px));
+    width: min(620px, calc(100vw - 96px));
     height: calc(100vh - 32px);
     height: calc(100dvh - 32px);
     max-height: 920px;
@@ -3060,6 +3060,10 @@ body.has-side-menu {
     transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
 }
 
+.notifications-drawer-item-complaint {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .notifications-drawer-item:hover {
     border-color: rgba(104, 197, 219, 0.38);
 }
@@ -3180,7 +3184,7 @@ body.has-side-menu {
 
 @media (max-width: 768px) {
     .notifications-drawer {
-        width: min(520px, calc(100vw - 66px));
+        width: min(480px, calc(100vw - 66px));
         height: 100dvh;
         top: 0;
         left: 66px;

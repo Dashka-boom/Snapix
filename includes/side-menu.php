@@ -172,7 +172,7 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
                     <?php if ($notifications['complaints']): ?>
                         <div class="notifications-drawer-list">
                             <?php foreach ($notifications['complaints'] as $complaint): ?>
-                                <article class="notifications-drawer-item">
+                                <article class="notifications-drawer-item notifications-drawer-item-complaint">
                                     <div class="notifications-drawer-copy">
                                         <p class="notifications-drawer-title"><?php echo htmlspecialchars((string) ($complaint['title'] ?? 'Жалоба')); ?></p>
                                         <p><?php echo nl2br(htmlspecialchars((string) ($complaint['message'] ?? ''))); ?></p>
