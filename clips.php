@@ -371,6 +371,11 @@ foreach ($clipsRows as $clip) {
     <?php render_side_menu($user); ?>
 
     <main class="clips-page">
+        <div class="home-feed-tabs clips-feed-tabs" role="tablist" aria-label="Категории Clips">
+            <button type="button" class="home-feed-tab is-active" role="tab" aria-selected="true" data-clips-tab="recommended">Рекомендации</button>
+            <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="following">Подписки</button>
+            <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="authored">Авторское</button>
+        </div>
         <?php if ($clips): ?>
             <section class="clips-shell" aria-label="Clips">
                 <div class="clips-info">
@@ -498,6 +503,27 @@ foreach ($clipsRows as $clip) {
     <script>
     (function () {
         var clips = <?php echo json_encode($clips, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+        var activeCategory = 'recommended';
+        var categoryTabs = document.querySelectorAll('[data-clips-tab]');
+
+        function setActiveCategory(nextCategory) {
+            activeCategory = nextCategory;
+            categoryTabs.forEach(function (tab) {
+                var isActive = tab.getAttribute('data-clips-tab') === nextCategory;
+                tab.classList.toggle('is-active', isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+        }
+
+        categoryTabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                var nextCategory = tab.getAttribute('data-clips-tab') || 'recommended';
+                if (activeCategory === nextCategory) {
+                    return;
+                }
+                setActiveCategory(nextCategory);
+            });
+        });
 
         if (!clips.length) {
             return;
