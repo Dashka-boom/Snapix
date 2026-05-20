@@ -81,10 +81,10 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
     $tabs = [
         'requests' => 'Заявки',
         'likes' => 'Лайки',
+        'comments' => 'Комментарии',
         'reposts' => 'Репосты',
         'saved' => 'Избранные',
         'complaints' => 'Жалобы',
-        'comments' => 'Комментарии',
     ];
     ?>
     <section class="notifications-drawer" id="notificationsDrawer" aria-label="Уведомления" aria-hidden="true">
