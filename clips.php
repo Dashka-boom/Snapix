@@ -374,7 +374,9 @@ foreach ($clipsRows as $clip) {
         ],
     ];
 
-    $clipsByCategory['recommended'][] = $preparedClip;
+    if ((int) $clip['user_id'] !== $currentUserId) {
+        $clipsByCategory['recommended'][] = $preparedClip;
+    }
 
     if ($currentUserId > 0) {
         if ((int) $clip['user_id'] === $currentUserId) {
