@@ -2193,6 +2193,10 @@ i,
     transform: translateX(-50%) scaleX(1);
 }
 
+.clips-feed-tabs {
+    padding-left: 210px;
+}
+
 main[data-feed-content] {
     transition: opacity 0.18s ease, transform 0.18s ease;
 }
@@ -2877,6 +2881,10 @@ body.has-side-menu {
         margin-left: 0;
         padding: 7px 14px 16px;
         gap: 22px;
+    }
+
+    .clips-feed-tabs {
+        padding-left: 14px;
     }
 
     .home-feed-tab {

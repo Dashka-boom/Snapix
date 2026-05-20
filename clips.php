@@ -260,6 +260,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $currentUserId = (int) ($user['id'] ?? 0);
+$followingUserIds = [];
+
+if ($currentUserId > 0) {
+    $followingStmt = $pdo->prepare("
+        SELECT following_id
+        FROM followers
+        WHERE follower_id = :follower_id
+          AND status = 'accepted'
+    ");
+    $followingStmt->execute(['follower_id' => $currentUserId]);
+    $followingUserIds = array_map('intval', $followingStmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+}
 $clipsStmt = $pdo->query('
     SELECT
         posts.id,
@@ -326,14 +338,18 @@ $clipsStmt = $pdo->query('
     LIMIT 60
 ');
 $clipsRows = $clipsStmt->fetchAll();
-$clips = [];
+$clipsByCategory = [
+    'recommended' => [],
+    'following' => [],
+    'authored' => [],
+];
 
 foreach ($clipsRows as $clip) {
     $caption = (string) ($clip['caption'] ?? '');
     $hashtags = clips_extract_hashtags($caption);
     $description = trim(preg_replace('/#[\p{L}\p{N}_]+/u', '', $caption));
 
-    $clips[] = [
+    $preparedClip = [
         'id' => (int) $clip['id'],
         'videoUrl' => (string) $clip['media_url'],
         'description' => $description,
@@ -357,6 +373,18 @@ foreach ($clipsRows as $clip) {
             'reposted' => (int) $clip['is_reposted'] > 0,
         ],
     ];
+
+    $clipsByCategory['recommended'][] = $preparedClip;
+
+    if ($currentUserId > 0) {
+        if ((int) $clip['user_id'] === $currentUserId) {
+            $clipsByCategory['authored'][] = $preparedClip;
+        }
+
+        if ((int) $clip['user_id'] !== $currentUserId && in_array((int) $clip['user_id'], $followingUserIds, true)) {
+            $clipsByCategory['following'][] = $preparedClip;
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -371,8 +399,14 @@ foreach ($clipsRows as $clip) {
     <?php render_side_menu($user); ?>
 
     <main class="clips-page">
-        <?php if ($clips): ?>
+        <div class="home-feed-tabs clips-feed-tabs" role="tablist" aria-label="Категории Clips">
+            <button type="button" class="home-feed-tab is-active" role="tab" aria-selected="true" data-clips-tab="recommended">Рекомендации</button>
+            <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="following">Подписки</button>
+            <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="authored">Авторское</button>
+        </div>
+        <?php if (!empty($clipsByCategory['recommended'])): ?>
             <section class="clips-shell" aria-label="Clips">
+                <div class="clips-empty-state is-hidden" data-clips-empty-state></div>
                 <div class="clips-info">
                     <div class="clips-author-row">
                         <a href="#" class="clips-author-link" data-clips-author-link>
@@ -497,15 +531,53 @@ foreach ($clipsRows as $clip) {
 
     <script>
     (function () {
-        var clips = <?php echo json_encode($clips, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+        var clipsByCategory = <?php echo json_encode($clipsByCategory, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+        var clips = clipsByCategory.recommended || [];
+        var activeCategory = 'recommended';
+        var categoryTabs = document.querySelectorAll('[data-clips-tab]');
 
-        if (!clips.length) {
-            return;
+        function setActiveCategory(nextCategory) {
+            activeCategory = nextCategory;
+            clips = clipsByCategory[nextCategory] || [];
+            currentIndex = 0;
+            categoryTabs.forEach(function (tab) {
+                var isActive = tab.getAttribute('data-clips-tab') === nextCategory;
+                tab.classList.toggle('is-active', isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            toggleEmptyState();
+            if (clips.length) {
+                renderClip(currentIndex);
+            } else if (video) {
+                video.pause();
+                video.removeAttribute('src');
+            }
         }
+
+        categoryTabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                var nextCategory = tab.getAttribute('data-clips-tab') || 'recommended';
+                if (activeCategory === nextCategory) {
+                    return;
+                }
+                setActiveCategory(nextCategory);
+            });
+        });
+
+        
 
         var currentIndex = 0;
         var lastNavigationAt = 0;
         var shell = document.querySelector('.clips-shell');
+        if (!shell) {
+            return;
+        }
+        var emptyState = document.querySelector('[data-clips-empty-state]');
+        var infoBlock = document.querySelector('.clips-info');
+        var videoWrap = document.querySelector('.clips-video-wrap');
+        var actionsBlock = document.querySelector('.clips-actions');
+        var navBlock = document.querySelector('.clips-nav');
         var video = document.querySelector('[data-clips-video]');
         var avatar = document.querySelector('[data-clips-avatar]');
         var authorLink = document.querySelector('[data-clips-author-link]');
@@ -534,6 +606,23 @@ foreach ($clipsRows as $clip) {
             repost: document.querySelector('[data-clips-action="add_repost"]'),
             save: document.querySelector('[data-clips-action="toggle_save"]')
         };
+
+        function toggleEmptyState() {
+            if (!emptyState) {
+                return;
+            }
+
+            var hasClips = clips.length > 0;
+            emptyState.classList.toggle('is-hidden', hasClips);
+            emptyState.textContent = hasClips ? '' : 'В этой категории пока нет видео.';
+
+            [infoBlock, videoWrap, actionsBlock, navBlock].forEach(function (node) {
+                if (!node) {
+                    return;
+                }
+                node.classList.toggle('is-hidden', !hasClips);
+            });
+        }
 
         function formatCount(value) {
             return String(Number(value || 0));
@@ -658,7 +747,9 @@ foreach ($clipsRows as $clip) {
             }
 
             currentIndex = nextIndex;
-    
+            renderClip(currentIndex);
+        }
+
         function escapeHtml(value) {
             return String(value || '').replace(/[&<>"']/g, function (char) {
                 return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]);
@@ -713,7 +804,7 @@ foreach ($clipsRows as $clip) {
         });
 
         function openCommentsModal(triggerButton) {
-            if (!commentsModal) { return; }
+            if (!commentsModal || !clips.length) { return; }
             var clip = clips[currentIndex];
             commentsModal.classList.add('is-open');
             if (shell) {
@@ -798,9 +889,6 @@ foreach ($clipsRows as $clip) {
             });
         }
 
-        renderClip(currentIndex);
-        }
-
         function navigateClip(direction) {
             var now = Date.now();
 
@@ -821,6 +909,9 @@ foreach ($clipsRows as $clip) {
         }
 
         function sendClipAction(action) {
+            if (!clips.length) {
+                return Promise.resolve({ ok: false });
+            }
             var clip = clips[currentIndex];
             var formData = new URLSearchParams();
             formData.set('action', action);
@@ -864,6 +955,9 @@ foreach ($clipsRows as $clip) {
         }
 
         function copyCurrentClipLink(button) {
+            if (!clips.length) {
+                return;
+            }
             var clip = clips[currentIndex];
             var absoluteUrl = new URL('post.php?id=' + clip.id, window.location.href).toString();
             var label = button ? button.querySelector('span') : null;
@@ -1039,7 +1133,10 @@ foreach ($clipsRows as $clip) {
             navigateClip(event.deltaY > 0 ? 1 : -1);
         }, { passive: false });
 
-        renderClip(currentIndex);
+        toggleEmptyState();
+        if (clips.length) {
+            renderClip(currentIndex);
+        }
     })();
     </script>
 </body>
