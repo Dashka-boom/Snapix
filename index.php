@@ -15,7 +15,6 @@ function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
 }
 
 $user = null;
-$notifications = [];
 $shareRecipients = [];
 
 if (isset($_SESSION['user_id'])) {
@@ -24,10 +23,6 @@ if (isset($_SESSION['user_id'])) {
     $user = $stmt->fetch();
 
     if ($user) {
-        $notificationsStmt = $pdo->prepare('SELECT id, title, message, created_at FROM user_notifications WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 5');
-        $notificationsStmt->execute(['user_id' => $user['id']]);
-        $notifications = $notificationsStmt->fetchAll();
-
         $shareRecipientsStmt = $pdo->prepare("
             SELECT
                 users.id,
@@ -59,14 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     $commentsPostId = 0;
     $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost'], true);
     $ajaxExtra = [];
-
-    if ($action === 'mark_notifications_read') {
-        $markReadStmt = $pdo->prepare('UPDATE user_notifications SET is_read = 1 WHERE user_id = :user_id AND is_read = 0');
-        $markReadStmt->execute(['user_id' => $user['id']]);
-
-        header('Location: index.php');
-        exit;
-    }
 
     if ($action === 'report_comment') {
         $commentId = (int) ($_POST['comment_id'] ?? 0);
@@ -444,26 +431,6 @@ if ($feedPosts) {
 
     <main data-feed-content="for-you">
         <section class="feed-wrap">
-            <?php if ($user && $notifications): ?>
-                <section class="card-surface" style="padding: 16px; margin-bottom: 16px;">
-                    <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px;">
-                        <h2 style="margin: 0;">Уведомления</h2>
-                        <form method="post">
-                            <input type="hidden" name="action" value="mark_notifications_read">
-                            <button type="submit" class="secondary-link">Отметить как прочитанные</button>
-                        </form>
-                    </div>
-                    <div style="display:grid; gap: 10px; margin-top: 12px;">
-                        <?php foreach ($notifications as $notification): ?>
-                            <article style="background: #f8fafc; border:1px solid #e2e8f0; border-radius: 8px; padding: 10px;">
-                                <strong><?php echo htmlspecialchars($notification['title']); ?></strong>
-                                <p style="margin: 8px 0 0;"><?php echo nl2br(htmlspecialchars($notification['message'])); ?></p>
-                            </article>
-                        <?php endforeach; ?>
-                    </div>
-                </section>
-            <?php endif; ?>
-
 
             <?php if ($feedPosts): ?>
                 <div class="feed-list">
