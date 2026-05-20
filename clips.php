@@ -52,13 +52,14 @@ if (isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$user) {
-        snapix_send_post_action_error('login_required', 401);
-    }
-
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
     $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post'], true);
+    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment'], true);
+
+    if ($requiresAuth && !$user) {
+        snapix_send_post_action_error('login_required', 401);
+    }
     $ajaxExtra = [];
     $postExists = false;
     $postOwnerId = 0;
@@ -698,8 +699,15 @@ foreach ($clipsRows as $clip) {
             commentsModal.classList.add('is-open');
             commentsList.innerHTML = '<p class="comments-empty">Загрузка...</p>';
             sendClipAction('get_comments').then(function (data) {
-                if (data && data.ok) { renderComments(data.comments || []); }
-            }).catch(function () {});
+                if (!data || !data.ok) {
+                    commentsList.innerHTML = '<p class="comments-empty">Не удалось загрузить комментарии.</p>';
+                    return;
+                }
+
+                renderComments(data.comments || []);
+            }).catch(function () {
+                commentsList.innerHTML = '<p class="comments-empty">Не удалось загрузить комментарии.</p>';
+            });
         }
 
         function closeCommentsModal() {
@@ -803,7 +811,15 @@ foreach ($clipsRows as $clip) {
                 },
                 body: formData.toString()
             }).then(function (response) {
-                return response.json();
+                if (!response.ok) {
+                    return response.text().then(function () {
+                        return { ok: false };
+                    });
+                }
+
+                return response.json().catch(function () {
+                    return { ok: false };
+                });
             });
         }
 
