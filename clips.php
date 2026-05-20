@@ -457,7 +457,7 @@ foreach ($clipsRows as $clip) {
                     <?php if ($user): ?>
                         <form class="clips-comments-form" data-clips-comments-form>
                             <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Добавьте комментарий..."></textarea>
-                            <button type="submit" class="primary-link">Отправить</button>
+                            <button type="submit" class="clips-comments-send" aria-label="Отправить комментарий">➤</button>
                         </form>
                     <?php endif; ?>
                 </div>
@@ -656,7 +656,7 @@ foreach ($clipsRows as $clip) {
         function renderComments(items) {
             if (!commentsList) { return; }
             if (!items.length) {
-                commentsList.innerHTML = '<p class="comments-empty">Пока нет комментариев.</p>';
+                commentsList.innerHTML = '<p class="comments-empty">Комментариев пока нет.</p>';
                 return;
             }
             commentsList.innerHTML = items.map(function (comment, index) {

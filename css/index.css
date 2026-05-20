@@ -3360,3 +3360,108 @@ body.has-side-menu {
 @media (max-width: 1100px) {
     .clips-comments-modal { right: 84px; width: min(350px, calc(100vw - 170px)); }
 }
+
+/* Clips comments panel refinements */
+.clips-comments-modal {
+    right: 92px;
+    width: 420px;
+    max-width: calc(100vw - 220px);
+    height: 76vh;
+    max-height: 76vh;
+    border-radius: 24px;
+    display: none;
+}
+
+.clips-comments-modal.is-open {
+    display: flex;
+}
+
+.clips-comments-modal-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(104, 197, 219, 0.2);
+}
+
+.clips-comments-close {
+    min-height: 0;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0 !important;
+    background: transparent !important;
+    color: #fff !important;
+    box-shadow: none !important;
+    font-size: 30px;
+    line-height: 1;
+    border-radius: 0;
+    opacity: 0.92;
+}
+
+.clips-comments-close:hover,
+.clips-comments-close:focus-visible {
+    opacity: 1;
+    background: transparent !important;
+    outline: none;
+}
+
+.clips-comments-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.clips-comments-form {
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 10px;
+}
+
+.clips-comments-form textarea {
+    min-height: 42px;
+    max-height: 90px;
+    resize: none;
+    font-size: 14px;
+}
+
+.clips-comments-send {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    border: 1px solid rgba(104, 197, 219, 0.35) !important;
+    border-radius: 999px;
+    background: rgba(4, 6, 7, 0.95) !important;
+    color: #68C5DB !important;
+    padding: 0;
+    box-shadow: none !important;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.clips-comments-send:hover,
+.clips-comments-send:focus-visible {
+    border-color: #68C5DB !important;
+    color: #ffffff !important;
+    background: rgba(104, 197, 219, 0.16) !important;
+    outline: none;
+}
+
+.clips-comments-send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 1200px) {
+    .clips-comments-modal {
+        width: min(380px, calc(100vw - 190px));
+        right: 80px;
+    }
+}
+
+@media (max-width: 980px) {
+    .clips-comments-modal {
+        width: min(340px, calc(100vw - 150px));
+        right: 72px;
+        height: 72vh;
+        max-height: 72vh;
+    }
+}
