@@ -20,6 +20,29 @@ function clips_extract_hashtags(string $caption): array
     return array_values(array_unique($matches[0] ?? []));
 }
 
+
+function clips_fetch_comments(PDO $pdo, int $postId, ?int $currentUserId): array
+{
+    $stmt = $pdo->prepare('\n        SELECT comments.comment_text, comments.created_at, users.id AS user_id, users.login, users.avatar\n        FROM comments\n        INNER JOIN users ON users.id = comments.user_id\n        WHERE comments.post_id = :post_id AND comments.is_deleted = 0\n        ORDER BY comments.created_at DESC, comments.id DESC\n        LIMIT 80\n    ');
+    $stmt->execute(['post_id' => $postId]);
+    $rows = $stmt->fetchAll() ?: [];
+    $comments = [];
+
+    foreach ($rows as $row) {
+        $comments[] = [
+            'text' => (string) ($row['comment_text'] ?? ''),
+            'login' => (string) ($row['login'] ?? ''),
+            'profile_url' => clips_build_profile_url((int) ($row['user_id'] ?? 0), $currentUserId),
+            'avatar' => (string) ($row['avatar'] ?? ''),
+            'created_at' => (string) ($row['created_at'] ?? ''),
+            'likes_count' => 0,
+            'replies_count' => 1,
+        ];
+    }
+
+    return $comments;
+}
+
 $user = null;
 
 if (isset($_SESSION['user_id'])) {
@@ -29,13 +52,14 @@ if (isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$user) {
-        snapix_send_post_action_error('login_required', 401);
-    }
-
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
     $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post'], true);
+    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment'], true);
+
+    if ($requiresAuth && !$user) {
+        snapix_send_post_action_error('login_required', 401);
+    }
     $ajaxExtra = [];
     $postExists = false;
     $postOwnerId = 0;
@@ -158,6 +182,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'reason_text' => 'Жалоба на clips #' . $postId,
         ]);
         $ajaxExtra['reported'] = true;
+    }
+
+    if ($action === 'get_comments') {
+        if ($postId <= 0 || !$postExists) {
+            snapix_send_post_action_error('post_not_found', 404);
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'comments' => clips_fetch_comments($pdo, $postId, $user ? (int) $user['id'] : null),
+        ]);
+        exit;
+    }
+
+    if ($action === 'add_comment') {
+        if (!$user) {
+            snapix_send_post_action_error('login_required', 401);
+        }
+
+        if ($postId <= 0 || !$postExists) {
+            snapix_send_post_action_error('post_not_found', 404);
+        }
+
+        $commentText = trim((string) ($_POST['comment_text'] ?? ''));
+
+        if ($commentText === '') {
+            snapix_send_post_action_error('empty_comment', 422);
+        }
+
+        $insertCommentStmt = $pdo->prepare('INSERT INTO comments (user_id, post_id, comment_text) VALUES (:user_id, :post_id, :comment_text)');
+        $insertCommentStmt->execute([
+            'user_id' => (int) $user['id'],
+            'post_id' => $postId,
+            'comment_text' => mb_substr($commentText, 0, 1000),
+        ]);
+
+        $comment = [
+            'text' => mb_substr($commentText, 0, 1000),
+            'login' => (string) $user['login'],
+            'profile_url' => clips_build_profile_url((int) $user['id'], (int) $user['id']),
+        ];
+
+        snapix_send_post_action_json($pdo, $postId, (int) $user['id'], ['comment' => $comment]);
     }
 
     if ($isAjaxPostAction) {
@@ -377,6 +445,24 @@ foreach ($clipsRows as $clip) {
                     <?php endif; ?>
                 </div>
 
+
+                <div class="clips-comments-modal" data-clips-comments-modal>
+                    <div class="clips-comments-modal-header">
+                        <button type="button" class="clips-comments-close" data-clips-comments-close aria-label="Закрыть">×</button>
+                        <h3>Комментарии</h3>
+                        <span class="clips-comments-header-spacer" aria-hidden="true"></span>
+                    </div>
+                    <div class="clips-comments-modal-body" data-clips-comments-list>
+                        <p class="comments-empty">Загрузка...</p>
+                    </div>
+                    <?php if ($user): ?>
+                        <form class="clips-comments-form" data-clips-comments-form>
+                            <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Добавьте комментарий..."></textarea>
+                            <button type="submit" class="clips-comments-send" aria-label="Отправить комментарий">➤</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+
                 <div class="clips-nav" aria-label="Навигация Clips">
                     <button type="button" class="clips-nav-btn" data-clips-prev aria-label="Предыдущий clips">↑</button>
                     <button type="button" class="clips-nav-btn" data-clips-next aria-label="Следующий clips">↓</button>
@@ -414,6 +500,10 @@ foreach ($clipsRows as $clip) {
         var clipsBlockLabel = document.querySelector('[data-clips-block-label]');
         var clipsCopyLink = document.querySelector('[data-clips-copy-link]');
         var commentLinks = document.querySelectorAll('[data-clips-comment-link]');
+        var commentsModal = document.querySelector('[data-clips-comments-modal]');
+        var commentsList = document.querySelector('[data-clips-comments-list]');
+        var commentsForm = document.querySelector('[data-clips-comments-form]');
+        var isCommentsSubmitting = false;
         var counts = {
             likes: document.querySelector('[data-clips-count="likes"]'),
             comments: document.querySelector('[data-clips-count="comments"]'),
@@ -529,9 +619,6 @@ foreach ($clipsRows as $clip) {
                     buttons.save.classList.toggle('is-saved', !!clip.state.saved);
                 }
 
-                commentLinks.forEach(function (link) {
-                    link.href = 'index.php?comments_post=' + clip.id + '#post-' + clip.id;
-                });
                 if (clipsMenuAccount) {
                     clipsMenuAccount.href = clip.author.profileUrl;
                 }
@@ -552,7 +639,147 @@ foreach ($clipsRows as $clip) {
             }
 
             currentIndex = nextIndex;
-            renderClip(currentIndex);
+    
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, function (char) {
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]);
+            });
+        }
+
+        function formatCommentDate(value) {
+            var date = parseDate(value);
+            if (!Number.isFinite(date.getTime())) {
+                return '';
+            }
+            return pad(date.getDate()) + '.' + pad(date.getMonth() + 1) + '.' + String(date.getFullYear()).slice(-2);
+        }
+
+        function renderComments(items) {
+            if (!commentsList) { return; }
+            if (!items.length) {
+                commentsList.innerHTML = '<p class="comments-empty">Комментариев пока нет.</p>';
+                return;
+            }
+            commentsList.innerHTML = items.map(function (comment, index) {
+                var avatar = comment.avatar ? '<span class="clips-comment-avatar has-avatar" style="background-image:url(\'' + escapeHtml(comment.avatar) + '\')"></span>' : '<span class="clips-comment-avatar">' + escapeHtml((comment.login || 'S').slice(0,1)) + '</span>';
+                return '<article class="clips-comment-item" data-comment-index="' + index + '">' +
+                    '<div class="clips-comment-top">' +
+                        '<div class="clips-comment-meta-left">' + avatar + '<div><a href="' + escapeHtml(comment.profile_url || '#') + '" class="comment-author"><strong>' + escapeHtml(comment.login || '') + '</strong></a><span class="clips-comment-date">' + escapeHtml(formatCommentDate(comment.created_at || '')) + '</span></div></div>' +
+                        '<div class="clips-comment-meta-right"><button type="button" class="clips-comment-menu-btn" aria-label="Меню">•••</button><button type="button" class="clips-comment-like-btn" aria-label="Лайк комментария"><img src="icon/dark theme/like.png" alt=""></button><span class="clips-comment-like-count">' + escapeHtml(comment.likes_count || 0) + '</span></div>' +
+                    '</div>' +
+                    '<p>' + escapeHtml(comment.text || '') + '</p>' +
+                    '<button type="button" class="clips-comment-replies-toggle" data-open="0">Смотреть ответы (' + escapeHtml(comment.replies_count || 1) + ')</button>' +
+                    '<div class="clips-comment-replies" hidden><p class="clips-comment-reply">Ответы пока недоступны.</p></div>' +
+                '</article>';
+            }).join('');
+        }
+
+        commentsList.addEventListener('click', function (event) {
+            var likeBtn = event.target.closest('.clips-comment-like-btn');
+            if (likeBtn) {
+                var count = likeBtn.parentElement.querySelector('.clips-comment-like-count');
+                var liked = likeBtn.classList.toggle('is-liked');
+                var value = Number(count.textContent || 0);
+                count.textContent = String(Math.max(0, value + (liked ? 1 : -1)));
+                return;
+            }
+            var toggle = event.target.closest('.clips-comment-replies-toggle');
+            if (toggle) {
+                var replies = toggle.nextElementSibling;
+                var isOpen = toggle.getAttribute('data-open') === '1';
+                toggle.setAttribute('data-open', isOpen ? '0' : '1');
+                toggle.textContent = isOpen ? 'Смотреть ответы (1)' : 'Скрыть ответы';
+                if (replies) { replies.hidden = isOpen; }
+            }
+        });
+
+        function openCommentsModal(triggerButton) {
+            if (!commentsModal) { return; }
+            var clip = clips[currentIndex];
+            commentsModal.classList.add('is-open');
+            if (shell) {
+                shell.classList.add('comments-open');
+            }
+            commentsList.innerHTML = '<p class="comments-empty">Загрузка...</p>';
+            sendClipAction('get_comments').then(function (data) {
+                if (!data || !data.ok) {
+                    commentsList.innerHTML = '<p class="comments-empty">Не удалось загрузить комментарии.</p>';
+                    return;
+                }
+
+                renderComments(data.comments || []);
+            }).catch(function () {
+                commentsList.innerHTML = '<p class="comments-empty">Не удалось загрузить комментарии.</p>';
+            });
+        }
+
+        function closeCommentsModal() {
+            if (commentsModal) { commentsModal.classList.remove('is-open'); }
+            if (shell) {
+                shell.classList.remove('comments-open');
+            }
+        }
+
+        commentLinks.forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                if (commentsModal && commentsModal.classList.contains('is-open')) {
+                    closeCommentsModal();
+                    return;
+                }
+                openCommentsModal(link);
+            });
+        });
+
+        var commentsClose = document.querySelector('[data-clips-comments-close]');
+        if (commentsClose) { commentsClose.addEventListener('click', closeCommentsModal); }
+
+        if (commentsForm) {
+            commentsForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                if (isCommentsSubmitting) {
+                    return;
+                }
+
+                var textarea = commentsForm.querySelector('textarea[name="comment_text"]');
+                var submitButton = commentsForm.querySelector('button[type="submit"]');
+                var textValue = textarea ? textarea.value.trim() : '';
+
+                if (!textarea || !textValue) {
+                    return;
+                }
+
+                isCommentsSubmitting = true;
+                if (submitButton) {
+                    submitButton.disabled = true;
+                }
+
+                var clip = clips[currentIndex];
+                var formData = new URLSearchParams();
+                formData.set('action', 'add_comment');
+                formData.set('post_id', clip.id);
+                formData.set('comment_text', textValue);
+                fetch('clips.php', { method:'POST', credentials:'same-origin', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','Accept':'application/json'}, body: formData.toString() })
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        if (!data || !data.ok) { return; }
+                        textarea.value = '';
+                        counts.comments.textContent = formatCount(data.comments_count);
+                        clips[currentIndex].counts.comments = Number(data.comments_count || 0);
+                        openCommentsModal();
+                    })
+                    .catch(function () {})
+                    .finally(function () {
+                        isCommentsSubmitting = false;
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                        }
+                    });
+            });
+        }
+
+        renderClip(currentIndex);
         }
 
         function navigateClip(direction) {
@@ -590,7 +817,15 @@ foreach ($clipsRows as $clip) {
                 },
                 body: formData.toString()
             }).then(function (response) {
-                return response.json();
+                if (!response.ok) {
+                    return response.text().then(function () {
+                        return { ok: false };
+                    });
+                }
+
+                return response.json().catch(function () {
+                    return { ok: false };
+                });
             });
         }
 
