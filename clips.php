@@ -402,7 +402,7 @@ foreach ($clipsRows as $clip) {
 
     <main class="clips-page">
         <div class="home-feed-tabs clips-feed-tabs" role="tablist" aria-label="Категории Clips">
-            <button type="button" class="home-feed-tab is-active" role="tab" aria-selected="true" data-clips-tab="recommended">Рекомендации</button>
+            <button type="button" class="home-feed-tab is-active" role="tab" aria-selected="true" data-clips-tab="recommended">Для вас</button>
             <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="following">Подписки</button>
             <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="authored">Авторское</button>
         </div>
