@@ -697,6 +697,9 @@ foreach ($clipsRows as $clip) {
             if (!commentsModal) { return; }
             var clip = clips[currentIndex];
             commentsModal.classList.add('is-open');
+            if (shell) {
+                shell.classList.add('comments-open');
+            }
             commentsList.innerHTML = '<p class="comments-empty">Загрузка...</p>';
             sendClipAction('get_comments').then(function (data) {
                 if (!data || !data.ok) {
@@ -712,6 +715,9 @@ foreach ($clipsRows as $clip) {
 
         function closeCommentsModal() {
             if (commentsModal) { commentsModal.classList.remove('is-open'); }
+            if (shell) {
+                shell.classList.remove('comments-open');
+            }
         }
 
         commentLinks.forEach(function (link) {
