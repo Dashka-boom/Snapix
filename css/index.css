@@ -2314,8 +2314,18 @@ body[data-page="clips"].has-side-menu {
 
 .clips-post-menu {
     right: 0;
+    top: auto;
     bottom: calc(100% + 10px);
     min-width: 290px;
+}
+
+.clips-post-menu::after {
+    top: auto;
+    bottom: -7px;
+    border-top: 0;
+    border-right: 0;
+    border-left: 1px solid rgba(104, 197, 219, 0.2);
+    border-bottom: 1px solid rgba(104, 197, 219, 0.2);
 }
 
 .clips-avatar {
