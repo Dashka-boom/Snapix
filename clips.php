@@ -265,13 +265,28 @@ $relatedUserIds = [];
 if ($currentUserId > 0) {
   $relatedUserIdsStmt = $pdo->prepare("
     SELECT following_id AS uid
-        FROM followers
-        WHERE follower_id = :follower_id
-          AND status = 'accepted'
-    ");
-    $followingStmt->execute(['follower_id' => $currentUserId]);
-    $followingUserIds = array_map('intval', $followingStmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+    FROM followers
+    WHERE follower_id = :user_id
+      AND following_id <> :user_id
+
+    UNION
+
+    SELECT follower_id AS uid
+    FROM followers
+    WHERE following_id = :user_id
+      AND follower_id <> :user_id
+");
+
+    $relatedUserIdsStmt->execute([
+        'user_id' => $currentUserId
+    ]);
+
+    $relatedUserIds = array_map(
+        'intval',
+        $relatedUserIdsStmt->fetchAll(PDO::FETCH_COLUMN) ?: []
+    );
 }
+
 $clipsStmt = $pdo->query('
     SELECT
         posts.id,
@@ -337,7 +352,8 @@ $clipsStmt = $pdo->query('
     ORDER BY posts.created_at DESC, posts.id DESC
     LIMIT 60
 ');
-$clipsRows = $clipsStmt->fetchAll();
+$clipsRows = $clipsStmt->fetchAll() ?: [];
+
 $clipsByCategory = [
     'recommended' => [],
     'following' => [],
@@ -345,6 +361,7 @@ $clipsByCategory = [
 ];
 
 foreach ($clipsRows as $clip) {
+    $clipUserId = (int) $clip['user_id'];
     $caption = (string) ($clip['caption'] ?? '');
     $hashtags = clips_extract_hashtags($caption);
     $description = trim(preg_replace('/#[\p{L}\p{N}_]+/u', '', $caption));
@@ -356,10 +373,10 @@ foreach ($clipsRows as $clip) {
         'hashtags' => $hashtags,
         'createdAt' => (string) $clip['created_at'],
         'author' => [
-            'id' => (int) $clip['user_id'],
+            'id' => $clipUserId,
             'login' => (string) $clip['login'],
             'avatar' => (string) ($clip['avatar'] ?? ''),
-            'profileUrl' => clips_build_profile_url((int) $clip['user_id'], $user ? (int) $user['id'] : null),
+            'profileUrl' => clips_build_profile_url($clipUserId, $user ? (int) $user['id'] : null),
         ],
         'counts' => [
             'likes' => (int) $clip['likes_count'],
@@ -374,18 +391,16 @@ foreach ($clipsRows as $clip) {
         ],
     ];
 
-    if ((int) $clip['user_id'] !== $currentUserId) {
+    if ($clipUserId !== $currentUserId) {
         $clipsByCategory['recommended'][] = $preparedClip;
     }
 
-    if ($currentUserId > 0) {
-        if ((int) $clip['user_id'] === $currentUserId) {
-            $clipsByCategory['authored'][] = $preparedClip;
-        }
+    if ($currentUserId > 0 && $clipUserId === $currentUserId) {
+        $clipsByCategory['authored'][] = $preparedClip;
+    }
 
-        if ((int) $clip['user_id'] !== $currentUserId && in_array((int) $clip['user_id'], $followingUserIds, true)) {
-            $clipsByCategory['following'][] = $preparedClip;
-        }
+    if ($currentUserId > 0 && $clipUserId !== $currentUserId && in_array($clipUserId, $relatedUserIds, true)) {
+        $clipsByCategory['following'][] = $preparedClip;
     }
 }
 ?>
@@ -406,7 +421,13 @@ foreach ($clipsRows as $clip) {
             <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="following">Подписки</button>
             <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="authored">Авторское</button>
         </div>
-        <?php if (!empty($clipsByCategory['recommended'])): ?>
+        <?php
+$hasAnyClips = !empty($clipsByCategory['recommended'])
+    || !empty($clipsByCategory['following'])
+    || !empty($clipsByCategory['authored']);
+?>
+
+<?php if ($hasAnyClips): ?>
             <section class="clips-shell" aria-label="Clips">
                 <div class="clips-empty-state is-hidden" data-clips-empty-state></div>
                 <div class="clips-info">
