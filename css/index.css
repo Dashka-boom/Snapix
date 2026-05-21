@@ -3390,13 +3390,26 @@ body.has-side-menu {
 }
 
 .clips-comment-actions-overlay {
-    position: fixed;
-    inset: 0;
-    border: 0;
-    z-index: 9998;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    background-color: rgba(0, 0, 0, 0.55) !important;
+    box-shadow: none !important;
+    filter: none !important;
+    z-index: 9998 !important;
+}
+
+.clips-comment-actions-overlay:hover,
+.clips-comment-actions-overlay:focus-visible {
+    background: rgba(0, 0, 0, 0.55) !important;
+    background-color: rgba(0, 0, 0, 0.55) !important;
+    filter: none !important;
+    outline: none !important;
 }
 
 .clips-comment-actions-dialog {
