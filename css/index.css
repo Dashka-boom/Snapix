@@ -3372,6 +3372,50 @@ body.has-side-menu {
 .clips-comment-replies-toggle:hover { color: rgba(255,255,255,0.82); }
 .clips-comment-reply { color: rgba(255,255,255,0.7); font-size: 13px; }
 
+.clips-comment-menu-btn.is-favorited {
+    color: #F3C94A !important;
+}
+
+.clips-comment-actions-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 260;
+}
+
+.clips-comment-actions-modal.is-open {
+    display: flex;
+}
+
+.clips-comment-actions-overlay {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(2, 4, 5, 0.74);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+.clips-comment-actions-dialog {
+    position: relative;
+    width: min(90vw, 360px);
+    border-radius: 18px;
+    overflow: hidden;
+    z-index: 1;
+    display: grid;
+}
+
+.clips-comment-actions-dialog .post-menu-item {
+    width: 100%;
+    text-align: left;
+}
+
+.clips-comment-actions-dialog .post-menu-item.is-favorited img {
+    filter: brightness(0) saturate(100%) invert(77%) sepia(82%) saturate(749%) hue-rotate(358deg) brightness(99%) contrast(87%);
+}
+
 @media (max-width: 1200px) {
     .clips-shell.comments-open { grid-template-columns: minmax(200px, 290px) minmax(240px, 380px) 70px minmax(300px, 360px); gap: 22px; }
     .clips-comments-modal { width: min(360px, 34vw); }
