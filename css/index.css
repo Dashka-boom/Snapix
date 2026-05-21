@@ -2292,14 +2292,30 @@ body[data-page="clips"].has-side-menu {
     text-decoration: none;
 }
 
-.clips-follow-link {
-    color: #68C5DB;
+.clips-follow-link,
+.clips-follow-link:hover,
+.clips-follow-link:focus-visible {
+    position: relative;
+    top: -2px;
+
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+
+    color: #68C5DB !important;
+    font-size: 14px;
+    font-weight: 700;
+
+    cursor: pointer;
+    filter: none !important;
 }
 
 .clips-menu-wrap {
-    margin-left: auto;
     position: relative;
-    flex: 0 0 auto;
+    top: -2px;
 }
 
 .clips-menu-toggle {
