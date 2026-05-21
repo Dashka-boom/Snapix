@@ -2252,6 +2252,19 @@ body[data-page="clips"].has-side-menu {
     transform: translateY(0);
 }
 
+.clips-empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(90vw, 560px);
+    text-align: center;
+    color: #fff;
+    font-size: 18px;
+    line-height: 1.4;
+    z-index: 3;
+}
+
 .clips-info {
     max-width: 320px;
     padding-bottom: 8vh;
