@@ -630,10 +630,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 <div class="clips-comment-actions-modal" data-clips-comment-actions-modal>
                     <button type="button" class="clips-comment-actions-overlay" data-clips-comment-actions-close aria-label="Закрыть меню"></button>
                     <div class="post-menu clips-comment-actions-dialog" data-clips-comment-actions-dialog>
-                        <button type="button" class="post-menu-item" data-clips-comment-action="share">
-                            <img src="icon/dark theme/addcommunication.png" alt="">
-                            <span>Поделиться</span>
-                        </button>
                         <button type="button" class="post-menu-item" data-clips-comment-action="toggle_save" data-clips-comment-favorite-btn data-save-post-id="">
                             <img src="icon/dark theme/favourites.png" alt="">
                             <span>Избранное</span>
