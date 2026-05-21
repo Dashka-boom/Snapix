@@ -733,7 +733,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
             var hasClips = clips.length > 0;
             emptyState.classList.toggle('is-hidden', hasClips);
-            emptyState.textContent = hasClips ? '' : 'В этой категории пока нет видео.';
+            emptyState.textContent = hasClips ? '' : 'Clips  Видео пока нет.';
 
             [infoBlock, videoWrap, actionsBlock, navBlock].forEach(function (node) {
                 if (!node) {
