@@ -597,7 +597,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                             <img src="icon/dark theme/repost.png" alt="">
                             <span data-clips-count="reposts">0</span>
                         </button>
-                        <button type="button" class="clips-action-btn clips-save-btn" data-clips-action="toggle_save" aria-label="Избранное">
+                        <button type="button" class="clips-action-btn clips-save-btn" data-clips-action="toggle_save" data-save-post-id="" aria-label="Избранное">
                             <img src="icon/dark theme/favourites.png" alt="">
                             <span data-clips-count="saves">0</span>
                         </button>
@@ -634,7 +634,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                             <img src="icon/dark theme/addcommunication.png" alt="">
                             <span>Поделиться</span>
                         </button>
-                        <button type="button" class="post-menu-item" data-clips-comment-action="toggle_favorite" data-clips-comment-favorite-btn>
+                        <button type="button" class="post-menu-item" data-clips-comment-action="toggle_save" data-clips-comment-favorite-btn data-save-post-id="">
                             <img src="icon/dark theme/favourites.png" alt="">
                             <span>Избранное</span>
                         </button>
@@ -880,7 +880,13 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 }
                 if (buttons.save) {
                     buttons.save.classList.toggle('is-saved', !!clip.state.saved);
+                    buttons.save.setAttribute('data-save-post-id', String(clip.id));
                 }
+                if (commentFavoriteButton) {
+                    commentFavoriteButton.setAttribute('data-save-post-id', String(clip.id));
+                    commentFavoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
+                }
+                syncCommentFavoriteUi();
 
                 if (clipsMenuAccount) {
                     clipsMenuAccount.href = clip.author.profileUrl;
@@ -957,41 +963,14 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             }).join('');
         }
 
-        function getCommentFavoriteKey(clipId, commentId) {
-            return 'clips:comment-favorites:' + String(clipId || 0) + ':' + String(commentId || 0);
-        }
-
-        function isCommentFavorited(clipId, commentId) {
-            return window.localStorage.getItem(getCommentFavoriteKey(clipId, commentId)) === '1';
-        }
-
-        function setCommentFavorited(clipId, commentId, isFavorited) {
-            var key = getCommentFavoriteKey(clipId, commentId);
-            if (isFavorited) {
-                window.localStorage.setItem(key, '1');
-            } else {
-                window.localStorage.removeItem(key);
-            }
-        }
-
         function syncCommentFavoriteUi() {
             if (!commentsList || !clips.length) {
                 return;
             }
             var clip = clips[currentIndex];
-            var nodes = commentsList.querySelectorAll('.clips-comment-item');
-            nodes.forEach(function (node) {
-                var index = Number(node.getAttribute('data-comment-index'));
-                var comment = commentsCache[index];
-                if (!comment) {
-                    return;
-                }
-                var favoriteButton = node.querySelector('.clips-comment-menu-btn');
-                if (!favoriteButton) {
-                    return;
-                }
-                var favorited = isCommentFavorited(clip.id, comment.id || index);
-                favoriteButton.classList.toggle('is-favorited', favorited);
+            var nodes = commentsList.querySelectorAll('.clips-comment-item .clips-comment-menu-btn');
+            nodes.forEach(function (favoriteButton) {
+                favoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
             });
         }
 
@@ -1002,9 +981,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             activeCommentIndex = commentIndex;
             if (commentFavoriteButton) {
                 var clip = clips[currentIndex];
-                var comment = commentsCache[commentIndex];
-                var favorited = !!(comment && isCommentFavorited(clip.id, comment.id || commentIndex));
-                commentFavoriteButton.classList.toggle('is-favorited', favorited);
+                commentFavoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
             }
             commentActionsModal.classList.add('is-open');
         }
@@ -1104,15 +1081,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                     var clip = clips[currentIndex];
                     var comment = commentsCache[activeCommentIndex] || null;
 
-                    if (action === 'toggle_favorite' && comment) {
-                        var commentKey = comment.id || activeCommentIndex;
-                        var nextState = !isCommentFavorited(clip.id, commentKey);
-                        setCommentFavorited(clip.id, commentKey, nextState);
-                        button.classList.toggle('is-favorited', nextState);
-                        syncCommentFavoriteUi();
-                        return;
-                    }
-
                     if (action === 'share') {
                         copyCurrentClipLink(button);
                         closeCommentActionsModal();
@@ -1122,6 +1090,12 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                     sendClipAction(action).then(function (data) {
                         if (!data || !data.ok) {
                             return;
+                        }
+                        clip.counts.saves = data.saves_count;
+                        clip.state.saved = !!data.saved;
+                        updateSavedStateEverywhere(clip.id, !!data.saved, data.saves_count);
+                        if (action === 'toggle_save') {
+                            animateButton(buttons.save, !!data.saved);
                         }
                         closeCommentActionsModal();
                     }).catch(function () {});
@@ -1276,6 +1250,18 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             field.remove();
         }
 
+        function updateSavedStateEverywhere(postId, isSaved, savesCount) {
+            var selectorPostId = String(postId || '');
+            document.querySelectorAll('[data-save-post-id="' + selectorPostId + '"]').forEach(function (node) {
+                node.classList.toggle('is-saved', !!isSaved);
+                node.classList.toggle('is-favorited', !!isSaved);
+            });
+            if (typeof savesCount !== 'undefined' && counts.saves) {
+                counts.saves.textContent = formatCount(savesCount);
+            }
+            syncCommentFavoriteUi();
+        }
+
         document.querySelector('[data-clips-prev]').addEventListener('click', function () {
             navigateClip(-1);
         });
@@ -1304,7 +1290,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                         clip.state.reposted = !!data.reposted;
 
                         counts.likes.textContent = formatCount(data.likes_count);
-                        counts.saves.textContent = formatCount(data.saves_count);
+                        updateSavedStateEverywhere(clip.id, !!data.saved, data.saves_count);
                         counts.reposts.textContent = formatCount(data.reposts_count);
 
                         buttons.like.classList.toggle('is-liked', !!data.liked);
