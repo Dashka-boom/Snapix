@@ -3515,9 +3515,12 @@ body.has-side-menu {
 .clips-share-panel { display: none; padding: 4px 0; }
 .clips-share-panel.is-active { display: block; }
 .clips-share-users { display: grid; }
-.clips-share-user { display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid rgba(104, 197, 219, 0.2); }
-.clips-share-avatar { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(104, 197, 219, 0.25); display: inline-flex; align-items: center; justify-content: center; background: #111517; color: #fff; font-weight: 700; }
-.clips-share-login { color: #fff; font-weight: 500; }
+.clips-share-user { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid rgba(104, 197, 219, 0.2); }
+.clips-share-avatar { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(104, 197, 219, 0.25); display: inline-flex; align-items: center; justify-content: center; background: #121619; color: #fff; font-weight: 700; flex-shrink: 0; overflow: hidden; position: relative; }
+.clips-share-avatar-image { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; display: block; }
+.clips-share-avatar-fallback { width: 100%; height: 100%; display: none; align-items: center; justify-content: center; background: #121619; color: #fff; font-weight: 700; text-transform: uppercase; }
+.clips-share-avatar-fallback.is-visible { display: inline-flex; }
+.clips-share-login { color: #fff; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clips-share-send-btn { min-height: 32px; padding: 0 12px; border: 1px solid rgba(104, 197, 219, 0.35) !important; border-radius: 999px; background: rgba(4, 6, 7, 0.95) !important; color: #68C5DB !important; box-shadow: none !important; }
 .clips-share-send-btn:hover, .clips-share-send-btn:focus-visible { border-color: #68C5DB !important; color: #fff !important; background: rgba(104, 197, 219, .16) !important; outline: none; }
 .clips-share-search-wrap { position: relative; padding: 12px 16px; border-bottom: 1px solid rgba(104, 197, 219, 0.2); }
