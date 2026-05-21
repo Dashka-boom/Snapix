@@ -73,8 +73,8 @@ if (isset($_SESSION['user_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post'], true);
-    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'toggle_pin', 'toggle_comments_visibility', 'delete_post'], true);
+    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment', 'toggle_pin', 'toggle_comments_visibility', 'delete_post'], true);
 
     if ($requiresAuth && !$user) {
         snapix_send_post_action_error('login_required', 401);
@@ -191,6 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($postExists && $action === 'report_post' && $postOwnerId > 0 && $postOwnerId !== (int) $user['id']) {
+        $reportReason = trim((string) ($_POST['report_reason'] ?? ''));
         $reportPostStmt = $pdo->prepare('
             INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text)
             VALUES (:reporter_user_id, :target_user_id, :reason_text)
@@ -198,9 +199,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reportPostStmt->execute([
             'reporter_user_id' => (int) $user['id'],
             'target_user_id' => $postOwnerId,
-            'reason_text' => 'Жалоба на clips #' . $postId,
+            'reason_text' => mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на clips #' . $postId), 0, 1000),
         ]);
         $ajaxExtra['reported'] = true;
+    }
+
+    if ($postExists && $action === 'toggle_pin' && $postOwnerId === (int) $user['id']) {
+        $pinExistsStmt = $pdo->prepare('SELECT id FROM pinned_posts WHERE user_id = :user_id AND post_id = :post_id LIMIT 1');
+        $pinExistsStmt->execute([
+            'user_id' => (int) $user['id'],
+            'post_id' => $postId,
+        ]);
+        $pinId = $pinExistsStmt->fetchColumn();
+        if ($pinId) {
+            $pdo->prepare('DELETE FROM pinned_posts WHERE id = :id AND user_id = :user_id')
+                ->execute(['id' => (int) $pinId, 'user_id' => (int) $user['id']]);
+            $ajaxExtra['is_pinned'] = false;
+        } else {
+            $pdo->prepare('INSERT IGNORE INTO pinned_posts (user_id, post_id) VALUES (:user_id, :post_id)')
+                ->execute(['user_id' => (int) $user['id'], 'post_id' => $postId]);
+            $ajaxExtra['is_pinned'] = true;
+        }
+    }
+
+    if ($postExists && $action === 'toggle_comments_visibility' && $postOwnerId === (int) $user['id']) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS clips_post_settings (
+            post_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+            comments_closed TINYINT(1) NOT NULL DEFAULT 0,
+            updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+        $settingsStmt = $pdo->prepare('SELECT comments_closed FROM clips_post_settings WHERE post_id = :post_id LIMIT 1');
+        $settingsStmt->execute(['post_id' => $postId]);
+        $isClosed = (int) $settingsStmt->fetchColumn() > 0;
+        $nextState = $isClosed ? 0 : 1;
+        $pdo->prepare('INSERT INTO clips_post_settings (post_id, comments_closed) VALUES (:post_id, :comments_closed)
+            ON DUPLICATE KEY UPDATE comments_closed = VALUES(comments_closed)')
+            ->execute(['post_id' => $postId, 'comments_closed' => $nextState]);
+        $ajaxExtra['comments_closed'] = $nextState === 1;
+    }
+    if ($postExists && $action === 'delete_post' && $postOwnerId === (int) $user['id']) {
+        $pdo->prepare('UPDATE posts SET is_deleted = 1 WHERE id = :id LIMIT 1')->execute(['id' => $postId]);
+        $ajaxExtra['deleted'] = true;
     }
 
     if ($action === 'get_comments') {
@@ -287,6 +326,12 @@ if ($currentUserId > 0) {
     );
 }
 
+$pdo->exec("CREATE TABLE IF NOT EXISTS clips_post_settings (
+    post_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+    comments_closed TINYINT(1) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+
 $clipsStmt = $pdo->query('
     SELECT
         posts.id,
@@ -333,7 +378,19 @@ $clipsStmt = $pdo->query('
             FROM reposts
             WHERE reposts.post_id = posts.id
               AND reposts.user_id = ' . $currentUserId . '
-        ) AS is_reposted
+        ) AS is_reposted,
+        (
+            SELECT COUNT(*)
+            FROM pinned_posts
+            WHERE pinned_posts.post_id = posts.id
+              AND pinned_posts.user_id = ' . $currentUserId . '
+        ) AS is_pinned,
+        (
+            SELECT settings.comments_closed
+            FROM clips_post_settings settings
+            WHERE settings.post_id = posts.id
+            LIMIT 1
+        ) AS comments_closed
     FROM posts
     INNER JOIN users ON users.id = posts.user_id
     INNER JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
@@ -388,7 +445,10 @@ foreach ($clipsRows as $clip) {
             'liked' => (int) $clip['is_liked'] > 0,
             'saved' => (int) $clip['is_saved'] > 0,
             'reposted' => (int) $clip['is_reposted'] > 0,
+            'pinned' => (int) $clip['is_pinned'] > 0,
+            'commentsClosed' => (int) ($clip['comments_closed'] ?? 0) > 0,
         ],
+        'isOwn' => $clipUserId === $currentUserId,
     ];
 
     if ($clipUserId !== $currentUserId) {
@@ -446,44 +506,73 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                                 <span></span>
                             </button>
                             <div class="post-menu clips-post-menu" data-clips-menu>
-                                <a href="#" class="post-menu-item" data-clips-menu-account>
-                                    <img src="icon/dark theme/об аккаунте.png" alt="">
-                                    <span>Об аккаунте</span>
-                                </a>
-                                <?php if ($user): ?>
-                                    <button type="button" class="post-menu-item" data-clips-menu-action="hide_post">
-                                        <img src="icon/dark theme/dislike.png" alt="">
-                                        <span>Мне не интересно</span>
+                                <div data-clips-menu-own class="is-hidden">
+                                    <button type="button" class="post-menu-item post-menu-item-danger" data-clips-menu-action="delete_post">
+                                        <img src="icon/trash.png" alt="">
+                                        <span>Удалить</span>
                                     </button>
-                                    <button type="button" class="post-menu-item" data-clips-menu-action="block_user">
-                                        <img src="icon/dark theme/stop.png" alt="">
-                                        <span data-clips-block-label>Добавить в чёрный список</span>
+                                    
+                                    <a href="#" class="post-menu-item" data-clips-edit-link>
+                                        <img src="icon/dark theme/edd.png" alt="">
+                                        <span>Редактировать</span>
+                                    </a>
+                                    <button type="button" class="post-menu-item" data-clips-menu-action="toggle_pin">
+                                        <img src="icon/dark theme/pinn.png" alt="" data-clips-pin-icon>
+                                        <span data-clips-pin-label>Закрепить</span>
                                     </button>
-                                <?php else: ?>
-                                    <a href="login.php" class="post-menu-item">
-                                        <img src="icon/dark theme/dislike.png" alt="">
-                                        <span>Мне не интересно</span>
-                                    </a>
-                                    <a href="login.php" class="post-menu-item">
-                                        <img src="icon/dark theme/stop.png" alt="">
-                                        <span data-clips-block-label>Добавить в чёрный список</span>
-                                    </a>
-                                <?php endif; ?>
-                                <button type="button" class="post-menu-item" data-clips-copy-link>
-                                    <img src="icon/dark theme/copy.png" alt="">
-                                    <span>Поделиться</span>
-                                </button>
-                                <?php if ($user): ?>
-                                    <button type="button" class="post-menu-item post-menu-item-danger" data-clips-menu-action="report_post">
-                                        <img src="icon/complaint.png" alt="">
-                                        <span>Пожаловаться</span>
+                                    <button type="button" class="post-menu-item" data-clips-menu-action="toggle_comments_visibility">
+                                        <img src="icon/dark theme/close comments.png" alt="" data-clips-comments-toggle-icon>
+                                        <span data-clips-comments-toggle-label>Закрыть комментарии</span>
                                     </button>
-                                <?php else: ?>
-                                    <a href="login.php" class="post-menu-item post-menu-item-danger">
-                                        <img src="icon/complaint.png" alt="">
-                                        <span>Пожаловаться</span>
+                                    <button type="button" class="post-menu-item" data-clips-copy-link>
+                                        <img src="icon/dark theme/copy.png" alt="">
+                                        <span>Поделиться</span>
+                                    </button>
+                                    <button type="button" class="post-menu-item">
+                                        <img src="icon/dark theme/analytic.png" alt="">
+                                        <span>Кто посмотрел пост</span>
+                                    </button>
+                                </div>
+                                <div data-clips-menu-foreign class="is-hidden">
+                                    <a href="#" class="post-menu-item" data-clips-menu-account>
+                                        <img src="icon/dark theme/об аккаунте.png" alt="">
+                                        <span>Об аккаунте</span>
                                     </a>
-                                <?php endif; ?>
+                                    <?php if ($user): ?>
+                                        <button type="button" class="post-menu-item" data-clips-menu-action="hide_post">
+                                            <img src="icon/dark theme/dislike.png" alt="">
+                                            <span>Мне не интересно</span>
+                                        </button>
+                                        <button type="button" class="post-menu-item" data-clips-menu-action="block_user">
+                                            <img src="icon/dark theme/stop.png" alt="">
+                                            <span data-clips-block-label>Добавить в чёрный список</span>
+                                        </button>
+                                    <?php else: ?>
+                                        <a href="login.php" class="post-menu-item">
+                                            <img src="icon/dark theme/dislike.png" alt="">
+                                            <span>Мне не интересно</span>
+                                        </a>
+                                        <a href="login.php" class="post-menu-item">
+                                            <img src="icon/dark theme/stop.png" alt="">
+                                            <span data-clips-block-label>Добавить в чёрный список</span>
+                                        </a>
+                                    <?php endif; ?>
+                                    <button type="button" class="post-menu-item" data-clips-copy-link-foreign>
+                                        <img src="icon/dark theme/copy.png" alt="">
+                                        <span>Поделиться</span>
+                                    </button>
+                                    <?php if ($user): ?>
+                                        <button type="button" class="post-menu-item post-menu-item-danger" data-clips-menu-action="report_post">
+                                            <img src="icon/complaint.png" alt="">
+                                            <span>Пожаловаться</span>
+                                        </button>
+                                    <?php else: ?>
+                                        <a href="login.php" class="post-menu-item post-menu-item-danger">
+                                            <img src="icon/complaint.png" alt="">
+                                            <span>Пожаловаться</span>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -509,7 +598,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                             <img src="icon/dark theme/repost.png" alt="">
                             <span data-clips-count="reposts">0</span>
                         </button>
-                        <button type="button" class="clips-action-btn clips-save-btn" data-clips-action="toggle_save" aria-label="Избранное">
+                        <button type="button" class="clips-action-btn clips-save-btn" data-clips-action="toggle_save" data-save-post-id="" aria-label="Избранное">
                             <img src="icon/dark theme/favourites.png" alt="">
                             <span data-clips-count="saves">0</span>
                         </button>
@@ -539,15 +628,74 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                     <?php endif; ?>
                 </div>
 
+                <div class="clips-comment-actions-modal" data-clips-comment-actions-modal>
+                    <button type="button" class="clips-comment-actions-overlay" data-clips-comment-actions-close aria-label="Закрыть меню"></button>
+                    <div class="post-menu clips-comment-actions-dialog" data-clips-comment-actions-dialog>
+                        <button type="button" class="post-menu-item" data-clips-comment-action="share">
+                            <img src="icon/dark theme/addcommunication.png" alt="">
+                            <span>Поделиться</span>
+                        </button>
+                        <button type="button" class="post-menu-item" data-clips-comment-action="toggle_save" data-clips-comment-favorite-btn data-save-post-id="">
+                            <img src="icon/dark theme/favourites.png" alt="">
+                            <span>Избранное</span>
+                        </button>
+                        <button type="button" class="post-menu-item post-menu-item-danger" data-clips-comment-action="report_post">
+                            <img src="icon/complaint.png" alt="">
+                            <span>Пожаловаться</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="clips-share-modal" data-clips-share-modal>
+                    <button type="button" class="clips-share-modal-overlay" data-clips-share-close aria-label="Закрыть отправку"></button>
+                    <div class="clips-share-modal-dialog" role="dialog" aria-modal="true" aria-label="Отправить">
+                        <div class="clips-share-modal-header">
+                            <button type="button" class="clips-share-modal-close" data-clips-share-close aria-label="Закрыть">×</button>
+                            <h3>Отправить</h3>
+                            <span class="clips-share-header-spacer" aria-hidden="true"></span>
+                        </div>
+                        <div class="home-feed-tabs clips-share-tabs" role="tablist" aria-label="Категории отправки">
+                            <button type="button" class="home-feed-tab is-active" data-clips-share-tab="followers">Подписчики</button>
+                            <button type="button" class="home-feed-tab" data-clips-share-tab="following">Подписки</button>
+                            <button type="button" class="home-feed-tab" data-clips-share-tab="search">Поиск</button>
+                        </div>
+                        <div class="clips-share-modal-content">
+                            <section class="clips-share-panel is-active" data-clips-share-panel="followers">
+                                <div class="clips-share-users">
+                                    <div class="clips-share-user"><span class="clips-share-avatar">A</span><span class="clips-share-login">alex_follow</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
+                                    <div class="clips-share-user"><span class="clips-share-avatar">M</span><span class="clips-share-login">mira_follower</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
+                                    <div class="clips-share-user"><span class="clips-share-avatar">N</span><span class="clips-share-login">niko_88</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
+                                </div>
+                            </section>
+                            <section class="clips-share-panel" data-clips-share-panel="following">
+                                <div class="clips-share-users">
+                                    <div class="clips-share-user"><span class="clips-share-avatar">L</span><span class="clips-share-login">luna_following</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
+                                    <div class="clips-share-user"><span class="clips-share-avatar">R</span><span class="clips-share-login">roma_artist</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
+                                    <div class="clips-share-user"><span class="clips-share-avatar">D</span><span class="clips-share-login">diana_clip</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
+                                </div>
+                            </section>
+                            <section class="clips-share-panel" data-clips-share-panel="search">
+                                <div class="clips-share-search-wrap">
+                                    <input type="text" class="clips-share-search-input" placeholder="Поиск" aria-label="Поиск">
+                                    <img src="icon/dark theme/search.png" alt="" class="clips-share-search-icon">
+                                </div>
+                                <div class="clips-share-users">
+                                    <div class="clips-share-user"><span class="clips-share-avatar">S</span><span class="clips-share-login">search_user</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
+                                    <p class="clips-share-empty">Такого пользователя нет</p>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="clips-nav" aria-label="Навигация Clips">
                     <button type="button" class="clips-nav-btn" data-clips-prev aria-label="Предыдущий clips">↑</button>
                     <button type="button" class="clips-nav-btn" data-clips-next aria-label="Следующий clips">↓</button>
                 </div>
             </section>
         <?php else: ?>
-            <section class="clips-empty">
-                <h1>Clips</h1>
-                <p>Видео пока нет.</p>
+            <section class="clips-empty" data-clips-empty-fallback>
+                <h1>Видео пока нет.</h1>
+                <p>Найдите интересных людей</p>
             </section>
         <?php endif; ?>
     </main>
@@ -610,14 +758,24 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         var hashtags = document.querySelector('[data-clips-hashtags]');
         var clipsMenu = document.querySelector('[data-clips-menu]');
         var clipsMenuToggle = document.querySelector('[data-clips-menu-toggle]');
+        var clipsMenuOwn = document.querySelector('[data-clips-menu-own]');
+        var clipsMenuForeign = document.querySelector('[data-clips-menu-foreign]');
         var clipsMenuAccount = document.querySelector('[data-clips-menu-account]');
         var clipsBlockLabel = document.querySelector('[data-clips-block-label]');
         var clipsCopyLink = document.querySelector('[data-clips-copy-link]');
+        var clipsCopyLinkForeign = document.querySelector('[data-clips-copy-link-foreign]');
+        var clipsPinLabel = document.querySelector('[data-clips-pin-label]');
+        var clipsPinIcon = document.querySelector('[data-clips-pin-icon]');
+        var clipsCommentsToggleLabel = document.querySelector('[data-clips-comments-toggle-label]');
+        var clipsCommentsToggleIcon = document.querySelector('[data-clips-comments-toggle-icon]');
+        var clipsEditLink = document.querySelector('[data-clips-edit-link]');
         var commentLinks = document.querySelectorAll('[data-clips-comment-link]');
         var commentsModal = document.querySelector('[data-clips-comments-modal]');
         var commentsList = document.querySelector('[data-clips-comments-list]');
         var commentsForm = document.querySelector('[data-clips-comments-form]');
         var isCommentsSubmitting = false;
+        var commentsCache = [];
+        var activeCommentIndex = -1;
         var counts = {
             likes: document.querySelector('[data-clips-count="likes"]'),
             comments: document.querySelector('[data-clips-count="comments"]'),
@@ -629,15 +787,33 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             repost: document.querySelector('[data-clips-action="add_repost"]'),
             save: document.querySelector('[data-clips-action="toggle_save"]')
         };
+        var commentActionsModal = document.querySelector('[data-clips-comment-actions-modal]');
+        var commentActionsDialog = document.querySelector('[data-clips-comment-actions-dialog]');
+        var commentFavoriteButton = document.querySelector('[data-clips-comment-favorite-btn]');
+        var shareModal = document.querySelector('[data-clips-share-modal]');
+        var shareTabButtons = document.querySelectorAll('[data-clips-share-tab]');
+        var sharePanels = document.querySelectorAll('[data-clips-share-panel]');
 
-        function toggleEmptyState() {
-            if (!emptyState) {
-                return;
+        function getEmptyStateMarkup() {
+            if (activeCategory === 'authored') {
+                return '<h1>Видео пока нет.</h1>';
             }
 
+            return '<h1>Видео пока нет.</h1><p>Найдите интересных людей</p>';
+        }
+
+        function toggleEmptyState() {
             var hasClips = clips.length > 0;
-            emptyState.classList.toggle('is-hidden', hasClips);
-            emptyState.textContent = hasClips ? '' : 'В этой категории пока нет видео.';
+
+            if (emptyState) {
+                emptyState.classList.toggle('is-hidden', hasClips);
+                emptyState.innerHTML = hasClips ? '' : getEmptyStateMarkup();
+            }
+
+            var fallbackEmptyState = document.querySelector('[data-clips-empty-fallback]');
+            if (fallbackEmptyState) {
+                fallbackEmptyState.innerHTML = getEmptyStateMarkup();
+            }
 
             [infoBlock, videoWrap, actionsBlock, navBlock].forEach(function (node) {
                 if (!node) {
@@ -705,6 +881,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
         function renderClip(index) {
             var clip = clips[index];
+            var isOwnClip = !!clip.isOwn;
 
             shell.classList.remove('is-visible');
             window.setTimeout(function () {
@@ -748,13 +925,36 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 }
                 if (buttons.save) {
                     buttons.save.classList.toggle('is-saved', !!clip.state.saved);
+                    buttons.save.setAttribute('data-save-post-id', String(clip.id));
                 }
+                if (commentFavoriteButton) {
+                    commentFavoriteButton.setAttribute('data-save-post-id', String(clip.id));
+                    commentFavoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
+                }
+                syncCommentFavoriteUi();
 
                 if (clipsMenuAccount) {
                     clipsMenuAccount.href = clip.author.profileUrl;
                 }
+                if (clipsEditLink) {
+                    clipsEditLink.href = 'post.php?id=' + clip.id;
+                }
                 if (clipsBlockLabel) {
                     clipsBlockLabel.textContent = 'Добавить ' + clip.author.login + ' в чёрный список';
+                }
+                if (clipsMenuOwn) {
+                    clipsMenuOwn.classList.toggle('is-hidden', !isOwnClip);
+                }
+                if (clipsMenuForeign) {
+                    clipsMenuForeign.classList.toggle('is-hidden', isOwnClip);
+                }
+                if (clipsPinLabel && clipsPinIcon) {
+                    clipsPinLabel.textContent = clip.state.pinned ? 'Открепить' : 'Закрепить';
+                    clipsPinIcon.src = clip.state.pinned ? 'icon/dark theme/nopinn.png' : 'icon/dark theme/pinn.png';
+                }
+                if (clipsCommentsToggleLabel && clipsCommentsToggleIcon) {
+                    clipsCommentsToggleLabel.textContent = clip.state.commentsClosed ? 'Открыть комментарии' : 'Закрыть комментарии';
+                    clipsCommentsToggleIcon.src = clip.state.commentsClosed ? 'icon/dark theme/addcommunication.png' : 'icon/dark theme/close comments.png';
                 }
                 if (clipsMenu) {
                     clipsMenu.classList.remove('is-open');
@@ -789,6 +989,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
         function renderComments(items) {
             if (!commentsList) { return; }
+            commentsCache = Array.isArray(items) ? items : [];
             if (!items.length) {
                 commentsList.innerHTML = '<p class="comments-empty">Комментариев пока нет.</p>';
                 return;
@@ -807,6 +1008,61 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             }).join('');
         }
 
+        function syncCommentFavoriteUi() {
+            if (!commentsList || !clips.length) {
+                return;
+            }
+            var clip = clips[currentIndex];
+            var nodes = commentsList.querySelectorAll('.clips-comment-item .clips-comment-menu-btn');
+            nodes.forEach(function (favoriteButton) {
+                favoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
+            });
+        }
+
+        function openCommentActionsModal(commentIndex) {
+            if (!commentActionsModal || !clips.length) {
+                return;
+            }
+            activeCommentIndex = commentIndex;
+            if (commentFavoriteButton) {
+                var clip = clips[currentIndex];
+                commentFavoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
+            }
+            commentActionsModal.classList.add('is-open');
+        }
+
+        function closeCommentActionsModal() {
+            if (!commentActionsModal) {
+                return;
+            }
+            activeCommentIndex = -1;
+            commentActionsModal.classList.remove('is-open');
+        }
+
+        function openShareModal() {
+            if (!shareModal) {
+                return;
+            }
+            shareModal.classList.add('is-open');
+        }
+
+        function closeShareModal() {
+            if (!shareModal) {
+                return;
+            }
+            shareModal.classList.remove('is-open');
+        }
+
+        function setShareTab(nextTab) {
+            shareTabButtons.forEach(function (tabButton) {
+                var isActive = tabButton.getAttribute('data-clips-share-tab') === nextTab;
+                tabButton.classList.toggle('is-active', isActive);
+            });
+            sharePanels.forEach(function (panel) {
+                panel.classList.toggle('is-active', panel.getAttribute('data-clips-share-panel') === nextTab);
+            });
+        }
+
         commentsList.addEventListener('click', function (event) {
             var likeBtn = event.target.closest('.clips-comment-like-btn');
             if (likeBtn) {
@@ -814,6 +1070,15 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 var liked = likeBtn.classList.toggle('is-liked');
                 var value = Number(count.textContent || 0);
                 count.textContent = String(Math.max(0, value + (liked ? 1 : -1)));
+                return;
+            }
+            var menuBtn = event.target.closest('.clips-comment-menu-btn');
+            if (menuBtn) {
+                var container = menuBtn.closest('.clips-comment-item');
+                var commentIndex = Number(container ? container.getAttribute('data-comment-index') : -1);
+                if (commentIndex >= 0) {
+                    openCommentActionsModal(commentIndex);
+                }
                 return;
             }
             var toggle = event.target.closest('.clips-comment-replies-toggle');
@@ -841,6 +1106,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 }
 
                 renderComments(data.comments || []);
+                syncCommentFavoriteUi();
             }).catch(function () {
                 commentsList.innerHTML = '<p class="comments-empty">Не удалось загрузить комментарии.</p>';
             });
@@ -848,6 +1114,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
         function closeCommentsModal() {
             if (commentsModal) { commentsModal.classList.remove('is-open'); }
+            closeCommentActionsModal();
             if (shell) {
                 shell.classList.remove('comments-open');
             }
@@ -866,6 +1133,58 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
         var commentsClose = document.querySelector('[data-clips-comments-close]');
         if (commentsClose) { commentsClose.addEventListener('click', closeCommentsModal); }
+        if (commentActionsModal) {
+            commentActionsModal.addEventListener('click', function (event) {
+                if (event.target.hasAttribute('data-clips-comment-actions-close')) {
+                    closeCommentActionsModal();
+                }
+            });
+        }
+        if (commentActionsDialog) {
+            commentActionsDialog.querySelectorAll('[data-clips-comment-action]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    if (!clips.length) {
+                        return;
+                    }
+                    var action = button.getAttribute('data-clips-comment-action');
+                    var clip = clips[currentIndex];
+                    var comment = commentsCache[activeCommentIndex] || null;
+
+                    if (action === 'share') {
+                        openShareModal();
+                        closeCommentActionsModal();
+                        return;
+                    }
+                    if (action === 'report_post' && window.SnapixReportModal) {
+                        window.SnapixReportModal.open({
+                            login: (clip.author && clip.author.login) ? clip.author.login : 'user',
+                            userId: (clip.author && clip.author.id) ? clip.author.id : 0,
+                            onSubmit: function (reason, api) {
+                                sendClipAction('report_post', { report_reason: reason }).then(function (reportData) {
+                                    if (!reportData || !reportData.ok) { return; }
+                                    api.showSuccess();
+                                });
+                            }
+                        });
+                        closeCommentActionsModal();
+                        return;
+                    }
+
+                    sendClipAction(action).then(function (data) {
+                        if (!data || !data.ok) {
+                            return;
+                        }
+                        clip.counts.saves = data.saves_count;
+                        clip.state.saved = !!data.saved;
+                        updateSavedStateEverywhere(clip.id, !!data.saved, data.saves_count);
+                        if (action === 'toggle_save') {
+                            animateButton(buttons.save, !!data.saved);
+                        }
+                        closeCommentActionsModal();
+                    }).catch(function () {});
+                });
+            });
+        }
 
         if (commentsForm) {
             commentsForm.addEventListener('submit', function (event) {
@@ -931,7 +1250,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             goToClip(currentIndex + direction);
         }
 
-        function sendClipAction(action) {
+        function sendClipAction(action, payload) {
             if (!clips.length) {
                 return Promise.resolve({ ok: false });
             }
@@ -939,6 +1258,11 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             var formData = new URLSearchParams();
             formData.set('action', action);
             formData.set('post_id', clip.id);
+            if (payload && typeof payload === 'object') {
+                Object.keys(payload).forEach(function (key) {
+                    formData.set(key, payload[key]);
+                });
+            }
 
             return fetch('clips.php', {
                 method: 'POST',
@@ -1014,6 +1338,18 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             field.remove();
         }
 
+        function updateSavedStateEverywhere(postId, isSaved, savesCount) {
+            var selectorPostId = String(postId || '');
+            document.querySelectorAll('[data-save-post-id="' + selectorPostId + '"]').forEach(function (node) {
+                node.classList.toggle('is-saved', !!isSaved);
+                node.classList.toggle('is-favorited', !!isSaved);
+            });
+            if (typeof savesCount !== 'undefined' && counts.saves) {
+                counts.saves.textContent = formatCount(savesCount);
+            }
+            syncCommentFavoriteUi();
+        }
+
         document.querySelector('[data-clips-prev]').addEventListener('click', function () {
             navigateClip(-1);
         });
@@ -1042,7 +1378,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                         clip.state.reposted = !!data.reposted;
 
                         counts.likes.textContent = formatCount(data.likes_count);
-                        counts.saves.textContent = formatCount(data.saves_count);
+                        updateSavedStateEverywhere(clip.id, !!data.saved, data.saves_count);
                         counts.reposts.textContent = formatCount(data.reposts_count);
 
                         buttons.like.classList.toggle('is-liked', !!data.liked);
@@ -1074,6 +1410,30 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 var action = button.getAttribute('data-clips-menu-action');
                 var clip = clips[currentIndex];
 
+                if (action === 'share') {
+                    openShareModal();
+                    if (clipsMenu) {
+                        clipsMenu.classList.remove('is-open');
+                    }
+                    return;
+                }
+                if (action === 'report_post' && window.SnapixReportModal) {
+                    window.SnapixReportModal.open({
+                        login: (clip.author && clip.author.login) ? clip.author.login : 'user',
+                        userId: (clip.author && clip.author.id) ? clip.author.id : 0,
+                        onSubmit: function (reason, api) {
+                            sendClipAction('report_post', { report_reason: reason }).then(function (reportData) {
+                                if (!reportData || !reportData.ok) { return; }
+                                api.showSuccess();
+                            });
+                        }
+                    });
+                    if (clipsMenu) {
+                        clipsMenu.classList.remove('is-open');
+                    }
+                    return;
+                }
+
                 sendClipAction(action)
                     .then(function (data) {
                         if (!data || !data.ok) {
@@ -1084,7 +1444,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                             clipsMenu.classList.remove('is-open');
                         }
 
-                        if (action === 'hide_post') {
+                        if (action === 'hide_post' || action === 'delete_post') {
                             removeCurrentClip();
                         }
 
@@ -1105,15 +1465,18 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                             renderClip(currentIndex);
                         }
 
-                        if (action === 'report_post') {
-                            var label = button.querySelector('span');
-                            var defaultText = label ? label.textContent : '';
-
-                            if (label) {
-                                label.textContent = 'Жалоба отправлена';
-                                window.setTimeout(function () {
-                                    label.textContent = defaultText;
-                                }, 1400);
+                        if (action === 'toggle_pin') {
+                            clip.state.pinned = !!data.is_pinned;
+                            if (clipsPinLabel && clipsPinIcon) {
+                                clipsPinLabel.textContent = clip.state.pinned ? 'Открепить' : 'Закрепить';
+                                clipsPinIcon.src = clip.state.pinned ? 'icon/dark theme/nopinn.png' : 'icon/dark theme/pinn.png';
+                            }
+                        }
+                        if (action === 'toggle_comments_visibility') {
+                            clip.state.commentsClosed = !!data.comments_closed;
+                            if (clipsCommentsToggleLabel && clipsCommentsToggleIcon) {
+                                clipsCommentsToggleLabel.textContent = clip.state.commentsClosed ? 'Открыть комментарии' : 'Закрыть комментарии';
+                                clipsCommentsToggleIcon.src = clip.state.commentsClosed ? 'icon/dark theme/addcommunication.png' : 'icon/dark theme/close comments.png';
                             }
                         }
                     })
@@ -1121,9 +1484,29 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             });
         });
 
+        document.querySelectorAll('[data-clips-share-close]').forEach(function (button) {
+            button.addEventListener('click', closeShareModal);
+        });
+        shareTabButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                setShareTab(button.getAttribute('data-clips-share-tab') || 'followers');
+            });
+        });
+
         if (clipsCopyLink) {
             clipsCopyLink.addEventListener('click', function () {
-                copyCurrentClipLink(clipsCopyLink);
+                openShareModal();
+                if (clipsMenu) {
+                    clipsMenu.classList.remove('is-open');
+                }
+            });
+        }
+        if (clipsCopyLinkForeign) {
+            clipsCopyLinkForeign.addEventListener('click', function () {
+                openShareModal();
+                if (clipsMenu) {
+                    clipsMenu.classList.remove('is-open');
+                }
             });
         }
 
