@@ -3435,7 +3435,7 @@ body.has-side-menu {
 
 .clips-comment-actions-dialog .post-menu-item:hover,
 .clips-comment-actions-dialog .post-menu-item:focus-visible {
-    background: rgba(104, 197, 219, 0.16);
+    background: rgba(255, 255, 255, 0.08);
     outline: none;
 }
 
