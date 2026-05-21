@@ -20,6 +20,48 @@ function clips_extract_hashtags(string $caption): array
     return array_values(array_unique($matches[0] ?? []));
 }
 
+
+function clips_fetch_comments(PDO $pdo, int $postId, ?int $currentUserId): array
+{
+    $stmt = $pdo->prepare("
+        SELECT 
+            comments.id,
+            comments.comment_text,
+            comments.created_at,
+            users.id AS user_id,
+            users.login,
+            users.avatar
+        FROM comments
+        INNER JOIN users ON users.id = comments.user_id
+        WHERE comments.post_id = :post_id 
+          AND comments.is_deleted = 0
+        ORDER BY comments.created_at DESC, comments.id DESC
+        LIMIT 80
+    ");
+
+    $stmt->execute([
+        'post_id' => $postId
+    ]);
+
+    $rows = $stmt->fetchAll() ?: [];
+    $comments = [];
+
+    foreach ($rows as $row) {
+        $comments[] = [
+            'id' => (int) ($row['id'] ?? 0),
+            'text' => (string) ($row['comment_text'] ?? ''),
+            'login' => (string) ($row['login'] ?? ''),
+            'profile_url' => clips_build_profile_url((int) ($row['user_id'] ?? 0), $currentUserId),
+            'avatar' => (string) ($row['avatar'] ?? ''),
+            'created_at' => (string) ($row['created_at'] ?? ''),
+            'likes_count' => 0,
+            'replies_count' => 0,
+        ];
+    }
+
+    return $comments;
+}
+
 $user = null;
 
 if (isset($_SESSION['user_id'])) {
@@ -29,13 +71,14 @@ if (isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$user) {
-        snapix_send_post_action_error('login_required', 401);
-    }
-
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
     $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post'], true);
+    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment'], true);
+
+    if ($requiresAuth && !$user) {
+        snapix_send_post_action_error('login_required', 401);
+    }
     $ajaxExtra = [];
     $postExists = false;
     $postOwnerId = 0;
@@ -160,6 +203,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ajaxExtra['reported'] = true;
     }
 
+    if ($action === 'get_comments') {
+        if ($postId <= 0 || !$postExists) {
+            snapix_send_post_action_error('post_not_found', 404);
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'comments' => clips_fetch_comments($pdo, $postId, $user ? (int) $user['id'] : null),
+        ]);
+        exit;
+    }
+
+    if ($action === 'add_comment') {
+        if (!$user) {
+            snapix_send_post_action_error('login_required', 401);
+        }
+
+        if ($postId <= 0 || !$postExists) {
+            snapix_send_post_action_error('post_not_found', 404);
+        }
+
+        $commentText = trim((string) ($_POST['comment_text'] ?? ''));
+
+        if ($commentText === '') {
+            snapix_send_post_action_error('empty_comment', 422);
+        }
+
+        $insertCommentStmt = $pdo->prepare('INSERT INTO comments (user_id, post_id, comment_text) VALUES (:user_id, :post_id, :comment_text)');
+        $insertCommentStmt->execute([
+            'user_id' => (int) $user['id'],
+            'post_id' => $postId,
+            'comment_text' => mb_substr($commentText, 0, 1000),
+        ]);
+
+        $comment = [
+            'text' => mb_substr($commentText, 0, 1000),
+            'login' => (string) $user['login'],
+            'profile_url' => clips_build_profile_url((int) $user['id'], (int) $user['id']),
+        ];
+
+        snapix_send_post_action_json($pdo, $postId, (int) $user['id'], ['comment' => $comment]);
+    }
+
     if ($isAjaxPostAction) {
         if ($postId <= 0 || !$postExists) {
             snapix_send_post_action_error('post_not_found', 404);
@@ -173,6 +260,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $currentUserId = (int) ($user['id'] ?? 0);
+$relatedUserIds = [];
+
+if ($currentUserId > 0) {
+  $relatedUserIdsStmt = $pdo->prepare("
+    SELECT following_id AS uid
+    FROM followers
+    WHERE follower_id = :user_id
+      AND following_id <> :user_id
+
+    UNION
+
+    SELECT follower_id AS uid
+    FROM followers
+    WHERE following_id = :user_id
+      AND follower_id <> :user_id
+");
+
+    $relatedUserIdsStmt->execute([
+        'user_id' => $currentUserId
+    ]);
+
+    $relatedUserIds = array_map(
+        'intval',
+        $relatedUserIdsStmt->fetchAll(PDO::FETCH_COLUMN) ?: []
+    );
+}
+
 $clipsStmt = $pdo->query('
     SELECT
         posts.id,
@@ -238,25 +352,31 @@ $clipsStmt = $pdo->query('
     ORDER BY posts.created_at DESC, posts.id DESC
     LIMIT 60
 ');
-$clipsRows = $clipsStmt->fetchAll();
-$clips = [];
+$clipsRows = $clipsStmt->fetchAll() ?: [];
+
+$clipsByCategory = [
+    'recommended' => [],
+    'following' => [],
+    'authored' => [],
+];
 
 foreach ($clipsRows as $clip) {
+    $clipUserId = (int) $clip['user_id'];
     $caption = (string) ($clip['caption'] ?? '');
     $hashtags = clips_extract_hashtags($caption);
     $description = trim(preg_replace('/#[\p{L}\p{N}_]+/u', '', $caption));
 
-    $clips[] = [
+    $preparedClip = [
         'id' => (int) $clip['id'],
         'videoUrl' => (string) $clip['media_url'],
         'description' => $description,
         'hashtags' => $hashtags,
         'createdAt' => (string) $clip['created_at'],
         'author' => [
-            'id' => (int) $clip['user_id'],
+            'id' => $clipUserId,
             'login' => (string) $clip['login'],
             'avatar' => (string) ($clip['avatar'] ?? ''),
-            'profileUrl' => clips_build_profile_url((int) $clip['user_id'], $user ? (int) $user['id'] : null),
+            'profileUrl' => clips_build_profile_url($clipUserId, $user ? (int) $user['id'] : null),
         ],
         'counts' => [
             'likes' => (int) $clip['likes_count'],
@@ -270,6 +390,18 @@ foreach ($clipsRows as $clip) {
             'reposted' => (int) $clip['is_reposted'] > 0,
         ],
     ];
+
+    if ($clipUserId !== $currentUserId) {
+        $clipsByCategory['recommended'][] = $preparedClip;
+    }
+
+    if ($currentUserId > 0 && $clipUserId === $currentUserId) {
+        $clipsByCategory['authored'][] = $preparedClip;
+    }
+
+    if ($currentUserId > 0 && $clipUserId !== $currentUserId && in_array($clipUserId, $relatedUserIds, true)) {
+        $clipsByCategory['following'][] = $preparedClip;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -284,8 +416,20 @@ foreach ($clipsRows as $clip) {
     <?php render_side_menu($user); ?>
 
     <main class="clips-page">
-        <?php if ($clips): ?>
+        <div class="home-feed-tabs clips-feed-tabs" role="tablist" aria-label="Категории Clips">
+            <button type="button" class="home-feed-tab is-active" role="tab" aria-selected="true" data-clips-tab="recommended">Для вас</button>
+            <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="following">Подписки</button>
+            <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="authored">Авторское</button>
+        </div>
+        <?php
+$hasAnyClips = !empty($clipsByCategory['recommended'])
+    || !empty($clipsByCategory['following'])
+    || !empty($clipsByCategory['authored']);
+?>
+
+<?php if ($hasAnyClips): ?>
             <section class="clips-shell" aria-label="Clips">
+                <div class="clips-empty-state is-hidden" data-clips-empty-state></div>
                 <div class="clips-info">
                     <div class="clips-author-row">
                         <a href="#" class="clips-author-link" data-clips-author-link>
@@ -377,6 +521,24 @@ foreach ($clipsRows as $clip) {
                     <?php endif; ?>
                 </div>
 
+
+                <div class="clips-comments-modal" data-clips-comments-modal>
+                    <div class="clips-comments-modal-header">
+                        <button type="button" class="clips-comments-close" data-clips-comments-close aria-label="Закрыть">×</button>
+                        <h3>Комментарии</h3>
+                        <span class="clips-comments-header-spacer" aria-hidden="true"></span>
+                    </div>
+                    <div class="clips-comments-modal-body" data-clips-comments-list>
+                        <p class="comments-empty">Загрузка...</p>
+                    </div>
+                    <?php if ($user): ?>
+                        <form class="clips-comments-form" data-clips-comments-form>
+                            <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Добавьте комментарий..."></textarea>
+                            <button type="submit" class="clips-comments-send" aria-label="Отправить комментарий">➤</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+
                 <div class="clips-nav" aria-label="Навигация Clips">
                     <button type="button" class="clips-nav-btn" data-clips-prev aria-label="Предыдущий clips">↑</button>
                     <button type="button" class="clips-nav-btn" data-clips-next aria-label="Следующий clips">↓</button>
@@ -392,15 +554,53 @@ foreach ($clipsRows as $clip) {
 
     <script>
     (function () {
-        var clips = <?php echo json_encode($clips, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+        var clipsByCategory = <?php echo json_encode($clipsByCategory, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+        var clips = clipsByCategory.recommended || [];
+        var activeCategory = 'recommended';
+        var categoryTabs = document.querySelectorAll('[data-clips-tab]');
 
-        if (!clips.length) {
-            return;
+        function setActiveCategory(nextCategory) {
+            activeCategory = nextCategory;
+            clips = clipsByCategory[nextCategory] || [];
+            currentIndex = 0;
+            categoryTabs.forEach(function (tab) {
+                var isActive = tab.getAttribute('data-clips-tab') === nextCategory;
+                tab.classList.toggle('is-active', isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            toggleEmptyState();
+            if (clips.length) {
+                renderClip(currentIndex);
+            } else if (video) {
+                video.pause();
+                video.removeAttribute('src');
+            }
         }
+
+        categoryTabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                var nextCategory = tab.getAttribute('data-clips-tab') || 'recommended';
+                if (activeCategory === nextCategory) {
+                    return;
+                }
+                setActiveCategory(nextCategory);
+            });
+        });
+
+        
 
         var currentIndex = 0;
         var lastNavigationAt = 0;
         var shell = document.querySelector('.clips-shell');
+        if (!shell) {
+            return;
+        }
+        var emptyState = document.querySelector('[data-clips-empty-state]');
+        var infoBlock = document.querySelector('.clips-info');
+        var videoWrap = document.querySelector('.clips-video-wrap');
+        var actionsBlock = document.querySelector('.clips-actions');
+        var navBlock = document.querySelector('.clips-nav');
         var video = document.querySelector('[data-clips-video]');
         var avatar = document.querySelector('[data-clips-avatar]');
         var authorLink = document.querySelector('[data-clips-author-link]');
@@ -414,6 +614,10 @@ foreach ($clipsRows as $clip) {
         var clipsBlockLabel = document.querySelector('[data-clips-block-label]');
         var clipsCopyLink = document.querySelector('[data-clips-copy-link]');
         var commentLinks = document.querySelectorAll('[data-clips-comment-link]');
+        var commentsModal = document.querySelector('[data-clips-comments-modal]');
+        var commentsList = document.querySelector('[data-clips-comments-list]');
+        var commentsForm = document.querySelector('[data-clips-comments-form]');
+        var isCommentsSubmitting = false;
         var counts = {
             likes: document.querySelector('[data-clips-count="likes"]'),
             comments: document.querySelector('[data-clips-count="comments"]'),
@@ -425,6 +629,23 @@ foreach ($clipsRows as $clip) {
             repost: document.querySelector('[data-clips-action="add_repost"]'),
             save: document.querySelector('[data-clips-action="toggle_save"]')
         };
+
+        function toggleEmptyState() {
+            if (!emptyState) {
+                return;
+            }
+
+            var hasClips = clips.length > 0;
+            emptyState.classList.toggle('is-hidden', hasClips);
+            emptyState.textContent = hasClips ? '' : 'В этой категории пока нет видео.';
+
+            [infoBlock, videoWrap, actionsBlock, navBlock].forEach(function (node) {
+                if (!node) {
+                    return;
+                }
+                node.classList.toggle('is-hidden', !hasClips);
+            });
+        }
 
         function formatCount(value) {
             return String(Number(value || 0));
@@ -529,9 +750,6 @@ foreach ($clipsRows as $clip) {
                     buttons.save.classList.toggle('is-saved', !!clip.state.saved);
                 }
 
-                commentLinks.forEach(function (link) {
-                    link.href = 'index.php?comments_post=' + clip.id + '#post-' + clip.id;
-                });
                 if (clipsMenuAccount) {
                     clipsMenuAccount.href = clip.author.profileUrl;
                 }
@@ -555,6 +773,145 @@ foreach ($clipsRows as $clip) {
             renderClip(currentIndex);
         }
 
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, function (char) {
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]);
+            });
+        }
+
+        function formatCommentDate(value) {
+            var date = parseDate(value);
+            if (!Number.isFinite(date.getTime())) {
+                return '';
+            }
+            return pad(date.getDate()) + '.' + pad(date.getMonth() + 1) + '.' + String(date.getFullYear()).slice(-2);
+        }
+
+        function renderComments(items) {
+            if (!commentsList) { return; }
+            if (!items.length) {
+                commentsList.innerHTML = '<p class="comments-empty">Комментариев пока нет.</p>';
+                return;
+            }
+            commentsList.innerHTML = items.map(function (comment, index) {
+                var avatar = comment.avatar ? '<span class="clips-comment-avatar has-avatar" style="background-image:url(\'' + escapeHtml(comment.avatar) + '\')"></span>' : '<span class="clips-comment-avatar">' + escapeHtml((comment.login || 'S').slice(0,1)) + '</span>';
+                return '<article class="clips-comment-item" data-comment-index="' + index + '">' +
+                    '<div class="clips-comment-top">' +
+                        '<div class="clips-comment-meta-left">' + avatar + '<div><a href="' + escapeHtml(comment.profile_url || '#') + '" class="comment-author"><strong>' + escapeHtml(comment.login || '') + '</strong></a><span class="clips-comment-date">' + escapeHtml(formatCommentDate(comment.created_at || '')) + '</span></div></div>' +
+                        '<div class="clips-comment-meta-right"><button type="button" class="clips-comment-menu-btn" aria-label="Меню">•••</button><button type="button" class="clips-comment-like-btn" aria-label="Лайк комментария"><img src="icon/dark theme/like.png" alt=""></button><span class="clips-comment-like-count">' + escapeHtml(comment.likes_count || 0) + '</span></div>' +
+                    '</div>' +
+                    '<p>' + escapeHtml(comment.text || '') + '</p>' +
+                    '<button type="button" class="clips-comment-replies-toggle" data-open="0">Смотреть ответы (' + escapeHtml(comment.replies_count || 1) + ')</button>' +
+                    '<div class="clips-comment-replies" hidden><p class="clips-comment-reply">Ответы пока недоступны.</p></div>' +
+                '</article>';
+            }).join('');
+        }
+
+        commentsList.addEventListener('click', function (event) {
+            var likeBtn = event.target.closest('.clips-comment-like-btn');
+            if (likeBtn) {
+                var count = likeBtn.parentElement.querySelector('.clips-comment-like-count');
+                var liked = likeBtn.classList.toggle('is-liked');
+                var value = Number(count.textContent || 0);
+                count.textContent = String(Math.max(0, value + (liked ? 1 : -1)));
+                return;
+            }
+            var toggle = event.target.closest('.clips-comment-replies-toggle');
+            if (toggle) {
+                var replies = toggle.nextElementSibling;
+                var isOpen = toggle.getAttribute('data-open') === '1';
+                toggle.setAttribute('data-open', isOpen ? '0' : '1');
+                toggle.textContent = isOpen ? 'Смотреть ответы (1)' : 'Скрыть ответы';
+                if (replies) { replies.hidden = isOpen; }
+            }
+        });
+
+        function openCommentsModal(triggerButton) {
+            if (!commentsModal || !clips.length) { return; }
+            var clip = clips[currentIndex];
+            commentsModal.classList.add('is-open');
+            if (shell) {
+                shell.classList.add('comments-open');
+            }
+            commentsList.innerHTML = '<p class="comments-empty">Загрузка...</p>';
+            sendClipAction('get_comments').then(function (data) {
+                if (!data || !data.ok) {
+                    commentsList.innerHTML = '<p class="comments-empty">Не удалось загрузить комментарии.</p>';
+                    return;
+                }
+
+                renderComments(data.comments || []);
+            }).catch(function () {
+                commentsList.innerHTML = '<p class="comments-empty">Не удалось загрузить комментарии.</p>';
+            });
+        }
+
+        function closeCommentsModal() {
+            if (commentsModal) { commentsModal.classList.remove('is-open'); }
+            if (shell) {
+                shell.classList.remove('comments-open');
+            }
+        }
+
+        commentLinks.forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                if (commentsModal && commentsModal.classList.contains('is-open')) {
+                    closeCommentsModal();
+                    return;
+                }
+                openCommentsModal(link);
+            });
+        });
+
+        var commentsClose = document.querySelector('[data-clips-comments-close]');
+        if (commentsClose) { commentsClose.addEventListener('click', closeCommentsModal); }
+
+        if (commentsForm) {
+            commentsForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                if (isCommentsSubmitting) {
+                    return;
+                }
+
+                var textarea = commentsForm.querySelector('textarea[name="comment_text"]');
+                var submitButton = commentsForm.querySelector('button[type="submit"]');
+                var textValue = textarea ? textarea.value.trim() : '';
+
+                if (!textarea || !textValue) {
+                    return;
+                }
+
+                isCommentsSubmitting = true;
+                if (submitButton) {
+                    submitButton.disabled = true;
+                }
+
+                var clip = clips[currentIndex];
+                var formData = new URLSearchParams();
+                formData.set('action', 'add_comment');
+                formData.set('post_id', clip.id);
+                formData.set('comment_text', textValue);
+                fetch('clips.php', { method:'POST', credentials:'same-origin', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','Accept':'application/json'}, body: formData.toString() })
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        if (!data || !data.ok) { return; }
+                        textarea.value = '';
+                        counts.comments.textContent = formatCount(data.comments_count);
+                        clips[currentIndex].counts.comments = Number(data.comments_count || 0);
+                        openCommentsModal();
+                    })
+                    .catch(function () {})
+                    .finally(function () {
+                        isCommentsSubmitting = false;
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                        }
+                    });
+            });
+        }
+
         function navigateClip(direction) {
             var now = Date.now();
 
@@ -575,6 +932,9 @@ foreach ($clipsRows as $clip) {
         }
 
         function sendClipAction(action) {
+            if (!clips.length) {
+                return Promise.resolve({ ok: false });
+            }
             var clip = clips[currentIndex];
             var formData = new URLSearchParams();
             formData.set('action', action);
@@ -590,7 +950,15 @@ foreach ($clipsRows as $clip) {
                 },
                 body: formData.toString()
             }).then(function (response) {
-                return response.json();
+                if (!response.ok) {
+                    return response.text().then(function () {
+                        return { ok: false };
+                    });
+                }
+
+                return response.json().catch(function () {
+                    return { ok: false };
+                });
             });
         }
 
@@ -610,6 +978,9 @@ foreach ($clipsRows as $clip) {
         }
 
         function copyCurrentClipLink(button) {
+            if (!clips.length) {
+                return;
+            }
             var clip = clips[currentIndex];
             var absoluteUrl = new URL('post.php?id=' + clip.id, window.location.href).toString();
             var label = button ? button.querySelector('span') : null;
@@ -785,7 +1156,10 @@ foreach ($clipsRows as $clip) {
             navigateClip(event.deltaY > 0 ? 1 : -1);
         }, { passive: false });
 
-        renderClip(currentIndex);
+        toggleEmptyState();
+        if (clips.length) {
+            renderClip(currentIndex);
+        }
     })();
     </script>
 </body>
