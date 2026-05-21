@@ -630,21 +630,17 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 <div class="clips-comment-actions-modal" data-clips-comment-actions-modal>
                     <button type="button" class="clips-comment-actions-overlay" data-clips-comment-actions-close aria-label="Закрыть меню"></button>
                     <div class="post-menu clips-comment-actions-dialog" data-clips-comment-actions-dialog>
-                        <button type="button" class="post-menu-item" data-clips-comment-action="block_user">
-                            <img src="icon/dark theme/stop.png" alt="">
-                            <span>Добавить в чёрный список</span>
-                        </button>
                         <button type="button" class="post-menu-item" data-clips-comment-action="share">
                             <img src="icon/dark theme/addcommunication.png" alt="">
                             <span>Поделиться</span>
                         </button>
-                        <button type="button" class="post-menu-item post-menu-item-danger" data-clips-comment-action="report_post">
-                            <img src="icon/complaint.png" alt="">
-                            <span>Пожаловаться</span>
-                        </button>
                         <button type="button" class="post-menu-item" data-clips-comment-action="toggle_favorite" data-clips-comment-favorite-btn>
                             <img src="icon/dark theme/favourites.png" alt="">
                             <span>Избранное</span>
+                        </button>
+                        <button type="button" class="post-menu-item post-menu-item-danger" data-clips-comment-action="report_post">
+                            <img src="icon/complaint.png" alt="">
+                            <span>Пожаловаться</span>
                         </button>
                     </div>
                 </div>
