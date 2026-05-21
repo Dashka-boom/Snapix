@@ -212,11 +212,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($postExists && $action === 'report_post' && $ownerId !== (int) $user['id']) {
+            $reportReason = trim((string) ($_POST['report_reason'] ?? ''));
             $pdo->prepare('INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text) VALUES (:reporter_user_id, :target_user_id, :reason_text)')
                 ->execute([
                     'reporter_user_id' => $user['id'],
                     'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                    'reason_text' => 'Жалоба на пост #' . $postId,
+                    'reason_text' => mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000),
                 ]);
         }
 
@@ -841,7 +842,7 @@ $showFollowingPanel = $panel === 'following';
                                                 <form method="post"><input type="hidden" name="action" value="pin_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $user['id']; ?>"><button type="submit"><?php echo (int) $post['is_pinned'] > 0 ? 'Уже закреплено' : 'Закрепить пост в личном профиле'; ?></button></form>
                                                 <a href="post-insights.php?post_id=<?php echo (int) $post['id']; ?>">Кто посмотрел пост</a>
                                             <?php else: ?>
-                                                <form method="post"><input type="hidden" name="action" value="report_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $post['author_user_id']; ?>"><button type="submit">Жалоба на пост</button></form>
+                                                <form method="post"><input type="hidden" name="action" value="report_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $post['author_user_id']; ?>"><button type="submit" data-report-trigger data-report-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? 'user')); ?>" data-report-user-id="<?php echo (int) $post['author_user_id']; ?>">Жалоба на пост</button></form>
                                                 <form method="post"><input type="hidden" name="action" value="report_post_user"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $post['author_user_id']; ?>"><button type="submit">Жалоба на пользователя</button></form>
                                                 <form method="post"><input type="hidden" name="action" value="hide_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $post['author_user_id']; ?>"><button type="submit">Мне не интересна эта публикация</button></form>
                                             <?php endif; ?>
