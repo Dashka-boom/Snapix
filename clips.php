@@ -506,10 +506,11 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                             </button>
                             <div class="post-menu clips-post-menu" data-clips-menu>
                                 <div data-clips-menu-own class="is-hidden">
-                                    <button type="button" class="post-menu-item" data-clips-menu-action="delete_post">
+                                    <button type="button" class="post-menu-item post-menu-item-danger" data-clips-menu-action="delete_post">
                                         <img src="icon/trash.png" alt="">
                                         <span>Удалить</span>
                                     </button>
+                                    
                                     <a href="#" class="post-menu-item" data-clips-edit-link>
                                         <img src="icon/dark theme/edd.png" alt="">
                                         <span>Редактировать</span>
