@@ -482,6 +482,60 @@ foreach ($clipsRows as $clip) {
             <button type="button" class="home-feed-tab" role="tab" aria-selected="false" data-clips-tab="authored">Авторское</button>
         </div>
         <?php
+
+$shareFollowers = [];
+$shareFollowing = [];
+$shareSearchUsers = [];
+
+if ($currentUserId > 0) {
+    $shareFollowersStmt = $pdo->prepare("
+        SELECT DISTINCT u.id, u.login, u.avatar
+        FROM followers f
+        INNER JOIN users u ON u.id = f.follower_id
+        WHERE f.following_id = :user_id
+          AND f.status = 'accepted'
+          AND f.follower_id <> :user_id
+          AND NOT EXISTS (
+              SELECT 1
+              FROM followers f2
+              WHERE f2.follower_id = :user_id
+                AND f2.following_id = f.follower_id
+                AND f2.status = 'accepted'
+          )
+        ORDER BY u.login ASC
+    ");
+    $shareFollowersStmt->execute(['user_id' => $currentUserId]);
+    $shareFollowers = $shareFollowersStmt->fetchAll() ?: [];
+
+    $shareFollowingStmt = $pdo->prepare("
+        SELECT DISTINCT u.id, u.login, u.avatar
+        FROM followers f
+        INNER JOIN users u ON u.id = f.following_id
+        WHERE f.follower_id = :user_id
+          AND f.status = 'accepted'
+          AND f.following_id <> :user_id
+          AND NOT EXISTS (
+              SELECT 1
+              FROM followers f2
+              WHERE f2.follower_id = f.following_id
+                AND f2.following_id = :user_id
+                AND f2.status = 'accepted'
+          )
+        ORDER BY u.login ASC
+    ");
+    $shareFollowingStmt->execute(['user_id' => $currentUserId]);
+    $shareFollowing = $shareFollowingStmt->fetchAll() ?: [];
+
+    $shareSearchStmt = $pdo->prepare("
+        SELECT u.id, u.login, u.avatar
+        FROM users u
+        WHERE u.id <> :user_id
+        ORDER BY u.login ASC
+        LIMIT 120
+    ");
+    $shareSearchStmt->execute(['user_id' => $currentUserId]);
+    $shareSearchUsers = $shareSearchStmt->fetchAll() ?: [];
+}
 $hasAnyClips = !empty($clipsByCategory['recommended'])
     || !empty($clipsByCategory['following'])
     || !empty($clipsByCategory['authored']);
@@ -660,17 +714,25 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                         </div>
                         <div class="clips-share-modal-content">
                             <section class="clips-share-panel is-active" data-clips-share-panel="followers">
-                                <div class="clips-share-users">
-                                    <div class="clips-share-user"><span class="clips-share-avatar">A</span><span class="clips-share-login">alex_follow</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">M</span><span class="clips-share-login">mira_follower</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">N</span><span class="clips-share-login">niko_88</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
+                                <div class="clips-share-users" data-clips-share-users="followers">
+                                    <?php foreach ($shareFollowers as $recipient): ?>
+                                        <div class="clips-share-user" data-clips-user-login="<?php echo htmlspecialchars(mb_strtolower((string) $recipient['login'])); ?>">
+                                            <span class="clips-share-avatar"<?php if (!empty($recipient['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($recipient['avatar']); ?>');"<?php endif; ?>><?php if (empty($recipient['avatar'])): ?><?php echo htmlspecialchars(mb_substr((string) $recipient['login'], 0, 1)); ?><?php endif; ?></span>
+                                            <span class="clips-share-login"><?php echo htmlspecialchars((string) $recipient['login']); ?></span>
+                                            <button type="button" class="clips-share-send-btn" data-recipient-id="<?php echo (int) $recipient['id']; ?>">Отправить</button>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
                             </section>
                             <section class="clips-share-panel" data-clips-share-panel="following">
-                                <div class="clips-share-users">
-                                    <div class="clips-share-user"><span class="clips-share-avatar">L</span><span class="clips-share-login">luna_following</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">R</span><span class="clips-share-login">roma_artist</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">D</span><span class="clips-share-login">diana_clip</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
+                                <div class="clips-share-users" data-clips-share-users="following">
+                                    <?php foreach ($shareFollowing as $recipient): ?>
+                                        <div class="clips-share-user" data-clips-user-login="<?php echo htmlspecialchars(mb_strtolower((string) $recipient['login'])); ?>">
+                                            <span class="clips-share-avatar"<?php if (!empty($recipient['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($recipient['avatar']); ?>');"<?php endif; ?>><?php if (empty($recipient['avatar'])): ?><?php echo htmlspecialchars(mb_substr((string) $recipient['login'], 0, 1)); ?><?php endif; ?></span>
+                                            <span class="clips-share-login"><?php echo htmlspecialchars((string) $recipient['login']); ?></span>
+                                            <button type="button" class="clips-share-send-btn" data-recipient-id="<?php echo (int) $recipient['id']; ?>">Отправить</button>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
                             </section>
                             <section class="clips-share-panel" data-clips-share-panel="search">
@@ -678,9 +740,15 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                                     <input type="text" class="clips-share-search-input" placeholder="Поиск" aria-label="Поиск">
                                     <img src="icon/dark theme/search.png" alt="" class="clips-share-search-icon">
                                 </div>
-                                <div class="clips-share-users">
-                                    <div class="clips-share-user"><span class="clips-share-avatar">S</span><span class="clips-share-login">search_user</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <p class="clips-share-empty">Такого пользователя нет</p>
+                                <div class="clips-share-users" data-clips-share-users="search">
+                                    <?php foreach ($shareSearchUsers as $recipient): ?>
+                                        <div class="clips-share-user" data-clips-user-login="<?php echo htmlspecialchars(mb_strtolower((string) $recipient['login'])); ?>">
+                                            <span class="clips-share-avatar"<?php if (!empty($recipient['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($recipient['avatar']); ?>');"<?php endif; ?>><?php if (empty($recipient['avatar'])): ?><?php echo htmlspecialchars(mb_substr((string) $recipient['login'], 0, 1)); ?><?php endif; ?></span>
+                                            <span class="clips-share-login"><?php echo htmlspecialchars((string) $recipient['login']); ?></span>
+                                            <button type="button" class="clips-share-send-btn" data-recipient-id="<?php echo (int) $recipient['id']; ?>">Отправить</button>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    <p class="clips-share-empty is-hidden" data-clips-share-search-empty>Такого пользователя нет</p>
                                 </div>
                             </section>
                         </div>
@@ -793,6 +861,8 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         var shareModal = document.querySelector('[data-clips-share-modal]');
         var shareTabButtons = document.querySelectorAll('[data-clips-share-tab]');
         var sharePanels = document.querySelectorAll('[data-clips-share-panel]');
+        var shareSearchInput = document.querySelector('.clips-share-search-input');
+        var shareSearchUsers = document.querySelector('[data-clips-share-users="search"]');
 
         function getEmptyStateMarkup() {
             if (activeCategory === 'authored') {
@@ -1044,6 +1114,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 return;
             }
             shareModal.classList.add('is-open');
+            filterShareSearch();
         }
 
         function closeShareModal() {
@@ -1061,6 +1132,45 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             sharePanels.forEach(function (panel) {
                 panel.classList.toggle('is-active', panel.getAttribute('data-clips-share-panel') === nextTab);
             });
+        }
+
+
+        function sendClipToRecipient(button) {
+            if (!button || !clips.length) { return; }
+            var recipientId = Number(button.getAttribute('data-recipient-id') || 0);
+            var clip = clips[currentIndex];
+            if (!recipientId || !clip || !clip.id) { return; }
+            var params = new URLSearchParams();
+            params.set('post_id', String(clip.id));
+            params.set('receiver_id', String(recipientId));
+            fetch('share-post.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            }).then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (!data || !data.ok) { return; }
+                button.textContent = 'Отправлено';
+                button.disabled = true;
+            }).catch(function () {});
+        }
+
+        function filterShareSearch() {
+            if (!shareSearchInput || !shareSearchUsers) { return; }
+            var query = (shareSearchInput.value || '').trim().toLowerCase();
+            var users = shareSearchUsers.querySelectorAll('.clips-share-user');
+            var matched = 0;
+            users.forEach(function (row) {
+                var loginValue = row.getAttribute('data-clips-user-login') || '';
+                var isVisible = !query || loginValue.indexOf(query) === 0;
+                row.classList.toggle('is-hidden', !isVisible);
+                if (isVisible) { matched += 1; }
+            });
+            var empty = shareSearchUsers.querySelector('[data-clips-share-search-empty]');
+            if (empty) {
+                empty.classList.toggle('is-hidden', query === '' || matched > 0);
+            }
         }
 
         commentsList.addEventListener('click', function (event) {
@@ -1487,6 +1597,15 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         document.querySelectorAll('[data-clips-share-close]').forEach(function (button) {
             button.addEventListener('click', closeShareModal);
         });
+        if (shareModal) {
+            shareModal.addEventListener('click', function (event) {
+                var sendButton = event.target.closest('.clips-share-send-btn');
+                if (sendButton) { sendClipToRecipient(sendButton); }
+            });
+        }
+
+        if (shareSearchInput) { shareSearchInput.addEventListener('input', filterShareSearch); }
+
         shareTabButtons.forEach(function (button) {
             button.addEventListener('click', function () {
                 setShareTab(button.getAttribute('data-clips-share-tab') || 'followers');
