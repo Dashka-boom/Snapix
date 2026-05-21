@@ -322,8 +322,37 @@ function render_side_menu(?array $sideMenuUser = null): void
             <button type="button" class="moderation-alert-action" data-moderation-alert-close>Понятно</button>
         </section>
     <?php endif; ?>
+    <div class="report-modal-backdrop" data-report-modal>
+        <section class="report-modal-dialog" role="dialog" aria-modal="true" aria-label="Пожаловаться">
+            <button type="button" class="report-modal-overlay" data-report-modal-close aria-label="Закрыть"></button>
+            <div class="report-modal-content">
+                <button type="button" class="report-modal-close" data-report-modal-close aria-label="Закрыть">×</button>
+                <div data-report-form>
+                    <h2>Пожаловаться</h2>
+                    <p>Почему вы хотите пожаловаться на этот контент?</p>
+                    <label class="report-reason"><input type="radio" name="report_reason" value="Спам"><span>Спам</span></label>
+                    <label class="report-reason"><input type="radio" name="report_reason" value="Оскорбления или ненависть"><span>Оскорбления или ненависть</span></label>
+                    <label class="report-reason"><input type="radio" name="report_reason" value="Насилие"><span>Насилие</span></label>
+                    <label class="report-reason"><input type="radio" name="report_reason" value="Ложная информация"><span>Ложная информация</span></label>
+                    <label class="report-reason"><input type="radio" name="report_reason" value="Нежелательный контент"><span>Нежелательный контент</span></label>
+                    <label class="report-reason"><input type="radio" name="report_reason" value="Нарушение авторских прав"><span>Нарушение авторских прав</span></label>
+                    <label class="report-reason"><input type="radio" name="report_reason" value="Другое"><span>Другое</span></label>
+                    <div class="report-custom-reason-wrap" data-report-custom-reason-wrap hidden>
+                        <input type="text" class="report-custom-reason-input" data-report-custom-reason-input maxlength="1000" placeholder="Опишите причину">
+                    </div>
+                    <button type="button" class="report-submit-btn" data-report-submit disabled>Отправить</button>
+                </div>
+                <div data-report-success hidden>
+                    <h1>Спасибо за обращение</h1>
+                    <p>Мы рассмотрим вашу жалобу и примем соответствующие меры в случае обнаружения нарушения правил сообщества. Автор не получит уведомление о том, что вы пожаловались на его контент.</p>
+                    <button type="button" class="report-block-btn" data-report-block>Заблокировать @user</button>
+                </div>
+            </div>
+        </section>
+    </div>
 
     <script src="js/notifications-drawer.js" defer></script>
     <script src="js/moderation-alert.js" defer></script>
+    <script src="js/report-modal.js" defer></script>
     <?php
 }
