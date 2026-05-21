@@ -210,11 +210,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
         }
 
         if ($postExists && $action === 'report_post' && $ownerId !== (int) $currentUser['id']) {
+            $reportReason = trim((string) ($_POST['report_reason'] ?? ''));
             $pdo->prepare('INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text) VALUES (:reporter_user_id, :target_user_id, :reason_text)')
                 ->execute([
                     'reporter_user_id' => $currentUser['id'],
                     'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                    'reason_text' => 'Жалоба на пост #' . $postId,
+                    'reason_text' => mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000),
                 ]);
         }
 
@@ -627,7 +628,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                             <button type="button" class="post-menu-toggle" data-post-menu="user-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-horizontal'); ?></button>
                                             <div class="post-menu" id="user-post-menu-<?php echo (int) $post['id']; ?>">
                                                 <?php if ($currentUser): ?>
-                                                    <form method="post"><input type="hidden" name="action" value="report_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit">Жалоба на пост</button></form>
+                                                    <form method="post"><input type="hidden" name="action" value="report_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" data-report-trigger data-report-login="<?php echo htmlspecialchars((string) ($profileUser['login'] ?? 'user')); ?>" data-report-user-id="<?php echo (int) $profileUser['id']; ?>">Жалоба на пост</button></form>
                                                     <form method="post"><input type="hidden" name="action" value="report_post_user"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit">Жалоба на пользователя</button></form>
                                                     <form method="post"><input type="hidden" name="action" value="hide_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit">Мне не интересна эта публикация</button></form>
                                                 <?php else: ?>

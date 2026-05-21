@@ -191,6 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($postExists && $action === 'report_post' && $postOwnerId > 0 && $postOwnerId !== (int) $user['id']) {
+        $reportReason = trim((string) ($_POST['report_reason'] ?? ''));
         $reportPostStmt = $pdo->prepare('
             INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text)
             VALUES (:reporter_user_id, :target_user_id, :reason_text)
@@ -198,7 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reportPostStmt->execute([
             'reporter_user_id' => (int) $user['id'],
             'target_user_id' => $postOwnerId,
-            'reason_text' => 'Жалоба на clips #' . $postId,
+            'reason_text' => mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на clips #' . $postId), 0, 1000),
         ]);
         $ajaxExtra['reported'] = true;
     }
@@ -1154,6 +1155,20 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                         closeCommentActionsModal();
                         return;
                     }
+                    if (action === 'report_post' && window.SnapixReportModal) {
+                        window.SnapixReportModal.open({
+                            login: (clip.author && clip.author.login) ? clip.author.login : 'user',
+                            userId: (clip.author && clip.author.id) ? clip.author.id : 0,
+                            onSubmit: function (reason, api) {
+                                sendClipAction('report_post', { report_reason: reason }).then(function (reportData) {
+                                    if (!reportData || !reportData.ok) { return; }
+                                    api.showSuccess();
+                                });
+                            }
+                        });
+                        closeCommentActionsModal();
+                        return;
+                    }
 
                     sendClipAction(action).then(function (data) {
                         if (!data || !data.ok) {
@@ -1235,7 +1250,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             goToClip(currentIndex + direction);
         }
 
-        function sendClipAction(action) {
+        function sendClipAction(action, payload) {
             if (!clips.length) {
                 return Promise.resolve({ ok: false });
             }
@@ -1243,6 +1258,11 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             var formData = new URLSearchParams();
             formData.set('action', action);
             formData.set('post_id', clip.id);
+            if (payload && typeof payload === 'object') {
+                Object.keys(payload).forEach(function (key) {
+                    formData.set(key, payload[key]);
+                });
+            }
 
             return fetch('clips.php', {
                 method: 'POST',
@@ -1397,6 +1417,22 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                     }
                     return;
                 }
+                if (action === 'report_post' && window.SnapixReportModal) {
+                    window.SnapixReportModal.open({
+                        login: (clip.author && clip.author.login) ? clip.author.login : 'user',
+                        userId: (clip.author && clip.author.id) ? clip.author.id : 0,
+                        onSubmit: function (reason, api) {
+                            sendClipAction('report_post', { report_reason: reason }).then(function (reportData) {
+                                if (!reportData || !reportData.ok) { return; }
+                                api.showSuccess();
+                            });
+                        }
+                    });
+                    if (clipsMenu) {
+                        clipsMenu.classList.remove('is-open');
+                    }
+                    return;
+                }
 
                 sendClipAction(action)
                     .then(function (data) {
@@ -1429,17 +1465,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                             renderClip(currentIndex);
                         }
 
-                        if (action === 'report_post') {
-                            var label = button.querySelector('span');
-                            var defaultText = label ? label.textContent : '';
-
-                            if (label) {
-                                label.textContent = 'Жалоба отправлена';
-                                window.setTimeout(function () {
-                                    label.textContent = defaultText;
-                                }, 1400);
-                            }
-                        }
                         if (action === 'toggle_pin') {
                             clip.state.pinned = !!data.is_pinned;
                             if (clipsPinLabel && clipsPinIcon) {
