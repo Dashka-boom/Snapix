@@ -2897,6 +2897,143 @@ body[data-page="clips"].has-side-menu {
     }
 }
 
+/* Final mobile/tablet clips layout override:
+   Author + description are overlays on top of video (Reels/TikTok style),
+   actions and nav are right-side rails without collisions. */
+@media (max-width: 900px) {
+    body[data-page="clips"] {
+        overflow-x: hidden;
+    }
+
+    .clips-shell {
+        display: block;
+        position: relative;
+        padding: 72px 104px 16px 16px;
+        min-height: calc(100vh - 64px);
+        min-height: calc(100dvh - 64px);
+    }
+
+    .clips-video-wrap {
+        margin: 0 auto;
+        width: min(440px, calc(100vw - 132px));
+        max-width: min(440px, calc(100vw - 132px));
+        height: min(84vh, 760px);
+        border-radius: 18px;
+    }
+
+    .clips-info {
+        position: absolute;
+        top: 72px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(440px, calc(100vw - 132px));
+        max-width: min(440px, calc(100vw - 132px));
+        z-index: 6;
+        padding: 14px 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        justify-content: space-between;
+        height: min(84vh, 760px);
+        pointer-events: none;
+    }
+
+    .clips-author-row,
+    .clips-description,
+    .clips-hashtags {
+        pointer-events: auto;
+    }
+
+    .clips-description {
+        position: absolute;
+        left: 16px;
+        right: 80px;
+        bottom: 24px;
+        margin: 0;
+        max-width: none;
+        color: #fff !important;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+        font-size: 14px;
+        line-height: 1.4;
+        z-index: 2;
+    }
+
+    .clips-hashtags {
+        position: absolute;
+        left: 16px;
+        right: 80px;
+        bottom: 4px;
+        z-index: 2;
+        gap: 4px;
+    }
+
+    .clips-hashtags span {
+        color: #fff !important;
+        font-weight: 800;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+    }
+
+    .clips-actions {
+        position: absolute;
+        right: 40px;
+        bottom: 116px;
+        z-index: 7;
+        gap: 12px;
+        padding-bottom: 0;
+    }
+
+    .clips-nav {
+        right: 6px;
+        z-index: 8;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 576px) {
+    .clips-shell {
+        padding: 70px 90px 12px 8px;
+    }
+
+    .clips-video-wrap,
+    .clips-info {
+        width: min(420px, calc(100vw - 102px));
+        max-width: min(420px, calc(100vw - 102px));
+    }
+
+    .clips-video-wrap {
+        height: min(82vh, 700px);
+        border-radius: 14px;
+    }
+
+    .clips-info {
+        height: min(82vh, 700px);
+        padding: 10px 10px 14px;
+    }
+
+    .clips-actions {
+        right: 32px;
+        bottom: 104px;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 390px) {
+    .clips-shell {
+        padding: 68px 82px 10px 6px;
+    }
+
+    .clips-video-wrap,
+    .clips-info {
+        width: min(380px, calc(100vw - 92px));
+        max-width: min(380px, calc(100vw - 92px));
+    }
+
+    .clips-actions {
+        right: 28px;
+        bottom: 94px;
+    }
+}
+
 
 .page-glass-nav {
     width: 100%;
