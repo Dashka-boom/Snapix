@@ -3317,8 +3317,28 @@ body.has-side-menu {
 }
 
 .report-modal-backdrop { position: fixed; inset: 0; display: none; z-index: 12000; }
-.report-modal-backdrop.is-open { display: block; }
-.report-modal-overlay { position: fixed; inset: 0; border: 0; background: rgba(0,0,0,.58); }
+.report-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 12000;
+    background: transparent !important;
+}
+
+.report-modal-backdrop.is-open {
+    display: flex;
+}
+.report-modal-dialog {
+    background: transparent !important;
+}
+.report-modal-overlay {
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgba(0, 0, 0, 0.58) !important;
+}
 .report-modal-dialog { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; }
 .report-modal-content { pointer-events: auto; width: min(520px, calc(100vw - 32px)); border: 1px solid rgba(104, 197, 219, 0.2); border-radius: 24px; background: #040607; backdrop-filter: blur(8px); box-shadow: 0 16px 36px rgba(0,0,0,.45); color: #fff; padding: 18px 18px 16px; position: relative; animation: reportFade .18s ease-out; }
 .report-modal-close { position: absolute; top: 8px; right: 12px; border: 0 !important; background: transparent !important; color: #fff !important; font-size: 30px; }
