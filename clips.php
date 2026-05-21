@@ -260,11 +260,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $currentUserId = (int) ($user['id'] ?? 0);
-$followingUserIds = [];
+$relatedUserIds = [];
 
 if ($currentUserId > 0) {
-    $followingStmt = $pdo->prepare("
-        SELECT following_id
+  $relatedUserIdsStmt = $pdo->prepare("
+    SELECT following_id AS uid
         FROM followers
         WHERE follower_id = :follower_id
           AND status = 'accepted'
