@@ -2293,21 +2293,7 @@ body[data-page="clips"].has-side-menu {
 }
 
 .clips-follow-link {
-    margin-left: 4px;
-    border: 0;
-    background: transparent;
     color: #68C5DB;
-    font-size: 15px;
-    font-weight: 700;
-    line-height: 1;
-    padding: 0;
-    cursor: pointer;
-}
-
-.clips-follow-link:hover,
-.clips-follow-link:focus-visible {
-    color: #84d4e6;
-    outline: none;
 }
 
 .clips-menu-wrap {
