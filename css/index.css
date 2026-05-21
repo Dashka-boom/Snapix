@@ -2254,11 +2254,12 @@ body[data-page="clips"].has-side-menu {
 
 .clips-empty-state {
     position: absolute;
-    top: 50%;
+    top: calc(50% + 24px);
     left: 50%;
     transform: translate(-50%, -50%);
     width: min(90vw, 560px);
-    text-align: center;
+    padding-left: 210px;
+    text-align: left;
     color: #fff;
     font-size: 18px;
     line-height: 1.4;
@@ -2537,14 +2538,15 @@ body[data-page="clips"].has-side-menu {
 .clips-empty {
     min-height: 100vh;
     min-height: 100dvh;
-    padding: 72px 24px;
+    padding: 72px 24px 24px;
     background: #040607;
     display: grid;
     place-content: center;
+    align-content: center;
     gap: 10px;
-    justify-items: start;
-    text-align: left;
-    padding-left: 210px;
+    justify-items: center;
+    text-align: center;
+    padding-top: max(96px, 14vh);
 }
 
 .clips-empty h1,
@@ -2554,6 +2556,11 @@ body[data-page="clips"].has-side-menu {
 }
 
 @media (max-width: 980px) {
+    .clips-empty-state {
+        padding-left: 0;
+        text-align: center;
+    }
+
     .clips-empty {
         padding-left: 24px;
         justify-items: center;
@@ -3364,6 +3371,68 @@ body.has-side-menu {
 .clips-comment-replies-toggle { color: rgba(255,255,255,0.6); padding: 0; text-align: left; cursor: pointer; text-decoration: none; }
 .clips-comment-replies-toggle:hover { color: rgba(255,255,255,0.82); }
 .clips-comment-reply { color: rgba(255,255,255,0.7); font-size: 13px; }
+
+.clips-comment-menu-btn.is-favorited {
+    color: #F3C94A !important;
+}
+
+.clips-comment-actions-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.clips-comment-actions-modal.is-open {
+    display: flex;
+}
+
+.clips-comment-actions-overlay {
+    position: fixed;
+    inset: 0;
+    border: 0;
+    z-index: 9998;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+.clips-comment-actions-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 360px;
+    max-width: 92vw;
+    border: 1px solid rgba(104, 197, 219, 0.2);
+    background: #040607;
+    color: #ffffff;
+    border-radius: 24px;
+    overflow: hidden;
+    z-index: 9999;
+    display: grid;
+    gap: 4px;
+    padding: 8px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+.clips-comment-actions-dialog .post-menu-item {
+    width: 100%;
+    text-align: left;
+    color: #ffffff;
+}
+
+.clips-comment-actions-dialog .post-menu-item:hover,
+.clips-comment-actions-dialog .post-menu-item:focus-visible {
+    background: rgba(255, 255, 255, 0.08);
+    outline: none;
+}
+
+.clips-comment-actions-dialog .post-menu-item.is-favorited img {
+    filter: brightness(0) saturate(100%) invert(77%) sepia(82%) saturate(749%) hue-rotate(358deg) brightness(99%) contrast(87%);
+}
 
 @media (max-width: 1200px) {
     .clips-shell.comments-open { grid-template-columns: minmax(200px, 290px) minmax(240px, 380px) 70px minmax(300px, 360px); gap: 22px; }

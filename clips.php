@@ -627,15 +627,37 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                     <?php endif; ?>
                 </div>
 
+                <div class="clips-comment-actions-modal" data-clips-comment-actions-modal>
+                    <button type="button" class="clips-comment-actions-overlay" data-clips-comment-actions-close aria-label="Закрыть меню"></button>
+                    <div class="clips-comment-actions-dialog" data-clips-comment-actions-dialog>
+                        <button type="button" class="post-menu-item" data-clips-comment-action="block_user">
+                            <img src="icon/dark theme/bloked.png" alt="">
+                            <span>Добавить в чёрный список</span>
+                        </button>
+                        <button type="button" class="post-menu-item" data-clips-comment-action="share">
+                            <img src="icon/dark theme/addcommunication.png" alt="">
+                            <span>Поделиться</span>
+                        </button>
+                        <button type="button" class="post-menu-item post-menu-item-danger" data-clips-comment-action="report_post">
+                            <img src="icon/dark theme/danger.png" alt="">
+                            <span>Пожаловаться</span>
+                        </button>
+                        <button type="button" class="post-menu-item" data-clips-comment-action="toggle_favorite" data-clips-comment-favorite-btn>
+                            <img src="icon/dark theme/favourites.png" alt="">
+                            <span>Избранное</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="clips-nav" aria-label="Навигация Clips">
                     <button type="button" class="clips-nav-btn" data-clips-prev aria-label="Предыдущий clips">↑</button>
                     <button type="button" class="clips-nav-btn" data-clips-next aria-label="Следующий clips">↓</button>
                 </div>
             </section>
         <?php else: ?>
-            <section class="clips-empty">
-                <h1>Clips</h1>
-                <p>Видео пока нет.</p>
+            <section class="clips-empty" data-clips-empty-fallback>
+                <h1>Видео пока нет.</h1>
+                <p>Найдите интересных людей</p>
             </section>
         <?php endif; ?>
     </main>
@@ -714,6 +736,8 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         var commentsList = document.querySelector('[data-clips-comments-list]');
         var commentsForm = document.querySelector('[data-clips-comments-form]');
         var isCommentsSubmitting = false;
+        var commentsCache = [];
+        var activeCommentIndex = -1;
         var counts = {
             likes: document.querySelector('[data-clips-count="likes"]'),
             comments: document.querySelector('[data-clips-count="comments"]'),
@@ -725,15 +749,30 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             repost: document.querySelector('[data-clips-action="add_repost"]'),
             save: document.querySelector('[data-clips-action="toggle_save"]')
         };
+        var commentActionsModal = document.querySelector('[data-clips-comment-actions-modal]');
+        var commentActionsDialog = document.querySelector('[data-clips-comment-actions-dialog]');
+        var commentFavoriteButton = document.querySelector('[data-clips-comment-favorite-btn]');
 
-        function toggleEmptyState() {
-            if (!emptyState) {
-                return;
+        function getEmptyStateMarkup() {
+            if (activeCategory === 'authored') {
+                return '<h1>Видео пока нет.</h1>';
             }
 
+            return '<h1>Видео пока нет.</h1><p>Найдите интересных людей</p>';
+        }
+
+        function toggleEmptyState() {
             var hasClips = clips.length > 0;
-            emptyState.classList.toggle('is-hidden', hasClips);
-            emptyState.textContent = hasClips ? '' : 'В этой категории пока нет видео.';
+
+            if (emptyState) {
+                emptyState.classList.toggle('is-hidden', hasClips);
+                emptyState.innerHTML = hasClips ? '' : getEmptyStateMarkup();
+            }
+
+            var fallbackEmptyState = document.querySelector('[data-clips-empty-fallback]');
+            if (fallbackEmptyState) {
+                fallbackEmptyState.innerHTML = getEmptyStateMarkup();
+            }
 
             [infoBlock, videoWrap, actionsBlock, navBlock].forEach(function (node) {
                 if (!node) {
@@ -903,6 +942,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
         function renderComments(items) {
             if (!commentsList) { return; }
+            commentsCache = Array.isArray(items) ? items : [];
             if (!items.length) {
                 commentsList.innerHTML = '<p class="comments-empty">Комментариев пока нет.</p>';
                 return;
@@ -921,6 +961,66 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             }).join('');
         }
 
+        function getCommentFavoriteKey(clipId, commentId) {
+            return 'clips:comment-favorites:' + String(clipId || 0) + ':' + String(commentId || 0);
+        }
+
+        function isCommentFavorited(clipId, commentId) {
+            return window.localStorage.getItem(getCommentFavoriteKey(clipId, commentId)) === '1';
+        }
+
+        function setCommentFavorited(clipId, commentId, isFavorited) {
+            var key = getCommentFavoriteKey(clipId, commentId);
+            if (isFavorited) {
+                window.localStorage.setItem(key, '1');
+            } else {
+                window.localStorage.removeItem(key);
+            }
+        }
+
+        function syncCommentFavoriteUi() {
+            if (!commentsList || !clips.length) {
+                return;
+            }
+            var clip = clips[currentIndex];
+            var nodes = commentsList.querySelectorAll('.clips-comment-item');
+            nodes.forEach(function (node) {
+                var index = Number(node.getAttribute('data-comment-index'));
+                var comment = commentsCache[index];
+                if (!comment) {
+                    return;
+                }
+                var favoriteButton = node.querySelector('.clips-comment-menu-btn');
+                if (!favoriteButton) {
+                    return;
+                }
+                var favorited = isCommentFavorited(clip.id, comment.id || index);
+                favoriteButton.classList.toggle('is-favorited', favorited);
+            });
+        }
+
+        function openCommentActionsModal(commentIndex) {
+            if (!commentActionsModal || !clips.length) {
+                return;
+            }
+            activeCommentIndex = commentIndex;
+            if (commentFavoriteButton) {
+                var clip = clips[currentIndex];
+                var comment = commentsCache[commentIndex];
+                var favorited = !!(comment && isCommentFavorited(clip.id, comment.id || commentIndex));
+                commentFavoriteButton.classList.toggle('is-favorited', favorited);
+            }
+            commentActionsModal.classList.add('is-open');
+        }
+
+        function closeCommentActionsModal() {
+            if (!commentActionsModal) {
+                return;
+            }
+            activeCommentIndex = -1;
+            commentActionsModal.classList.remove('is-open');
+        }
+
         commentsList.addEventListener('click', function (event) {
             var likeBtn = event.target.closest('.clips-comment-like-btn');
             if (likeBtn) {
@@ -928,6 +1028,15 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 var liked = likeBtn.classList.toggle('is-liked');
                 var value = Number(count.textContent || 0);
                 count.textContent = String(Math.max(0, value + (liked ? 1 : -1)));
+                return;
+            }
+            var menuBtn = event.target.closest('.clips-comment-menu-btn');
+            if (menuBtn) {
+                var container = menuBtn.closest('.clips-comment-item');
+                var commentIndex = Number(container ? container.getAttribute('data-comment-index') : -1);
+                if (commentIndex >= 0) {
+                    openCommentActionsModal(commentIndex);
+                }
                 return;
             }
             var toggle = event.target.closest('.clips-comment-replies-toggle');
@@ -955,6 +1064,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 }
 
                 renderComments(data.comments || []);
+                syncCommentFavoriteUi();
             }).catch(function () {
                 commentsList.innerHTML = '<p class="comments-empty">Не удалось загрузить комментарии.</p>';
             });
@@ -962,6 +1072,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
         function closeCommentsModal() {
             if (commentsModal) { commentsModal.classList.remove('is-open'); }
+            closeCommentActionsModal();
             if (shell) {
                 shell.classList.remove('comments-open');
             }
@@ -980,6 +1091,47 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
         var commentsClose = document.querySelector('[data-clips-comments-close]');
         if (commentsClose) { commentsClose.addEventListener('click', closeCommentsModal); }
+        if (commentActionsModal) {
+            commentActionsModal.addEventListener('click', function (event) {
+                if (event.target.hasAttribute('data-clips-comment-actions-close')) {
+                    closeCommentActionsModal();
+                }
+            });
+        }
+        if (commentActionsDialog) {
+            commentActionsDialog.querySelectorAll('[data-clips-comment-action]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    if (!clips.length) {
+                        return;
+                    }
+                    var action = button.getAttribute('data-clips-comment-action');
+                    var clip = clips[currentIndex];
+                    var comment = commentsCache[activeCommentIndex] || null;
+
+                    if (action === 'toggle_favorite' && comment) {
+                        var commentKey = comment.id || activeCommentIndex;
+                        var nextState = !isCommentFavorited(clip.id, commentKey);
+                        setCommentFavorited(clip.id, commentKey, nextState);
+                        button.classList.toggle('is-favorited', nextState);
+                        syncCommentFavoriteUi();
+                        return;
+                    }
+
+                    if (action === 'share') {
+                        copyCurrentClipLink(button);
+                        closeCommentActionsModal();
+                        return;
+                    }
+
+                    sendClipAction(action).then(function (data) {
+                        if (!data || !data.ok) {
+                            return;
+                        }
+                        closeCommentActionsModal();
+                    }).catch(function () {});
+                });
+            });
+        }
 
         if (commentsForm) {
             commentsForm.addEventListener('submit', function (event) {
