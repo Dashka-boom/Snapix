@@ -2254,7 +2254,7 @@ body[data-page="clips"].has-side-menu {
 
 .clips-empty-state {
     position: absolute;
-    top: 50%;
+    top: calc(50% + 24px);
     left: 50%;
     transform: translate(-50%, -50%);
     width: min(90vw, 560px);
@@ -2537,14 +2537,15 @@ body[data-page="clips"].has-side-menu {
 .clips-empty {
     min-height: 100vh;
     min-height: 100dvh;
-    padding: 72px 24px;
+    padding: 72px 24px 24px;
     background: #040607;
     display: grid;
     place-content: center;
+    align-content: center;
     gap: 10px;
-    justify-items: start;
-    text-align: left;
-    padding-left: 210px;
+    justify-items: center;
+    text-align: center;
+    padding-top: max(96px, 14vh);
 }
 
 .clips-empty h1,

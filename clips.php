@@ -633,9 +633,9 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 </div>
             </section>
         <?php else: ?>
-            <section class="clips-empty">
-                <h1>Clips</h1>
-                <p>Видео пока нет.</p>
+            <section class="clips-empty" data-clips-empty-fallback>
+                <h1>Видео пока нет.</h1>
+                <p>Найдите интересных людей</p>
             </section>
         <?php endif; ?>
     </main>
@@ -726,14 +726,26 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             save: document.querySelector('[data-clips-action="toggle_save"]')
         };
 
-        function toggleEmptyState() {
-            if (!emptyState) {
-                return;
+        function getEmptyStateMarkup() {
+            if (activeCategory === 'authored') {
+                return '<h1>Видео пока нет.</h1>';
             }
 
+            return '<h1>Видео пока нет.</h1><p>Найдите интересных людей</p>';
+        }
+
+        function toggleEmptyState() {
             var hasClips = clips.length > 0;
-            emptyState.classList.toggle('is-hidden', hasClips);
-            emptyState.textContent = hasClips ? '' : 'Clips  Видео пока нет.';
+
+            if (emptyState) {
+                emptyState.classList.toggle('is-hidden', hasClips);
+                emptyState.innerHTML = hasClips ? '' : getEmptyStateMarkup();
+            }
+
+            var fallbackEmptyState = document.querySelector('[data-clips-empty-fallback]');
+            if (fallbackEmptyState) {
+                fallbackEmptyState.innerHTML = getEmptyStateMarkup();
+            }
 
             [infoBlock, videoWrap, actionsBlock, navBlock].forEach(function (node) {
                 if (!node) {
