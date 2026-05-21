@@ -2258,7 +2258,8 @@ body[data-page="clips"].has-side-menu {
     left: 50%;
     transform: translate(-50%, -50%);
     width: min(90vw, 560px);
-    text-align: center;
+    padding-left: 210px;
+    text-align: left;
     color: #fff;
     font-size: 18px;
     line-height: 1.4;
@@ -2555,6 +2556,11 @@ body[data-page="clips"].has-side-menu {
 }
 
 @media (max-width: 980px) {
+    .clips-empty-state {
+        padding-left: 0;
+        text-align: center;
+    }
+
     .clips-empty {
         padding-left: 24px;
         justify-items: center;
