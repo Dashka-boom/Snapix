@@ -220,10 +220,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text)
                 VALUES (:reporter_user_id, :target_user_id, :reason_text)
             ');
+            $reportReason = trim((string) ($_POST['report_reason'] ?? ''));
             $reportPostStmt->execute([
                 'reporter_user_id' => $user['id'],
                 'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                'reason_text' => 'Жалоба на пост #' . $postId,
+                'reason_text' => mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000),
             ]);
         }
 
@@ -499,7 +500,7 @@ if ($feedPosts) {
                                                         <input type="hidden" name="action" value="report_post">
                                                         <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
                                                         <input type="hidden" name="owner_id" value="<?php echo (int) $post['user_id']; ?>">
-                                                        <button type="submit" class="post-menu-item post-menu-item-danger">
+                                                        <button type="submit" class="post-menu-item post-menu-item-danger" data-report-trigger data-report-login="<?php echo htmlspecialchars((string) ($post['login'] ?? 'user')); ?>" data-report-user-id="<?php echo (int) $post['user_id']; ?>">
                                                             <img src="icon/complaint.png" alt="">
                                                             <span>Пожаловаться</span>
                                                         </button>
