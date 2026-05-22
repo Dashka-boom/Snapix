@@ -10,30 +10,32 @@
     const themeButtonIcon = themeButton ? themeButton.querySelector('.side-menu-icon') : null;
     const themeButtonLabel = themeButton ? themeButton.querySelector('.side-menu-label') : null;
 
-    function mapLightIconPath(darkPath) {
-        if (!darkPath || !darkPath.includes('icon/dark theme/')) return darkPath;
-        return darkPath.replace('icon/dark theme/', 'icon/light theme/');
+    function toLightIconPath(path) {
+        if (!path || !path.includes('icon/dark theme/')) return path;
+        return path.replace('icon/dark theme/', 'icon/light theme/');
     }
 
-    function swapSideMenuIcons(theme) {
-        const sideMenuIcons = document.querySelectorAll('.side-menu .side-menu-icon');
-        sideMenuIcons.forEach((icon) => {
+    function toDarkIconPath(path) {
+        if (!path || !path.includes('icon/light theme/')) return path;
+        return path.replace('icon/light theme/', 'icon/dark theme/');
+    }
+
+    function swapAllThemeIcons(theme) {
+        const icons = document.querySelectorAll('img[src*="icon/dark theme/"], img[src*="icon/light theme/"]');
+
+        icons.forEach((icon) => {
             const currentSrc = icon.getAttribute('src') || '';
-            if (!currentSrc.includes('icon/dark theme/') && !currentSrc.includes('icon/light theme/')) {
-                return;
-            }
 
             if (!icon.dataset.darkIcon) {
-                if (currentSrc.includes('icon/dark theme/')) {
-                    icon.dataset.darkIcon = currentSrc;
-                } else {
-                    icon.dataset.darkIcon = currentSrc.replace('icon/light theme/', 'icon/dark theme/');
-                }
+                icon.dataset.darkIcon = currentSrc.includes('icon/light theme/')
+                    ? toDarkIconPath(currentSrc)
+                    : currentSrc;
             }
 
             const darkIcon = icon.dataset.darkIcon;
+
             if (theme === LIGHT_THEME) {
-                icon.setAttribute('src', mapLightIconPath(darkIcon));
+                icon.setAttribute('src', toLightIconPath(darkIcon));
             } else {
                 icon.setAttribute('src', darkIcon);
             }
@@ -42,7 +44,9 @@
 
     function updateThemeButton(theme) {
         if (!themeButton) return;
+
         const isLight = theme === LIGHT_THEME;
+
         themeButton.setAttribute('aria-label', isLight ? 'Светлая тема' : 'Темная тема');
 
         if (themeButtonLabel) {
@@ -50,18 +54,30 @@
         }
 
         if (themeButtonIcon) {
-            themeButtonIcon.setAttribute('src', isLight ? 'icon/light theme/lighttheme.png' : 'icon/dark theme/dark theme.png');
+            themeButtonIcon.setAttribute(
+                'src',
+                isLight
+                    ? 'icon/light theme/lighttheme.png'
+                    : 'icon/dark theme/dark theme.png'
+            );
+
+            themeButtonIcon.dataset.darkIcon = 'icon/dark theme/dark theme.png';
         }
     }
 
-    function applyTheme(theme) {
-        const nextTheme = theme === LIGHT_THEME ? LIGHT_THEME : DARK_THEME;
-        body.setAttribute('data-theme', nextTheme);
-        body.classList.toggle('theme-light', nextTheme === LIGHT_THEME);
-        swapSideMenuIcons(nextTheme);
-        updateThemeButton(nextTheme);
-    }
+  function applyTheme(theme) {
+    const nextTheme = theme === LIGHT_THEME ? LIGHT_THEME : DARK_THEME;
+    const root = document.documentElement;
 
+    body.setAttribute('data-theme', nextTheme);
+    body.classList.toggle('theme-light', nextTheme === LIGHT_THEME);
+
+    root.setAttribute('data-theme', nextTheme);
+    root.classList.toggle('theme-light', nextTheme === LIGHT_THEME);
+
+    swapAllThemeIcons(nextTheme);
+    updateThemeButton(nextTheme);
+}
     function saveTheme(theme) {
         localStorage.setItem(THEME_KEY, theme);
     }
@@ -73,6 +89,7 @@
         themeButton.addEventListener('click', function () {
             const currentTheme = body.getAttribute('data-theme') === LIGHT_THEME ? LIGHT_THEME : DARK_THEME;
             const nextTheme = currentTheme === LIGHT_THEME ? DARK_THEME : LIGHT_THEME;
+
             applyTheme(nextTheme);
             saveTheme(nextTheme);
         });
