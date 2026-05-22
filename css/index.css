@@ -4590,6 +4590,18 @@ html[data-theme="light"] body[data-page="clips"] .clips-comment-like-btn img {
     filter: brightness(0) saturate(100%) invert(10%) sepia(14%) saturate(1071%) hue-rotate(176deg) brightness(93%) contrast(90%) !important;
 }
 
+html.theme-light body[data-page="clips"] .clips-like-btn.is-liked img,
+html[data-theme="light"] body[data-page="clips"] .clips-like-btn.is-liked img,
+html.theme-light body[data-page="clips"] .clips-comment-like-btn.is-liked img,
+html[data-theme="light"] body[data-page="clips"] .clips-comment-like-btn.is-liked img {
+    filter: brightness(0) saturate(100%) invert(34%) sepia(92%) saturate(2313%) hue-rotate(337deg) brightness(102%) contrast(91%) !important;
+}
+
+html.theme-light body[data-page="clips"] .clips-repost-btn.is-reposted img,
+html[data-theme="light"] body[data-page="clips"] .clips-repost-btn.is-reposted img {
+    filter: brightness(0) saturate(100%) invert(58%) sepia(88%) saturate(477%) hue-rotate(93deg) brightness(92%) contrast(91%) !important;
+}
+
 /* FINAL FIX clips clickability */
 body[data-page="clips"] .clips-info {
     pointer-events: none !important;
