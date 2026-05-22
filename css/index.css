@@ -4512,6 +4512,13 @@ html[data-theme="light"] body[data-page="clips"] .clips-action-btn img {
     filter: none !important;
 }
 
+html.theme-light body[data-page="clips"] .clips-save-btn.is-saved img,
+html[data-theme="light"] body[data-page="clips"] .clips-save-btn.is-saved img,
+html.theme-light body[data-page="clips"] .clips-comment-actions-dialog .post-menu-item.is-favorited img,
+html[data-theme="light"] body[data-page="clips"] .clips-comment-actions-dialog .post-menu-item.is-favorited img {
+    filter: brightness(0) saturate(100%) invert(77%) sepia(82%) saturate(749%) hue-rotate(358deg) brightness(99%) contrast(87%) !important;
+}
+
 html.theme-light body[data-page="clips"] .clips-comments-form textarea,
 html[data-theme="light"] body[data-page="clips"] .clips-comments-form textarea {
     background: #FFFDF8 !important;
