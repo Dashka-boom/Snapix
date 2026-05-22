@@ -4133,3 +4133,132 @@ body.has-side-menu {
 .clips-comments-modal .clips-comment-replies-toggle:focus-visible {
     color: rgba(255, 255, 255, 0.82) !important;
 }
+
+/* Light theme overrides */
+body.theme-light,
+body[data-theme="light"] {
+    background: #FCFBF8;
+    color: #1f2937;
+}
+
+body.theme-light .page-glass-nav,
+body[data-theme="light"] .page-glass-nav {
+    background: rgba(252, 251, 248, 0.92);
+    border-bottom-color: rgba(31, 41, 55, 0.12);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+body.theme-light .side-menu,
+body[data-theme="light"] .side-menu {
+    background: #F8F6F1;
+    border-right-color: rgba(31, 41, 55, 0.12);
+}
+
+body.theme-light .side-menu-toggle,
+body.theme-light .side-menu-item,
+body.theme-light .side-menu-profile,
+body.theme-light .side-menu-label,
+body.theme-light .side-menu-account-toggle,
+body[data-theme="light"] .side-menu-toggle,
+body[data-theme="light"] .side-menu-item,
+body[data-theme="light"] .side-menu-profile,
+body[data-theme="light"] .side-menu-label,
+body[data-theme="light"] .side-menu-account-toggle {
+    color: #1f2937 !important;
+}
+
+body.theme-light .side-menu-toggle:hover,
+body.theme-light .side-menu-item:hover,
+body.theme-light .side-menu-profile:hover,
+body.theme-light .side-menu-account-toggle:hover,
+body[data-theme="light"] .side-menu-toggle:hover,
+body[data-theme="light"] .side-menu-item:hover,
+body[data-theme="light"] .side-menu-profile:hover,
+body[data-theme="light"] .side-menu-account-toggle:hover {
+    background: rgba(104, 197, 219, 0.16) !important;
+}
+
+body.theme-light .side-menu-icon,
+body[data-theme="light"] .side-menu-icon {
+    filter: none;
+}
+
+body.theme-light .card-surface,
+body.theme-light .feed-card,
+body.theme-light .post-card,
+body.theme-light .profile-posts,
+body.theme-light .profile-summary,
+body.theme-light .comments-modal-dialog,
+body.theme-light .share-modal-dialog,
+body.theme-light .notifications-drawer,
+body.theme-light .report-modal-content,
+body.theme-light .moderation-alert-modal,
+body[data-theme="light"] .card-surface,
+body[data-theme="light"] .feed-card,
+body[data-theme="light"] .post-card,
+body[data-theme="light"] .profile-posts,
+body[data-theme="light"] .profile-summary,
+body[data-theme="light"] .comments-modal-dialog,
+body[data-theme="light"] .share-modal-dialog,
+body[data-theme="light"] .notifications-drawer,
+body[data-theme="light"] .report-modal-content,
+body[data-theme="light"] .moderation-alert-modal {
+    background: #FCFBF8 !important;
+    border-color: rgba(100, 116, 139, 0.24) !important;
+    color: #1f2937 !important;
+}
+
+body.theme-light .feed-card-caption,
+body.theme-light .feed-action-count,
+body.theme-light .comments-list,
+body.theme-light .notifications-drawer-copy p,
+body[data-theme="light"] .feed-card-caption,
+body[data-theme="light"] .feed-action-count,
+body[data-theme="light"] .comments-list,
+body[data-theme="light"] .notifications-drawer-copy p {
+    color: #475569 !important;
+}
+
+body.theme-light main,
+body[data-theme="light"] main,
+body.theme-light .home-layout,
+body[data-theme="light"] .home-layout,
+body.theme-light .feed-wrap,
+body[data-theme="light"] .feed-wrap,
+body.theme-light .feed-tabs,
+body[data-theme="light"] .feed-tabs,
+body.theme-light .profile-shell,
+body[data-theme="light"] .profile-shell,
+body.theme-light .clips-shell,
+body[data-theme="light"] .clips-shell {
+    background: #FCFBF8 !important;
+}
+
+body.theme-light .feed-tabs button,
+body[data-theme="light"] .feed-tabs button,
+body.theme-light .profile-tab,
+body[data-theme="light"] .profile-tab {
+    color: #334155 !important;
+    border-color: rgba(100, 116, 139, 0.22) !important;
+    background: #f7f4ee !important;
+}
+
+body.theme-light .feed-tabs button:hover,
+body[data-theme="light"] .feed-tabs button:hover,
+body.theme-light .profile-tab:hover,
+body[data-theme="light"] .profile-tab:hover {
+    background: rgba(104, 197, 219, 0.16) !important;
+}
+
+body.theme-light .feed-card,
+body.theme-light .post-card,
+body.theme-light .request-card,
+body.theme-light .comments-modal,
+body.theme-light .share-modal,
+body[data-theme="light"] .feed-card,
+body[data-theme="light"] .post-card,
+body[data-theme="light"] .request-card,
+body[data-theme="light"] .comments-modal,
+body[data-theme="light"] .share-modal {
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06) !important;
+}
