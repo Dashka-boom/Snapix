@@ -4531,6 +4531,80 @@ html[data-theme="light"] body[data-page="clips"] .clips-comments-form textarea::
     color: #64748b !important;
 }
 
+html.theme-light body[data-page="clips"] .report-modal-overlay,
+html[data-theme="light"] body[data-page="clips"] .report-modal-overlay {
+    background: rgba(0, 0, 0, 0.35) !important;
+}
+
+html.theme-light body[data-page="clips"] .report-modal-content,
+html[data-theme="light"] body[data-page="clips"] .report-modal-content {
+    background: #FFFDF8 !important;
+    color: #1f2937 !important;
+    border-color: rgba(104, 197, 219, 0.35) !important;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16) !important;
+}
+
+html.theme-light body[data-page="clips"] .report-modal-content h2,
+html[data-theme="light"] body[data-page="clips"] .report-modal-content h2 {
+    color: #1f2937 !important;
+}
+
+html.theme-light body[data-page="clips"] .report-modal-content p,
+html[data-theme="light"] body[data-page="clips"] .report-modal-content p {
+    color: #64748b !important;
+}
+
+html.theme-light body[data-page="clips"] .report-modal-close,
+html[data-theme="light"] body[data-page="clips"] .report-modal-close {
+    color: #1f2937 !important;
+}
+
+html.theme-light body[data-page="clips"] .report-reason,
+html[data-theme="light"] body[data-page="clips"] .report-reason {
+    color: #1f2937 !important;
+    border-bottom-color: rgba(104, 197, 219, 0.35) !important;
+}
+
+html.theme-light body[data-page="clips"] .report-reason input,
+html[data-theme="light"] body[data-page="clips"] .report-reason input {
+    border-color: rgba(104, 197, 219, 0.55) !important;
+    background: #FFFDF8 !important;
+}
+
+html.theme-light body[data-page="clips"] .report-reason input:checked,
+html[data-theme="light"] body[data-page="clips"] .report-reason input:checked {
+    border-color: #68C5DB !important;
+    background: #68C5DB !important;
+    box-shadow: inset 0 0 0 4px #FFFDF8 !important;
+}
+
+html.theme-light body[data-page="clips"] .report-custom-reason-input,
+html[data-theme="light"] body[data-page="clips"] .report-custom-reason-input {
+    background: #FFFDF8 !important;
+    color: #1f2937 !important;
+    border-color: rgba(104, 197, 219, 0.35) !important;
+}
+
+html.theme-light body[data-page="clips"] .report-custom-reason-input::placeholder,
+html[data-theme="light"] body[data-page="clips"] .report-custom-reason-input::placeholder {
+    color: #64748b !important;
+}
+
+html.theme-light body[data-page="clips"] .report-submit-btn,
+html[data-theme="light"] body[data-page="clips"] .report-submit-btn {
+    border-color: rgba(104, 197, 219, 0.7) !important;
+    background: rgba(104, 197, 219, 0.06) !important;
+    color: #68C5DB !important;
+}
+
+html.theme-light body[data-page="clips"] .report-submit-btn:hover,
+html.theme-light body[data-page="clips"] .report-submit-btn:focus-visible,
+html[data-theme="light"] body[data-page="clips"] .report-submit-btn:hover,
+html[data-theme="light"] body[data-page="clips"] .report-submit-btn:focus-visible {
+    background: rgba(104, 197, 219, 0.12) !important;
+    border-color: #68C5DB !important;
+}
+
 html.theme-light body[data-page="clips"] .clips-share-modal-dialog,
 html[data-theme="light"] body[data-page="clips"] .clips-share-modal-dialog {
     background: #FFFDF8 !important;
