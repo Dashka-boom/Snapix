@@ -50,7 +50,7 @@
         }
 
         if (themeButtonIcon) {
-            themeButtonIcon.setAttribute('src', isLight ? 'icon/light theme/light theme.png' : 'icon/dark theme/dark theme.png');
+            themeButtonIcon.setAttribute('src', isLight ? 'icon/dark theme/lighttheme.png' : 'icon/dark theme/dark theme.png');
         }
     }
 
