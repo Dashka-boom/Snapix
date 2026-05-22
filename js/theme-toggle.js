@@ -12,14 +12,14 @@
 
     function mapLightIconPath(darkPath) {
         if (!darkPath || !darkPath.includes('icon/dark theme/')) return darkPath;
-        return darkPath.replace('icon/dark theme/', 'icon/ligth theme/');
+        return darkPath.replace('icon/dark theme/', 'icon/light theme/');
     }
 
     function swapSideMenuIcons(theme) {
         const sideMenuIcons = document.querySelectorAll('.side-menu .side-menu-icon');
         sideMenuIcons.forEach((icon) => {
             const currentSrc = icon.getAttribute('src') || '';
-            if (!currentSrc.includes('icon/dark theme/') && !currentSrc.includes('icon/ligth theme/')) {
+            if (!currentSrc.includes('icon/dark theme/') && !currentSrc.includes('icon/light theme/')) {
                 return;
             }
 
@@ -27,7 +27,7 @@
                 if (currentSrc.includes('icon/dark theme/')) {
                     icon.dataset.darkIcon = currentSrc;
                 } else {
-                    icon.dataset.darkIcon = currentSrc.replace('icon/ligth theme/', 'icon/dark theme/');
+                    icon.dataset.darkIcon = currentSrc.replace('icon/light theme/', 'icon/dark theme/');
                 }
             }
 
@@ -50,7 +50,7 @@
         }
 
         if (themeButtonIcon) {
-            themeButtonIcon.setAttribute('src', isLight ? 'icon/dark theme/lighttheme.png' : 'icon/dark theme/dark theme.png');
+            themeButtonIcon.setAttribute('src', isLight ? 'icon/light theme/lighttheme.png' : 'icon/dark theme/dark theme.png');
         }
     }
 
