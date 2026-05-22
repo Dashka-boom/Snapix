@@ -1,51 +1,99 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="css/index.css">
     <title>Snapix</title>
 </head>
-<body>
-    <header class="header">
-        <nav class="nav">
-            <a href="index.html" class="logo">Snapix</a>
-            <input type="text" class="search" placeholder="Поиск">
-            <div class="menu">
-                <a href="#">Reels</a>
-                <a href="login.html">Войти</a>
-                <a href="registr.html" class="auth">Регистрация</a>
-            </div>
+<body data-page="privacy" class="has-side-menu">
+    <aside class="side-menu" aria-label="Основное меню">
+        <button type="button" class="side-menu-toggle" aria-label="Меню">
+            <img src="icon/dark theme/menu.png" alt="" class="side-menu-icon">
+            <span class="side-menu-label">Меню</span>
+        </button>
+
+        <nav class="side-menu-nav" aria-label="Навигация по сайту">
+            <a href="index.php" class="side-menu-item" aria-label="Главная">
+                <img src="icon/logo.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Главная</span>
+            </a>
+            <a href="#" class="side-menu-item" aria-label="Clips">
+                <img src="icon/dark theme/Clips.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Clips</span>
+            </a>
+            <a href="connections.php?view=requests" class="side-menu-item" aria-label="Уведомления">
+                <img src="icon/dark theme/notification.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Уведомления</span>
+            </a>
+            <a href="#" class="side-menu-item" aria-label="Поиск">
+                <img src="icon/dark theme/search.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Поиск</span>
+            </a>
+            <a href="chat.php" class="side-menu-item" aria-label="Чат">
+                <img src="icon/dark theme/chat.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Чат</span>
+            </a>
+            <a href="profile.php" class="side-menu-item" aria-label="Закладки">
+                <img src="icon/dark theme/favourites.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Закладки</span>
+            </a>
+            <button type="button" class="side-menu-item side-menu-button" aria-label="Темная тема">
+                <img src="icon/dark theme/dark theme.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Темная тема</span>
+            </button>
+            <a href="#" class="side-menu-item" aria-label="Интересное">
+                <img src="icon/dark theme/new.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Интересное</span>
+            </a>
+            <a href="edit-profile.php" class="side-menu-item" aria-label="Настройки">
+                <img src="icon/dark theme/settings.png" alt="" class="side-menu-icon">
+                <span class="side-menu-label">Настройки</span>
+            </a>
         </nav>
-    </header>
+
+        <a href="login.php" class="side-menu-profile" aria-label="Профиль пользователя">
+            <span class="side-menu-avatar">S</span>
+            <span class="side-menu-label side-menu-profile-name">Войти</span>
+        </a>
+        <button type="button" class="side-menu-account-toggle" aria-label="Открыть меню аккаунта">•••</button>
+        <div class="side-menu-account-modal" role="dialog" aria-label="Меню аккаунта">
+            <a href="login.php">Поменять аккаунт</a>
+            <a href="logout.php">Выйти из учётной записи</a>
+        </div>
+    </aside>
+
+    <div class="page-glass-nav" aria-hidden="true"></div>
 
     <main class="legal-page">
-        <section class="legal-hero">
+        <section class="legal-hero card-surface">
+            <p class="page-eyebrow">Правовая информация</p>
             <h1>Политика конфиденциальности</h1>
+            <p class="legal-lead">Здесь описано, какие данные может обрабатывать Snapix, для чего они используются и какие инструменты доступны пользователю для управления своей приватностью.</p>
         </section>
 
         <section class="legal-content">
-            <article class="legal-section">
+            <article class="legal-section card-surface">
                 <h2>1. Какие данные мы собираем</h2>
                 <p>При создании аккаунта и использовании сервиса могут обрабатываться регистрационные данные, информация профиля, технические сведения об устройстве, а также данные, связанные с публикацией контента и взаимодействием внутри платформы.</p>
             </article>
 
-            <article class="legal-section">
+            <article class="legal-section card-surface">
                 <h2>2. Зачем это нужно</h2>
                 <p>Мы используем данные для авторизации, отображения персонализированного контента, поддержки стабильной работы сервиса, улучшения рекомендаций, обеспечения безопасности аккаунтов и реагирования на обращения пользователей.</p>
             </article>
 
-            <article class="legal-section">
+            <article class="legal-section card-surface">
                 <h2>3. Хранение и защита</h2>
                 <p>Snapix стремится применять разумные организационные и технические меры защиты данных. Срок хранения зависит от характера информации, требований законодательства и задач, для которых данные были собраны.</p>
             </article>
 
-            <article class="legal-section">
+            <article class="legal-section card-surface">
                 <h2>4. Передача третьим лицам</h2>
                 <p>Мы не передаём персональные данные без законных оснований. В отдельных случаях данные могут предоставляться подрядчикам, обеспечивающим работу инфраструктуры, аналитики или поддержки, при соблюдении требований к конфиденциальности.</p>
             </article>
 
-            <article class="legal-section">
+            <article class="legal-section card-surface">
                 <h2>5. Управление настройками</h2>
                 <p>Пользователь может обновлять данные профиля, настраивать видимость контента и обращаться в поддержку по вопросам обработки информации. Актуальная версия политики публикуется на этой странице и действует с момента обновления.</p>
             </article>
