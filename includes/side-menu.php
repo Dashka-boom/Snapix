@@ -354,5 +354,6 @@ function render_side_menu(?array $sideMenuUser = null): void
     <script src="js/notifications-drawer.js" defer></script>
     <script src="js/moderation-alert.js" defer></script>
     <script src="js/report-modal.js" defer></script>
+    <script src="js/theme-toggle.js" defer></script>
     <?php
 }
