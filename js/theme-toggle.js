@@ -11,13 +11,11 @@
     const themeButtonLabel = themeButton ? themeButton.querySelector('.side-menu-label') : null;
 
     function toLightIconPath(path) {
-        if (!path || !path.includes('icon/dark theme/')) return path;
-        return path.replace('icon/dark theme/', 'icon/light theme/');
+        return path ? path.replace('icon/dark theme/', 'icon/light theme/') : path;
     }
 
     function toDarkIconPath(path) {
-        if (!path || !path.includes('icon/light theme/')) return path;
-        return path.replace('icon/light theme/', 'icon/dark theme/');
+        return path ? path.replace('icon/light theme/', 'icon/dark theme/') : path;
     }
 
     function swapAllThemeIcons(theme) {
@@ -32,13 +30,10 @@
                     : currentSrc;
             }
 
-            const darkIcon = icon.dataset.darkIcon;
-
-            if (theme === LIGHT_THEME) {
-                icon.setAttribute('src', toLightIconPath(darkIcon));
-            } else {
-                icon.setAttribute('src', darkIcon);
-            }
+            icon.setAttribute(
+                'src',
+                theme === LIGHT_THEME ? toLightIconPath(icon.dataset.darkIcon) : icon.dataset.darkIcon
+            );
         });
     }
 
@@ -56,28 +51,26 @@
         if (themeButtonIcon) {
             themeButtonIcon.setAttribute(
                 'src',
-                isLight
-                    ? 'icon/light theme/lighttheme.png'
-                    : 'icon/dark theme/dark theme.png'
+                isLight ? 'icon/light theme/lighttheme.png' : 'icon/dark theme/dark theme.png'
             );
-
             themeButtonIcon.dataset.darkIcon = 'icon/dark theme/dark theme.png';
         }
     }
 
-  function applyTheme(theme) {
-    const nextTheme = theme === LIGHT_THEME ? LIGHT_THEME : DARK_THEME;
-    const root = document.documentElement;
+    function applyTheme(theme) {
+        const nextTheme = theme === LIGHT_THEME ? LIGHT_THEME : DARK_THEME;
+        const root = document.documentElement;
 
-    body.setAttribute('data-theme', nextTheme);
-    body.classList.toggle('theme-light', nextTheme === LIGHT_THEME);
+        body.setAttribute('data-theme', nextTheme);
+        body.classList.toggle('theme-light', nextTheme === LIGHT_THEME);
 
-    root.setAttribute('data-theme', nextTheme);
-    root.classList.toggle('theme-light', nextTheme === LIGHT_THEME);
+        root.setAttribute('data-theme', nextTheme);
+        root.classList.toggle('theme-light', nextTheme === LIGHT_THEME);
 
-    swapAllThemeIcons(nextTheme);
-    updateThemeButton(nextTheme);
-}
+        swapAllThemeIcons(nextTheme);
+        updateThemeButton(nextTheme);
+    }
+
     function saveTheme(theme) {
         localStorage.setItem(THEME_KEY, theme);
     }

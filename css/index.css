@@ -4423,3 +4423,66 @@ html.theme-light .clips-action-btn,
 html[data-theme="light"] .clips-action-btn {
     color: #1f2937 !important;
 }
+
+/* CLIPS fixes: full-width nav + light theme text */
+body[data-page="clips"] .clips-feed-tabs {
+    width: 100vw !important;
+    margin-left: calc(-1 * var(--side-menu-offset, 0px)) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+body[data-page="clips"].has-side-menu .clips-feed-tabs {
+    margin-left: -80px !important;
+}
+
+/* убрать рамку вокруг блока автора/описания */
+html.theme-light .clips-info,
+html[data-theme="light"] .clips-info {
+    border: 0 !important;
+}
+
+/* текст clips в светлой теме сделать тёмным */
+html.theme-light body[data-page="clips"] .clips-author-meta strong,
+html.theme-light body[data-page="clips"] .clips-author-meta span,
+html.theme-light body[data-page="clips"] .clips-description,
+html.theme-light body[data-page="clips"] .clips-hashtags span,
+html.theme-light body[data-page="clips"] .clips-action-btn span,
+html.theme-light body[data-page="clips"] .clips-empty h1,
+html.theme-light body[data-page="clips"] .clips-empty p,
+html.theme-light body[data-page="clips"] .clips-empty-state,
+html[data-theme="light"] body[data-page="clips"] .clips-author-meta strong,
+html[data-theme="light"] body[data-page="clips"] .clips-author-meta span,
+html[data-theme="light"] body[data-page="clips"] .clips-description,
+html[data-theme="light"] body[data-page="clips"] .clips-hashtags span,
+html[data-theme="light"] body[data-page="clips"] .clips-action-btn span,
+html[data-theme="light"] body[data-page="clips"] .clips-empty h1,
+html[data-theme="light"] body[data-page="clips"] .clips-empty p,
+html[data-theme="light"] body[data-page="clips"] .clips-empty-state {
+    color: #1f2937 !important;
+    text-shadow: none !important;
+}
+
+/* три точки в светлой теме */
+html.theme-light body[data-page="clips"] .clips-menu-toggle span,
+html[data-theme="light"] body[data-page="clips"] .clips-menu-toggle span {
+    background: #1f2937 !important;
+}
+
+/* кнопки действий в светлой теме */
+html.theme-light body[data-page="clips"] .clips-action-btn,
+html[data-theme="light"] body[data-page="clips"] .clips-action-btn {
+    color: #1f2937 !important;
+}
+
+/* навигация tabs на всю ширину и в тёмной, и в светлой теме */
+body[data-page="clips"] .home-feed-tabs.clips-feed-tabs {
+    max-width: none !important;
+    left: 0 !important;
+    right: 0 !important;
+}
+
+html.theme-light .post-menu .post-menu-item img,
+html[data-theme="light"] .post-menu .post-menu-item img {
+    filter: none !important;
+}
