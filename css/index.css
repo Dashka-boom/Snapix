@@ -4486,3 +4486,164 @@ html.theme-light .post-menu .post-menu-item img,
 html[data-theme="light"] .post-menu .post-menu-item img {
     filter: none !important;
 }
+
+/* FIX clips light theme */
+html.theme-light body[data-page="clips"] .clips-comments-modal,
+html[data-theme="light"] body[data-page="clips"] .clips-comments-modal,
+html.theme-light body[data-page="clips"] .clips-comments-modal-body,
+html[data-theme="light"] body[data-page="clips"] .clips-comments-modal-body,
+html.theme-light body[data-page="clips"] .clips-comments-form,
+html[data-theme="light"] body[data-page="clips"] .clips-comments-form {
+    background: #FCFBF8 !important;
+    color: #1f2937 !important;
+}
+
+html.theme-light body[data-page="clips"] .clips-comments-modal *,
+html[data-theme="light"] body[data-page="clips"] .clips-comments-modal * {
+    color: #1f2937 !important;
+}
+
+html.theme-light body[data-page="clips"] .clips-comment-like-btn img,
+html[data-theme="light"] body[data-page="clips"] .clips-comment-like-btn img,
+html.theme-light body[data-page="clips"] .post-menu .post-menu-item img,
+html[data-theme="light"] body[data-page="clips"] .post-menu .post-menu-item img,
+html.theme-light body[data-page="clips"] .clips-action-btn img,
+html[data-theme="light"] body[data-page="clips"] .clips-action-btn img {
+    filter: none !important;
+}
+
+html.theme-light body[data-page="clips"] .clips-comments-form textarea,
+html[data-theme="light"] body[data-page="clips"] .clips-comments-form textarea {
+    background: #FFFDF8 !important;
+    color: #1f2937 !important;
+    border-color: rgba(104, 197, 219, 0.45) !important;
+}
+
+html.theme-light body[data-page="clips"] .clips-comments-form textarea::placeholder,
+html[data-theme="light"] body[data-page="clips"] .clips-comments-form textarea::placeholder {
+    color: #64748b !important;
+}
+
+html.theme-light body[data-page="clips"] .clips-comments-send,
+html[data-theme="light"] body[data-page="clips"] .clips-comments-send {
+    background: #FFFDF8 !important;
+    color: #68C5DB !important;
+    border-color: #68C5DB !important;
+}
+
+html.theme-light body[data-page="clips"] .clips-comment-like-count,
+html[data-theme="light"] body[data-page="clips"] .clips-comment-like-count {
+    color: #1f2937 !important;
+}
+
+/* FIX clips light: white area must not overlap video */
+html.theme-light body[data-page="clips"] .clips-info,
+html[data-theme="light"] body[data-page="clips"] .clips-info {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+html.theme-light body[data-page="clips"] .clips-video-wrap,
+html[data-theme="light"] body[data-page="clips"] .clips-video-wrap {
+    background: #040607 !important;
+    background-color: #040607 !important;
+}
+
+/* блок автора не должен создавать белую плашку поверх видео */
+html.theme-light body[data-page="clips"] .clips-author-row,
+html.theme-light body[data-page="clips"] .clips-author-link,
+html.theme-light body[data-page="clips"] .clips-description,
+html.theme-light body[data-page="clips"] .clips-hashtags,
+html[data-theme="light"] body[data-page="clips"] .clips-author-row,
+html[data-theme="light"] body[data-page="clips"] .clips-author-link,
+html[data-theme="light"] body[data-page="clips"] .clips-description,
+html[data-theme="light"] body[data-page="clips"] .clips-hashtags {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* аватарки в комментариях сделать светлее */
+html.theme-light body[data-page="clips"] .clips-comment-avatar,
+html[data-theme="light"] body[data-page="clips"] .clips-comment-avatar {
+    background: #F1F5F9 !important;
+    border-color: rgba(104, 197, 219, 0.45) !important;
+    color: #1f2937 !important;
+}
+
+/* если у аватара есть фото — не перекрашивать */
+html.theme-light body[data-page="clips"] .clips-comment-avatar.has-avatar,
+html[data-theme="light"] body[data-page="clips"] .clips-comment-avatar.has-avatar {
+    background-color: transparent !important;
+    color: transparent !important;
+}
+
+/* сердечко комментария в светлой теме сделать тёмным */
+html.theme-light body[data-page="clips"] .clips-comment-like-btn img,
+html[data-theme="light"] body[data-page="clips"] .clips-comment-like-btn img {
+    filter: brightness(0) saturate(100%) invert(10%) sepia(14%) saturate(1071%) hue-rotate(176deg) brightness(93%) contrast(90%) !important;
+}
+
+/* FINAL FIX clips clickability */
+body[data-page="clips"] .clips-info {
+    pointer-events: none !important;
+}
+
+body[data-page="clips"] .clips-author-row {
+    pointer-events: none !important;
+}
+
+body[data-page="clips"] .clips-author-link,
+body[data-page="clips"] .clips-author-link *,
+body[data-page="clips"] .clips-menu-wrap,
+body[data-page="clips"] .clips-menu-wrap *,
+body[data-page="clips"] .clips-menu-toggle,
+body[data-page="clips"] .clips-menu-toggle * {
+    pointer-events: auto !important;
+}
+
+body[data-page="clips"] .clips-description,
+body[data-page="clips"] .clips-hashtags,
+body[data-page="clips"] .clips-hashtags * {
+    pointer-events: none !important;
+}
+
+body[data-page="clips"] .clips-actions {
+    z-index: 500 !important;
+    pointer-events: auto !important;
+}
+
+body[data-page="clips"] .clips-actions *,
+body[data-page="clips"] .clips-action-btn,
+body[data-page="clips"] .clips-action-btn * {
+    pointer-events: auto !important;
+}
+
+body[data-page="clips"] .clips-nav {
+    z-index: 500 !important;
+    pointer-events: auto !important;
+}
+
+body[data-page="clips"] .clips-nav *,
+body[data-page="clips"] .clips-nav-btn {
+    pointer-events: auto !important;
+}
+
+body[data-page="clips"] .side-menu {
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+}
+
+body[data-page="clips"] .side-menu *,
+body[data-page="clips"] .side-menu-button,
+body[data-page="clips"] .side-menu-button * {
+    pointer-events: auto !important;
+}
+
+body[data-page="clips"] .clips-video-wrap,
+body[data-page="clips"] .clips-video-wrap::before {
+    pointer-events: none !important;
+}
+
+body[data-page="clips"] video.clips-video {
+    pointer-events: auto !important;
+}

@@ -6,7 +6,7 @@
     const body = document.body;
     if (!body) return;
 
-    const themeButton = document.querySelector('.side-menu-button');
+    const themeButton = document.querySelector('.side-menu-button[aria-label*="тема"], .side-menu-button[aria-label*="Тема"]');
     const themeButtonIcon = themeButton ? themeButton.querySelector('.side-menu-icon') : null;
     const themeButtonLabel = themeButton ? themeButton.querySelector('.side-menu-label') : null;
 
