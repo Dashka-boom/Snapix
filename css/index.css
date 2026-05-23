@@ -4837,19 +4837,19 @@ body[data-page="clips"] video.clips-video {
 /* Profile redesign */
 .profile-page {max-width: 1160px; margin: 0 auto; gap: 8px; background: transparent; padding: 0 10px 20px;}
 .profile-cover {min-height: 270px; border: 0; border-radius: 14px; overflow: hidden; background: linear-gradient(160deg,#1f2a31,#0f1418);}
-.profile-summary {margin-top: -20px; padding: 0 2px 2px; background: transparent; border: 0; box-shadow: none;}
-.profile-header {align-items: flex-start; gap: 14px; position: relative;}
-.profile-avatar-shell {margin-top: -62px; position: relative; z-index: 5; flex: 0 0 154px;}
+.profile-summary {margin-top: -20px; padding: 0 2px 2px; background: transparent; border: 0; box-shadow: none; overflow: visible;}
+.profile-header {display: grid; grid-template-columns: 168px minmax(0,1fr) auto; align-items: start; column-gap: 22px; position: relative;}
+.profile-avatar-shell {margin-top: -62px; position: relative; z-index: 8; width: 168px; overflow: visible;}
 .profile-avatar {width: 154px; height: 154px; border: 2px solid rgba(104,197,219,.9); box-shadow: 0 10px 24px rgba(0,0,0,.28), 0 0 0 8px #0b1118;}
 .profile-name-row {display:flex; align-items:center; gap:10px;}
 .profile-private-icon {width:18px; height:18px; opacity:.9;}
-.profile-main {display:flex; flex-direction:column; gap:5px; padding-top: 6px; min-width: 0; flex: 1 1 auto;}
+.profile-main {display:flex; flex-direction:column; gap:7px; padding-top: 10px; min-width: 0;}
 .profile-bio {margin: 0; opacity: .92;}
-.profile-metrics {display:flex; gap:12px; align-items:center; flex-wrap:nowrap; white-space: nowrap; font-size: 14px;}
+.profile-metrics {display:flex; gap:14px; align-items:center; flex-wrap:nowrap; white-space: nowrap; font-size: 14px; padding-left: 0;}
 .profile-metrics .profile-metric-inline-link {color:#d6ecf0; text-decoration:none;}
 .profile-metrics strong {color:#fff; font-weight:800;}
-.profile-create-btn {margin-top: 2px; width:36px;height:36px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(82,240,245,.75);background:#18cfd5;color:#062025;text-decoration:none;font-size:26px;line-height:1;}
-.profile-actions {margin-left:auto; display:flex; gap:10px; padding-top: 8px;}
+.profile-create-btn {margin-top: 4px; width:36px;height:36px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(82,240,245,.75);background:#18cfd5;color:#062025;text-decoration:none;font-size:26px;line-height:1; align-self:flex-start;}
+.profile-actions {display:flex; gap:10px; padding-top: 10px; align-self:start;}
 .profile-actions .secondary-link {background:#1ecfd4; color:#082126; border:1px solid rgba(126,255,255,.5);} 
 .profile-tabs-line {border-bottom:1px solid rgba(148,165,176,.25); margin-top: 2px; background: rgba(255,255,255,0.01); backdrop-filter: blur(8px);}
 .profile-post-tabs {display:flex; gap:2px; overflow-x:auto; white-space: nowrap;}
@@ -4874,14 +4874,15 @@ body[data-page="clips"] video.clips-video {
 @media (max-width: 900px) {
   .profile-page {max-width: 100%; padding: 0 10px 18px;}
   .profile-summary {margin-top:-14px; padding:0 2px 2px;}
-  .profile-header {flex-wrap:wrap;}
-  .profile-avatar-shell {margin-top:-46px; flex-basis: 136px;}
-  .profile-actions {width:100%; justify-content:flex-start;}
+  .profile-header {grid-template-columns: 136px minmax(0,1fr); row-gap: 10px; column-gap: 16px;}
+  .profile-avatar-shell {margin-top:-46px; width:136px;}
+  .profile-actions {grid-column: 1 / -1; justify-content:flex-start; padding-top: 0;}
   .profile-media-grid {grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); justify-content:stretch;}
 }
 @media (max-width: 560px) {
   .profile-avatar {width:136px; height:136px;}
-  .profile-avatar-shell {flex-basis: 136px;}
+  .profile-avatar-shell {width:136px;}
+  .profile-main {padding-top: 6px; gap: 6px;}
   .profile-metrics {gap:8px; font-size:13px; overflow-x:auto;}
   .profile-post-tab {padding: 10px 12px;}
   .profile-media-grid {grid-template-columns:1fr; gap:12px; justify-content:stretch;}
