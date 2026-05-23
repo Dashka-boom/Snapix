@@ -4828,3 +4828,9 @@ body[data-page="clips"] .clips-video-wrap::before {
 body[data-page="clips"] video.clips-video {
     pointer-events: auto !important;
 }
+
+.side-menu-item[aria-label="Главная"] .side-menu-icon {
+    width: 40px !important;
+    height: 400x !important;
+    flex: 0 0 40px !important;
+}

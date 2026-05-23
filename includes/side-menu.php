@@ -254,7 +254,7 @@ function render_side_menu(?array $sideMenuUser = null): void
 
         <nav class="side-menu-nav" aria-label="Навигация по сайту">
             <a href="index.php" class="side-menu-item" aria-label="Главная">
-                <img src="icon/logo.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/logo.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Главная</span>
             </a>
             <a href="<?php echo htmlspecialchars($clipsUrl, ENT_QUOTES); ?>" class="side-menu-item" aria-label="Clips">
