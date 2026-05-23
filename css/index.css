@@ -1301,3 +1301,63 @@ h2 {
         width: auto;
     }
 }
+
+
+body[data-page="profile"] {
+    background: #0a0f14;
+    color: #e6eef5;
+}
+
+body[data-page="profile"] .header {
+    background: rgba(10, 15, 20, 0.92);
+    border-bottom-color: rgba(55, 73, 90, 0.6);
+}
+
+body[data-page="profile"] .logo,
+body[data-page="profile"] .menu a,
+body[data-page="profile"] .profile-nav-title {
+    color: #e6eef5;
+}
+
+body[data-page="profile"] .card-surface { background: #111a23; border-color: #243546; }
+body[data-page="profile"] .profile-page { max-width: 1100px; }
+body[data-page="profile"] .profile-cover { border-radius: 20px; border: none; min-height: 280px; background: linear-gradient(135deg,#111a23,#1a2b3b); }
+body[data-page="profile"] .profile-cover.has-image::after { background: rgba(5, 10, 16, 0.55); }
+body[data-page="profile"] .profile-summary { margin-top: -40px; background: transparent; border: none; box-shadow: none; padding: 0 6px 0; }
+body[data-page="profile"] .profile-header { background: rgba(14,22,31,.95); border:1px solid #274056; border-radius:20px; padding:24px; }
+body[data-page="profile"] .profile-avatar-shell { background:#0d151d; border:1px solid #2e4c66; }
+body[data-page="profile"] .profile-username { font-size: 30px; display:flex; align-items:center; gap:8px; }
+.profile-private-lock { font-size: 16px; opacity: .85; }
+body[data-page="profile"] .profile-bio { color:#b6c8d7; margin-bottom: 14px; }
+body[data-page="profile"] .profile-metric { background:#122130; border-color:#274056; min-width: 105px; padding:10px 12px; }
+body[data-page="profile"] .profile-metric span { color:#8fa7ba; }
+body[data-page="profile"] .primary-link,
+body[data-page="profile"] .profile-create-btn { background: linear-gradient(135deg, #14cfd0 0%, #08aeb7 100%); box-shadow: 0 10px 26px rgba(20,207,208,.25); }
+body[data-page="profile"] .profile-create-btn { width:44px; height:44px; border:1px solid rgba(208,255,255,.45); }
+body[data-page="profile"] .profile-actions { gap: 8px; }
+body[data-page="profile"] .profile-tabs { margin-top: 20px; display:flex; gap:10px; border-bottom:1px solid #284156; padding:0 2px; overflow-x:auto; }
+body[data-page="profile"] .profile-tab { color:#9db3c5; text-decoration:none; padding:14px 12px; white-space:nowrap; border-bottom:2px solid transparent; }
+body[data-page="profile"] .profile-tab.is-active { color:#eafcff; border-bottom-color:#14cfd0; }
+body[data-page="profile"] .profile-posts { background: transparent; border: none; box-shadow:none; padding: 20px 0 0; }
+body[data-page="profile"] .section-heading h2 { color:#d8e8f5; }
+body[data-page="profile"] .posts-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap:16px; }
+body[data-page="profile"] .post-card { position:relative; background:#101b26; border:1px solid #263c4f; border-radius:16px; overflow:hidden; }
+body[data-page="profile"] .post-card-media { aspect-ratio: 4 / 3; }
+.post-type-badge { position:absolute; right:10px; top:10px; z-index:2; background: rgba(8,14,20,.7); border:1px solid rgba(200,220,240,.4); border-radius:999px; padding:4px 7px; font-size:14px; }
+.post-card-hover { position:absolute; inset:0; background: rgba(0,0,0,.46); display:flex; align-items:center; justify-content:center; gap:26px; opacity:0; transition:opacity .2s ease; z-index:3; }
+.post-hover-icon { color:#fff; font-size:34px; line-height:1; }
+.post-card:hover .post-card-hover { opacity:1; }
+body[data-page="profile"] .post-card-copy { background:#0f1923; }
+
+@media (max-width: 900px) {
+  body[data-page="profile"] .profile-header { grid-template-columns: 1fr; }
+  body[data-page="profile"] .profile-actions { grid-template-columns: 1fr 1fr; display:grid; }
+  body[data-page="profile"] .posts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  body[data-page="profile"] .profile-cover { min-height: 180px; }
+  body[data-page="profile"] .profile-avatar-shell { width:96px; height:96px; }
+  body[data-page="profile"] .profile-username { font-size:24px; }
+  body[data-page="profile"] .profile-metrics { gap:10px; }
+  body[data-page="profile"] .posts-grid { grid-template-columns: 1fr; }
+}

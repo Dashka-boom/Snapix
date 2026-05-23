@@ -213,9 +213,9 @@ $showFollowingPanel = $panel === 'following';
     </header>
 
     <main class="profile-page">
-        <section class="profile-cover card-surface<?php echo !empty($user['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($user['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['background_image']); ?>');"<?php endif; ?>></section>
+        <section class="profile-cover<?php echo !empty($user['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($user['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['background_image']); ?>');"<?php endif; ?>></section>
 
-        <section class="profile-summary card-surface">
+        <section class="profile-summary">
             <div class="profile-header">
                 <div class="profile-avatar-shell">
                     <?php if (!empty($user['avatar'])): ?>
@@ -227,26 +227,32 @@ $showFollowingPanel = $panel === 'following';
 
                 <div class="profile-main">
                     <div class="profile-name-row">
-                        <h1 class="profile-username"><?php echo htmlspecialchars($user['login']); ?></h1>
-                        <a href="create-post.php" class="profile-create-btn" aria-label="Создать публикацию">+</a>
+                        <h1 class="profile-username">
+                            <?php echo htmlspecialchars($user['login']); ?>
+                            <?php if (!empty($user['is_private'])): ?>
+                                <span class="profile-private-lock" aria-label="Закрытый профиль" title="Закрытый профиль">🔒</span>
+                            <?php endif; ?>
+                        </h1>
                     </div>
 
                     <?php if (!empty($user['bio'])): ?>
                         <p class="profile-bio"><?php echo nl2br(htmlspecialchars($user['bio'])); ?></p>
                     <?php endif; ?>
 
+                    <a href="create-post.php" class="profile-create-btn" aria-label="Добавить публикацию">+</a>
+
                     <div class="profile-metrics">
                         <a href="connections.php?view=following" class="profile-metric profile-metric-link">
                             <strong><?php echo $followingCount; ?></strong>
-                            <span>Подписки</span>
+                            <span>Смотримые</span>
                         </a>
                         <a href="connections.php?view=followers" class="profile-metric profile-metric-link">
                             <strong><?php echo $followersCount; ?></strong>
-                            <span>Подписчики</span>
+                            <span>Смотрители</span>
                         </a>
                         <div class="profile-metric">
                             <strong><?php echo $postsCount; ?></strong>
-                            <span>Публикации</span>
+                            <span>Публикаций</span>
                         </div>
                         <div class="profile-metric">
                             <strong><?php echo $savedPostsCount; ?></strong>
@@ -256,7 +262,8 @@ $showFollowingPanel = $panel === 'following';
                 </div>
 
                 <div class="profile-actions">
-                    <a href="edit-profile.php" class="secondary-link profile-edit-btn">Изменить профиль</a>
+                    <a href="edit-profile.php" class="primary-link profile-edit-btn">Изменить профиль</a>
+                    <a href="create-post.php" class="primary-link profile-add-post-btn">Добавить публикацию</a>
                     <a href="logout.php" class="secondary-link profile-logout-btn">Выйти</a>
                 </div>
             </div>
@@ -302,6 +309,16 @@ $showFollowingPanel = $panel === 'following';
                 <p class="notification-popover-empty">Новых заявок нет.</p>
             <?php endif; ?>
         </div>
+
+
+
+        <section class="profile-tabs" aria-label="Навигация профиля">
+            <a href="#" class="profile-tab is-active">Посты</a>
+            <a href="#" class="profile-tab">Репосты</a>
+            <a href="#" class="profile-tab">Избранное</a>
+            <a href="#" class="profile-tab">Нравится</a>
+            <a href="#" class="profile-tab">Архивы</a>
+        </section>
 
         <?php if ($showRequestsBlock): ?>
             <section id="requests-panel" class="profile-posts card-surface">
@@ -406,9 +423,16 @@ $showFollowingPanel = $panel === 'following';
                 <div class="posts-grid">
                     <?php foreach ($posts as $post): ?>
                         <article class="post-card">
+                            <div class="post-card-hover" aria-hidden="true">
+                                <span class="post-hover-icon">♡</span>
+                                <span class="post-hover-icon">⟲</span>
+                                <span class="post-hover-icon">☆</span>
+                            </div>
                             <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
+                                <span class="post-type-badge" aria-hidden="true">🎬</span>
                                 <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                             <?php elseif (!empty($post['media_url'])): ?>
+                                <span class="post-type-badge" aria-hidden="true">🖼</span>
                                 <div class="post-card-media" style="background-image: url('<?php echo htmlspecialchars($post['media_url']); ?>');"></div>
                             <?php else: ?>
                                 <div class="post-card-media"></div>
@@ -442,9 +466,16 @@ $showFollowingPanel = $panel === 'following';
                 <div class="posts-grid">
                     <?php foreach ($savedPosts as $post): ?>
                         <article class="post-card">
+                            <div class="post-card-hover" aria-hidden="true">
+                                <span class="post-hover-icon">♡</span>
+                                <span class="post-hover-icon">⟲</span>
+                                <span class="post-hover-icon">☆</span>
+                            </div>
                             <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
+                                <span class="post-type-badge" aria-hidden="true">🎬</span>
                                 <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                             <?php elseif (!empty($post['media_url'])): ?>
+                                <span class="post-type-badge" aria-hidden="true">🖼</span>
                                 <div class="post-card-media" style="background-image: url('<?php echo htmlspecialchars($post['media_url']); ?>');"></div>
                             <?php else: ?>
                                 <div class="post-card-media"></div>
