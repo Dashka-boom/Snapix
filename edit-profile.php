@@ -1,6 +1,8 @@
 <?php
 session_start();
 require './config/config.php';
+require_once './includes/side-menu.php';
+require './includes/icons.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -24,6 +26,17 @@ if (!$user) {
     header('Location: login.php');
     exit;
 }
+
+$unreadMessagesStmt = $pdo->prepare('
+    SELECT COUNT(*)
+    FROM messages m
+    INNER JOIN chats c ON c.id = m.chat_id
+    WHERE (c.user_one_id = :user_id OR c.user_two_id = :user_id)
+      AND m.sender_id != :user_id
+      AND m.is_read = 0
+');
+$unreadMessagesStmt->execute(['user_id' => $user['id']]);
+$unreadMessagesCount = (int) $unreadMessagesStmt->fetchColumn();
 
 $statusMessage = '';
 $statusType = '';
@@ -186,30 +199,17 @@ $coverStyle = !empty($user['background_image'])
     <link rel="stylesheet" href="css/edit-profile.css">
     <title>Snapix</title>
 </head>
-<body data-page="edit-profile">
-    <header class="header">
-        <nav class="nav">
-            <a href="index.php" class="logo">Snapix</a>
-            <input type="text" class="search" placeholder="Поиск">
-            <div class="menu">
-                <a href="#">Reels</a>
-                <a href="profile.php" class="user-avatar-link" aria-label="Открыть профиль">
-                    <?php if (!empty($user['avatar'])): ?>
-                        <span class="user-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></span>
-                    <?php else: ?>
-                        <span class="user-avatar"><?php echo htmlspecialchars(mb_substr($user['login'], 0, 1)); ?></span>
-                    <?php endif; ?>
-                </a>
-            </div>
-        </nav>
-    </header>
+<body data-page="edit-profile" class="has-side-menu">
+    <?php render_side_menu($user); ?>
+
+    <div class="page-glass-nav" aria-hidden="true"></div>
 
     <main class="edit-profile-page">
         <section class="edit-preview-shell">
             <div class="edit-profile-cover" id="coverPreview" style="<?php echo $coverStyle; ?>">
                 <input class="file-input-hidden" type="file" id="backgroundInput" name="background" accept="image/*" form="editProfileForm">
                 <button type="button" class="upload-trigger cover" data-target-input="backgroundInput" aria-label="Изменить фон профиля">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5 7.7 6H5.5A2.5 2.5 0 0 0 3 8.5v9A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 18.5 6h-2.2L15 4.5H9Zm3 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-1.8a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z"/></svg>
+                    <?php echo snapix_icon('camera'); ?>
                 </button>
             </div>
             <div class="edit-preview-summary">
@@ -217,7 +217,7 @@ $coverStyle = !empty($user['background_image'])
                     <div class="edit-avatar" id="avatarPreview" style="<?php echo $avatarStyle; ?>"><?php echo empty($user['avatar']) ? htmlspecialchars(mb_substr($user['login'], 0, 1)) : ''; ?></div>
                     <input class="file-input-hidden" type="file" id="avatarInput" name="avatar" accept="image/*" form="editProfileForm">
                     <button type="button" class="upload-trigger avatar" data-target-input="avatarInput" aria-label="Изменить аватар">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5 7.7 6H5.5A2.5 2.5 0 0 0 3 8.5v9A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 18.5 6h-2.2L15 4.5H9Zm3 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-1.8a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z"/></svg>
+                        <?php echo snapix_icon('camera'); ?>
                     </button>
                 </div>
                 <div class="summary-copy">
