@@ -632,12 +632,12 @@ $showFollowingPanel = $panel === 'following';
         <?php endif; ?>
 
         <section class="profile-tabs-line">
-            <div class="profile-post-tabs" role="tablist" aria-label="Разделы профиля">
-                <button type="button" class="profile-post-tab is-active" data-profile-tab-button="publications">Посты</button>
-                <button type="button" class="profile-post-tab" data-profile-tab-button="reposts">Репосты</button>
-                <button type="button" class="profile-post-tab" data-profile-tab-button="favourites">Избранное</button>
-                <button type="button" class="profile-post-tab" data-profile-tab-button="likes">Нравится</button>
-                <button type="button" class="profile-post-tab" data-profile-tab-button="archives">Архивы</button>
+            <div class="profile-post-tabs home-feed-tabs" role="tablist" aria-label="Разделы профиля">
+                <button type="button" class="profile-post-tab home-feed-tab is-active" data-profile-tab-button="publications">Посты</button>
+                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="reposts">Репосты</button>
+                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="favourites">Избранное</button>
+                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="likes">Нравится</button>
+                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="archives">Архивы</button>
             </div>
         </section>
 
