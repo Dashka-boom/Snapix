@@ -468,8 +468,6 @@ $showFollowingPanel = $panel === 'following';
 <body data-page="profile" class="has-side-menu">
     <?php render_side_menu($user); ?>
 
-    <div class="page-glass-nav" aria-hidden="true"></div>
-
     <main class="profile-page">
         <section class="profile-cover card-surface<?php echo !empty($user['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($user['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['background_image']); ?>');"<?php endif; ?>></section>
 
@@ -646,6 +644,16 @@ $showFollowingPanel = $panel === 'following';
         <?php endif; ?>
 
         <section class="profile-posts card-surface">
+            <div class="profile-post-tabs" role="tablist" aria-label="Разделы профиля">
+                <button type="button" class="profile-post-tab is-active" data-profile-tab-button="publications">Посты</button>
+                <button type="button" class="profile-post-tab" data-profile-tab-button="reposts">Репосты</button>
+                <button type="button" class="profile-post-tab" data-profile-tab-button="favourites">Избранное</button>
+                <button type="button" class="profile-post-tab" data-profile-tab-button="likes">Нравится</button>
+                <button type="button" class="profile-post-tab" data-profile-tab-button="archives">Архивы</button>
+            </div>
+        </section>
+
+        <section class="profile-posts card-surface" data-profile-tab-panel="publications">
             <div class="section-heading">
                 <h2>Публикации</h2>
             </div>
@@ -744,7 +752,7 @@ $showFollowingPanel = $panel === 'following';
             <?php endif; ?>
         </section>
 
-        <section class="profile-posts card-surface">
+        <section class="profile-posts card-surface" data-profile-tab-panel="reposts" hidden>
             <div class="section-heading">
                 <h2>Репосты</h2>
             </div>
@@ -813,7 +821,7 @@ $showFollowingPanel = $panel === 'following';
             <?php endif; ?>
         </section>
 
-        <section class="profile-posts card-surface">
+        <section class="profile-posts card-surface" data-profile-tab-panel="favourites" hidden>
             <div class="section-heading">
                 <h2>Избранное</h2>
             </div>
@@ -896,6 +904,14 @@ $showFollowingPanel = $panel === 'following';
                 <p class="empty-state">Здесь будут публикации, которые вы добавите в избранное.</p>
             <?php endif; ?>
         </section>
+        <section class="profile-posts card-surface" data-profile-tab-panel="likes" hidden>
+            <div class="section-heading"><h2>Нравится</h2></div>
+            <p class="empty-state">Понравившиеся публикации появятся здесь.</p>
+        </section>
+        <section class="profile-posts card-surface" data-profile-tab-panel="archives" hidden>
+            <div class="section-heading"><h2>Архивы</h2></div>
+            <p class="empty-state">Архивов пока нет.</p>
+        </section>
 
     </main>
     <div class="share-modal" id="share-post-modal">
@@ -965,6 +981,23 @@ $showFollowingPanel = $panel === 'following';
                 }
             });
         });
+
+        (() => {
+            const tabButtons = document.querySelectorAll('[data-profile-tab-button]');
+            const tabPanels = document.querySelectorAll('[data-profile-tab-panel]');
+            if (!tabButtons.length || !tabPanels.length) {
+                return;
+            }
+            tabButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const tab = button.getAttribute('data-profile-tab-button');
+                    tabButtons.forEach((item) => item.classList.toggle('is-active', item === button));
+                    tabPanels.forEach((panel) => {
+                        panel.hidden = panel.getAttribute('data-profile-tab-panel') !== tab;
+                    });
+                });
+            });
+        })();
 
         document.querySelectorAll('.post-menu-toggle').forEach((button) => {
             button.addEventListener('click', () => {
