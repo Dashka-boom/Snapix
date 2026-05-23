@@ -4840,7 +4840,7 @@ body[data-page="clips"] video.clips-video {
 .profile-summary {margin-top: -20px; padding: 0 2px 2px; background: transparent; border: 0; box-shadow: none; overflow: visible;}
 .profile-header {display: grid; grid-template-columns: 168px minmax(0,1fr) auto; align-items: start; column-gap: 22px; position: relative;}
 .profile-avatar-shell {margin-top: -62px; position: relative; z-index: 8; width: 168px; overflow: visible;}
-.profile-avatar {width: 154px; height: 154px; border: 2px solid rgba(104,197,219,.9); box-shadow: 0 10px 24px rgba(0,0,0,.28), 0 0 0 8px #0b1118;}
+.profile-avatar {width: 154px; height: 154px; border: 2px solid rgba(104,197,219,.9); box-shadow: 0 10px 24px rgba(0,0,0,.28);}
 .profile-name-row {display:flex; align-items:center; gap:10px;}
 .profile-private-icon {width:18px; height:18px; opacity:.9;}
 .profile-main {display:flex; flex-direction:column; gap:7px; padding-top: 10px; min-width: 0;}
