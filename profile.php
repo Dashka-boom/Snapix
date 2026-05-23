@@ -471,7 +471,7 @@ $showFollowingPanel = $panel === 'following';
     <main class="profile-page">
         <section class="profile-cover card-surface<?php echo !empty($user['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($user['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['background_image']); ?>');"<?php endif; ?>></section>
 
-        <section class="profile-summary card-surface">
+        <section class="profile-summary">
             <div class="profile-header">
                 <div class="profile-avatar-shell">
                     <?php if (!empty($user['avatar'])): ?>
@@ -494,23 +494,11 @@ $showFollowingPanel = $panel === 'following';
                     <?php endif; ?>
 
                     <div class="profile-metrics">
-                        <a href="connections.php?view=following" class="profile-metric profile-metric-link">
-                            <strong><?php echo $followingCount; ?></strong>
-                            <span>Подписки</span>
-                        </a>
-                        <a href="connections.php?view=followers" class="profile-metric profile-metric-link">
-                            <strong><?php echo $followersCount; ?></strong>
-                            <span>Подписчики</span>
-                        </a>
-                        <div class="profile-metric">
-                            <strong><?php echo $postsCount; ?></strong>
-                            <span>Публикации</span>
-                        </div>
-                        <div class="profile-metric">
-                            <strong><?php echo $savedPostsCount; ?></strong>
-                            <span>Избранное</span>
-                        </div>
+                        <span><strong><?php echo $postsCount; ?></strong> публикаций</span>
+                        <a href="connections.php?view=followers" class="profile-metric-inline-link"><strong><?php echo $followersCount; ?></strong> смотрители</a>
+                        <a href="connections.php?view=following" class="profile-metric-inline-link"><strong><?php echo $followingCount; ?></strong> смотримые</a>
                     </div>
+                    <a href="create-post.php" class="profile-create-btn" aria-label="Создать публикацию">+</a>
                 </div>
 
                 <div class="profile-actions">
@@ -643,7 +631,7 @@ $showFollowingPanel = $panel === 'following';
             </section>
         <?php endif; ?>
 
-        <section class="profile-posts card-surface">
+        <section class="profile-tabs-line">
             <div class="profile-post-tabs" role="tablist" aria-label="Разделы профиля">
                 <button type="button" class="profile-post-tab is-active" data-profile-tab-button="publications">Посты</button>
                 <button type="button" class="profile-post-tab" data-profile-tab-button="reposts">Репосты</button>
@@ -653,10 +641,7 @@ $showFollowingPanel = $panel === 'following';
             </div>
         </section>
 
-        <section class="profile-posts card-surface" data-profile-tab-panel="publications">
-            <div class="section-heading">
-                <h2>Публикации</h2>
-            </div>
+        <section class="profile-posts profile-posts-stream" data-profile-tab-panel="publications">
 
             <?php if ($postCreated): ?>
                 <p class="form-status is-success">Публикация успешно добавлена.</p>
