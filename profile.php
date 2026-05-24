@@ -1017,7 +1017,7 @@ $showFollowingPanel = $panel === 'following';
                 <div class="profile-post-viewer-input-row">
                     <button type="button" class="profile-post-viewer-round-btn"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
                     <button type="button" class="profile-post-viewer-round-btn"><img class="icon-dark" src="icon/dark theme/add stickers.png" alt=""><img class="icon-light" src="icon/light theme/add stickers.png" alt=""></button>
-                    <div class="profile-post-viewer-input-shell"><input type="text" placeholder="Добавить комментарий" aria-label="Добавить комментарий"><button type="button" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
+                    <div class="profile-post-viewer-input-shell"><input class="profile-post-viewer-input" type="text" placeholder="Добавить комментарий" aria-label="Добавить комментарий"><button type="button" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
                 </div>
             </aside>
         </div>
