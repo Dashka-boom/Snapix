@@ -52,7 +52,7 @@ if (!in_array($panel, $allowedPanels, true)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'modal_follow_author'], true);
     $ajaxExtra = [];
     $postId = (int) ($_POST['post_id'] ?? 0);
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
@@ -103,6 +103,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'show_panel' && in_array($redirectPanel, $allowedPanels, true)) {
         header('Location: profile.php?panel=' . $redirectPanel . '#connections-panel');
+        exit;
+    }
+
+    if ($action === 'modal_follow_author') {
+        $targetUserId = (int) ($_POST['author_id'] ?? 0);
+        if ($targetUserId <= 0 || $targetUserId === (int) $user['id']) {
+            snapix_send_post_action_error('invalid_target_user', 400);
+        }
+
+        $targetStmt = $pdo->prepare('SELECT id, is_private FROM users WHERE id = :id');
+        $targetStmt->execute(['id' => $targetUserId]);
+        $targetUser = $targetStmt->fetch();
+        if (!$targetUser) {
+            snapix_send_post_action_error('user_not_found', 404);
+        }
+
+        $relationStmt = $pdo->prepare('
+            SELECT id, status, declined_until
+            FROM followers
+            WHERE follower_id = :follower_id AND following_id = :following_id
+            LIMIT 1
+        ');
+        $relationStmt->execute([
+            'follower_id' => $user['id'],
+            'following_id' => $targetUserId,
+        ]);
+        $relation = $relationStmt->fetch();
+
+        $isBlocked = $relation
+            && $relation['status'] === 'declined'
+            && !empty($relation['declined_until'])
+            && strtotime((string) $relation['declined_until']) > time();
+        if ($isBlocked) {
+            snapix_send_post_action_error('follow_blocked', 403);
+        }
+
+        if (!$relation || $relation['status'] !== 'accepted') {
+            $nextStatus = !empty($targetUser['is_private']) ? 'pending' : 'accepted';
+            if ($relation) {
+                $pdo->prepare('UPDATE followers SET status = :status, declined_until = NULL WHERE id = :id')
+                    ->execute(['status' => $nextStatus, 'id' => $relation['id']]);
+            } else {
+                $pdo->prepare('INSERT INTO followers (follower_id, following_id, status, declined_until) VALUES (:follower_id, :following_id, :status, NULL)')
+                    ->execute([
+                        'follower_id' => $user['id'],
+                        'following_id' => $targetUserId,
+                        'status' => $nextStatus,
+                    ]);
+            }
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => true]);
         exit;
     }
 
@@ -312,7 +365,8 @@ $postStatsSql = "
     (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
     (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
     (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted,
-    (SELECT COUNT(*) FROM pinned_posts WHERE pinned_posts.post_id = posts.id AND pinned_posts.user_id = :viewer_id) AS is_pinned
+    (SELECT COUNT(*) FROM pinned_posts WHERE pinned_posts.post_id = posts.id AND pinned_posts.user_id = :viewer_id) AS is_pinned,
+    (SELECT status FROM followers WHERE follower_id = :viewer_id AND following_id = users.id LIMIT 1) AS viewer_follow_status
 ";
 
 $stmt = $pdo->prepare("
@@ -662,7 +716,7 @@ $showFollowingPanel = $panel === 'following';
                     <?php foreach ($posts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                        <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>">
+                        <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $user['id']); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? $user['login'])); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['author_avatar'] ?? $user['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-follow-status="<?php echo htmlspecialchars((string) ($post['viewer_follow_status'] ?? '')); ?>">
                             <span class="post-type-badge" aria-hidden="true">
                                 <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
                             </span>
@@ -772,7 +826,7 @@ $showFollowingPanel = $panel === 'following';
                     <?php foreach ($repostedPosts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                        <article class="post-card" id="repost-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>">
+                        <article class="post-card" id="repost-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $user['id']); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? $user['login'])); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['author_avatar'] ?? $user['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-follow-status="<?php echo htmlspecialchars((string) ($post['viewer_follow_status'] ?? '')); ?>">
                             <span class="post-type-badge" aria-hidden="true">
                                 <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
                             </span>
@@ -874,7 +928,7 @@ $showFollowingPanel = $panel === 'following';
                     <?php foreach ($savedPosts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                        <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>">
+                        <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $user['id']); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? $user['login'])); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['author_avatar'] ?? $user['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-follow-status="<?php echo htmlspecialchars((string) ($post['viewer_follow_status'] ?? '')); ?>">
                             <span class="post-type-badge" aria-hidden="true">
                                 <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
                             </span>
@@ -990,6 +1044,39 @@ $showFollowingPanel = $panel === 'following';
         </section>
 
     </main>
+    <div class="profile-post-viewer" id="profilePostViewer" aria-hidden="true">
+        <div class="profile-post-viewer-overlay" data-post-viewer-close></div>
+        <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Просмотр публикации">
+            <button type="button" class="profile-post-viewer-close" data-post-viewer-close aria-label="Закрыть">×</button>
+            <div class="profile-post-viewer-media" id="profilePostViewerMedia"></div>
+            <aside class="profile-post-viewer-side">
+                <header class="profile-post-viewer-head">
+                    <div class="profile-post-viewer-author">
+                        <a class="profile-post-viewer-avatar" id="profilePostViewerAvatar" href="profile.php" aria-label="Открыть профиль автора"></a>
+                        <a id="profilePostViewerLogin" class="profile-post-viewer-login" href="profile.php"></a>
+                        <button type="button" class="profile-post-viewer-follow" id="profilePostViewerFollowBtn">Подписаться</button>
+                    </div>
+                    <button type="button" class="profile-post-viewer-more" aria-label="Ещё">•••</button>
+                </header>
+                <div class="profile-post-viewer-comments" id="profilePostViewerComments">
+                    <p class="profile-post-viewer-empty">Комментариев нет</p>
+                </div>
+                <div class="profile-post-viewer-metrics">
+                    <div class="profile-post-viewer-metric"><img class="icon-dark" src="icon/dark theme/like.png" alt=""><img class="icon-light" src="icon/light theme/like.png" alt=""><span id="viewerLikesCount">0</span></div>
+                    <div class="profile-post-viewer-metric"><img class="icon-dark" src="icon/dark theme/comment.png" alt=""><img class="icon-light" src="icon/light theme/comment.png" alt=""><span id="viewerCommentsCount">0</span></div>
+                    <div class="profile-post-viewer-metric"><img class="icon-dark" src="icon/dark theme/repost.png" alt=""><img class="icon-light" src="icon/light theme/repost.png" alt=""><span id="viewerRepostsCount">0</span></div>
+                    <div class="profile-post-viewer-metric"><img class="icon-dark" src="icon/dark theme/share.png" alt=""><img class="icon-light" src="icon/light theme/share.png" alt=""><span>0</span></div>
+                    <div class="profile-post-viewer-metric"><img class="icon-dark" src="icon/dark theme/favourites.png" alt=""><img class="icon-light" src="icon/light theme/favourites.png" alt=""><span id="viewerSavesCount">0</span></div>
+                </div>
+                <div class="profile-post-viewer-input-row">
+                    <button type="button" class="profile-post-viewer-round-btn"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
+                    <button type="button" class="profile-post-viewer-round-btn"><img class="icon-dark" src="icon/dark theme/add stickers.png" alt=""><img class="icon-light" src="icon/light theme/add stickers.png" alt=""></button>
+                    <div class="profile-post-viewer-input-shell"><input class="profile-post-viewer-input" type="text" placeholder="Добавить комментарий" aria-label="Добавить комментарий"><button type="button" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
     <div class="share-modal" id="share-post-modal">
         <div class="share-modal-overlay js-close-share-modal"></div>
         <div class="share-modal-dialog">
@@ -1035,6 +1122,101 @@ $showFollowingPanel = $panel === 'following';
                 if (!popover.classList.contains('is-open')) return;
                 if (popover.contains(event.target) || bell.contains(event.target)) return;
                 popover.classList.remove('is-open');
+            });
+        })();
+
+
+        (() => {
+            const viewer = document.getElementById('profilePostViewer');
+            const mediaHost = document.getElementById('profilePostViewerMedia');
+            const avatar = document.getElementById('profilePostViewerAvatar');
+            const login = document.getElementById('profilePostViewerLogin');
+            const followBtn = document.getElementById('profilePostViewerFollowBtn');
+            const likes = document.getElementById('viewerLikesCount');
+            const comments = document.getElementById('viewerCommentsCount');
+            const reposts = document.getElementById('viewerRepostsCount');
+            const saves = document.getElementById('viewerSavesCount');
+            let activeAuthorId = 0;
+            if (!viewer || !mediaHost) return;
+
+            const closeViewer = () => {
+                viewer.classList.remove('is-open');
+                document.body.classList.remove('is-modal-open');
+                document.body.style.overflow = '';
+                mediaHost.innerHTML = '';
+            };
+
+            document.querySelectorAll('.profile-media-grid .post-card').forEach((card) => {
+                card.addEventListener('click', (event) => {
+                    if (event.target.closest('button, a, form, .post-hover-overlay, .post-menu-wrap')) return;
+                    const mediaUrl = card.dataset.postMediaUrl || '';
+                    const mediaType = card.dataset.postMediaType || 'image';
+                    mediaHost.innerHTML = '';
+                    if (mediaType === 'video') {
+                        const video = document.createElement('video');
+                        video.src = mediaUrl;
+                        video.controls = true;
+                        video.playsInline = true;
+                        mediaHost.appendChild(video);
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = mediaUrl;
+                        img.alt = 'Публикация';
+                        mediaHost.appendChild(img);
+                    }
+                    login.textContent = card.dataset.postAuthorLogin || '';
+                    activeAuthorId = Number(card.dataset.postAuthorId || 0);
+                    const authorUrl = activeAuthorId > 0 ? `user.php?id=${activeAuthorId}` : 'profile.php';
+                    login.href = authorUrl;
+                    avatar.href = authorUrl;
+                    const avatarUrl = card.dataset.postAuthorAvatar || '';
+                    avatar.style.backgroundImage = avatarUrl ? `url('${avatarUrl}')` : '';
+                    avatar.textContent = avatarUrl ? '' : (login.textContent || '?').slice(0, 1).toUpperCase();
+                    const followStatus = card.dataset.postFollowStatus || '';
+                    followBtn.style.display = (activeAuthorId > 0 && followStatus !== 'accepted') ? '' : 'none';
+                    followBtn.classList.remove('is-success-anim');
+                    likes.textContent = card.dataset.postLikesCount || '0';
+                    comments.textContent = card.dataset.postCommentsCount || '0';
+                    reposts.textContent = card.dataset.postRepostsCount || '0';
+                    saves.textContent = card.dataset.postSavesCount || '0';
+                    viewer.classList.add('is-open');
+                    document.body.classList.add('is-modal-open');
+                    document.body.style.overflow = 'hidden';
+                });
+            });
+
+            viewer.querySelectorAll('[data-post-viewer-close]').forEach((node) => node.addEventListener('click', closeViewer));
+            followBtn?.addEventListener('click', () => {
+                if (!activeAuthorId || followBtn.dataset.loading === '1') return;
+                followBtn.dataset.loading = '1';
+                const body = new URLSearchParams({
+                    action: 'modal_follow_author',
+                    author_id: String(activeAuthorId),
+                }).toString();
+                fetch(window.location.href, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'Accept': 'application/json'
+                    },
+                    body
+                }).then((r) => r.json()).then((data) => {
+                    if (!data || data.error) return;
+                    followBtn.classList.remove('is-success-anim');
+                    void followBtn.offsetWidth;
+                    followBtn.classList.add('is-success-anim');
+                    window.setTimeout(() => {
+                        followBtn.style.display = 'none';
+                        followBtn.classList.remove('is-success-anim');
+                    }, 1000);
+                }).finally(() => {
+                    followBtn.dataset.loading = '0';
+                });
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && viewer.classList.contains('is-open')) closeViewer();
             });
         })();
 
