@@ -1682,7 +1682,9 @@ function themedIcon(path) {
                             return;
                         }
                         applyRelationMap(payload.relation_map || {});
-                        followButton.classList.add('is-hidden');
+                        if (clips.length) {
+                            renderClip(currentIndex);
+                        }
                         window.localStorage.setItem('snapix_follow_sync', String(Date.now()));
                     })
                     .catch(function () {});
