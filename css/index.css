@@ -5379,7 +5379,7 @@ body[data-page="profile"] .profile-hover-action-btn {
     min-height: 48px !important;
     border-radius: 50% !important;
     border: 0 !important;
-    background: rgba(4, 6, 7, 0.72) !important;
+    background: transparent !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
