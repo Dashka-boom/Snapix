@@ -5458,11 +5458,11 @@ body.light-theme .profile-post-viewer-head{ border-bottom-color:rgba(4,6,7,.12);
 .profile-post-viewer-author { display:flex; align-items:center; gap:10px; }
 .profile-post-viewer-avatar { width:34px; height:34px; border-radius:50%; background:#68C5DB; background-size:cover; background-position:center; display:inline-flex; align-items:center; justify-content:center; font-weight:700; }
 .profile-post-viewer-login { color: inherit; font-weight: 700; text-decoration: none; }
-.profile-post-viewer-follow { color:#68C5DB; font-size:14px; font-weight:600; background:transparent !important; border:none !important; box-shadow:none !important; outline:none !important; padding:0 !important; margin-left:6px; border-radius:0 !important; cursor:pointer; line-height:1.2; transition: opacity .2s ease; display:inline; appearance:none; -webkit-appearance:none; }
+.profile-post-viewer-follow { display:inline !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; background:transparent !important; background-color:transparent !important; border:0 !important; outline:none !important; box-shadow:none !important; border-radius:0 !important; padding:0 !important; margin-left:6px !important; color:#68C5DB !important; font-size:15px !important; font-weight:600 !important; line-height:1 !important; cursor:pointer !important; text-decoration:none !important; appearance:none !important; -webkit-appearance:none !important; }
 .profile-post-viewer-follow:hover,
 .profile-post-viewer-follow:focus,
 .profile-post-viewer-follow:focus-visible,
-.profile-post-viewer-follow:active { color:#68C5DB; opacity:.75; background:transparent !important; border:none !important; box-shadow:none !important; outline:none !important; }
+.profile-post-viewer-follow:active { display:inline !important; visibility:visible !important; opacity:.75 !important; background:transparent !important; background-color:transparent !important; border:0 !important; outline:none !important; box-shadow:none !important; color:#68C5DB !important; text-decoration:none !important; }
 .profile-post-viewer-follow.is-success-anim { animation: profileFollowPulseFade 1s ease forwards; }
 @keyframes profileFollowPulseFade {
     0% { transform: scale(1); opacity: 1; text-shadow: 0 0 0 rgba(104,197,219,0); }

@@ -1127,6 +1127,7 @@ $showFollowingPanel = $panel === 'following';
 
 
         (() => {
+            const currentUserId = <?php echo (int) $user['id']; ?>;
             const viewer = document.getElementById('profilePostViewer');
             const mediaHost = document.getElementById('profilePostViewerMedia');
             const avatar = document.getElementById('profilePostViewerAvatar');
@@ -1173,7 +1174,9 @@ $showFollowingPanel = $panel === 'following';
                     avatar.style.backgroundImage = avatarUrl ? `url('${avatarUrl}')` : '';
                     avatar.textContent = avatarUrl ? '' : (login.textContent || '?').slice(0, 1).toUpperCase();
                     const followStatus = card.dataset.postFollowStatus || '';
-                    followBtn.style.display = (activeAuthorId > 0 && followStatus !== 'accepted') ? '' : 'none';
+                    const isOwnPost = activeAuthorId === currentUserId;
+                    const shouldShowFollow = activeAuthorId > 0 && !isOwnPost && followStatus !== 'accepted';
+                    followBtn.style.display = shouldShowFollow ? 'inline' : 'none';
                     followBtn.classList.remove('is-success-anim');
                     likes.textContent = card.dataset.postLikesCount || '0';
                     comments.textContent = card.dataset.postCommentsCount || '0';
@@ -1187,7 +1190,7 @@ $showFollowingPanel = $panel === 'following';
 
             viewer.querySelectorAll('[data-post-viewer-close]').forEach((node) => node.addEventListener('click', closeViewer));
             followBtn?.addEventListener('click', () => {
-                if (!activeAuthorId || followBtn.dataset.loading === '1') return;
+                if (!activeAuthorId || activeAuthorId === currentUserId || followBtn.dataset.loading === '1') return;
                 followBtn.dataset.loading = '1';
                 const body = new URLSearchParams({
                     action: 'modal_follow_author',
