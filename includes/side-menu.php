@@ -240,6 +240,7 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
 
 function render_side_menu(?array $sideMenuUser = null): void
 {
+    $isAuthenticated = $sideMenuUser !== null;
     $profileUrl = $sideMenuUser ? 'profile.php' : 'login.php';
     $profileName = $sideMenuUser ? (string) ($sideMenuUser['login'] ?? 'Профиль') : 'Войти';
     $avatar = $sideMenuUser['avatar'] ?? '';
@@ -354,6 +355,7 @@ function render_side_menu(?array $sideMenuUser = null): void
     <script src="js/notifications-drawer.js" defer></script>
     <script src="js/moderation-alert.js" defer></script>
     <script src="js/report-modal.js" defer></script>
+    <script>window.IS_AUTH = <?php echo $isAuthenticated ? 'true' : 'false'; ?>;</script>
     <script src="js/theme-toggle.js" defer></script>
     <?php
 }

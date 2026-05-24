@@ -9,6 +9,7 @@
     const themeButton = document.querySelector('.side-menu-button[aria-label*="тема"], .side-menu-button[aria-label*="Тема"]');
     const themeButtonIcon = themeButton ? themeButton.querySelector('.side-menu-icon') : null;
     const themeButtonLabel = themeButton ? themeButton.querySelector('.side-menu-label') : null;
+    const isAuthenticated = window.IS_AUTH === true;
 
     function toLightIconPath(path) {
         return path ? path.replace('icon/dark theme/', 'icon/light theme/') : path;
@@ -75,11 +76,21 @@
         localStorage.setItem(THEME_KEY, theme);
     }
 
-    const savedTheme = localStorage.getItem(THEME_KEY);
-    applyTheme(savedTheme === LIGHT_THEME ? LIGHT_THEME : DARK_THEME);
+    if (!isAuthenticated) {
+        applyTheme(DARK_THEME);
+    } else {
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        applyTheme(savedTheme === LIGHT_THEME ? LIGHT_THEME : DARK_THEME);
+    }
 
     if (themeButton) {
         themeButton.addEventListener('click', function () {
+            if (!isAuthenticated) {
+                applyTheme(DARK_THEME);
+                window.location.href = 'login.php';
+                return;
+            }
+
             const currentTheme = body.getAttribute('data-theme') === LIGHT_THEME ? LIGHT_THEME : DARK_THEME;
             const nextTheme = currentTheme === LIGHT_THEME ? DARK_THEME : LIGHT_THEME;
 

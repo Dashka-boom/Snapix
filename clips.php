@@ -700,7 +700,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             </section>
         <?php endif; ?>
     </main>
-<script src="js/theme-toggle.js"></script>
     <script>
     (function () {
         var clipsByCategory = <?php echo json_encode($clipsByCategory, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
