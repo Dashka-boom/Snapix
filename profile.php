@@ -674,6 +674,7 @@ $showFollowingPanel = $panel === 'following';
                                 <div class="post-card-media"></div>
                             <?php endif; ?>
                             <div class="post-hover-overlay">
+                                <div class="profile-hover-action-item">
                                 <form method="post" class="inline-action-form profile-hover-action-form">
                                     <input type="hidden" name="action" value="toggle_like">
                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
@@ -681,6 +682,9 @@ $showFollowingPanel = $panel === 'following';
                                         <img src="icon/dark theme/like.png" alt="Лайк">
                                     </button>
                                 </form>
+                                <span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span>
+                            </div>
+                                <div class="profile-hover-action-item">
                                 <form method="post" class="inline-action-form profile-hover-action-form">
                                     <input type="hidden" name="action" value="add_repost">
                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
@@ -688,6 +692,9 @@ $showFollowingPanel = $panel === 'following';
                                         <img src="icon/dark theme/repost.png" alt="Репост">
                                     </button>
                                 </form>
+                                <span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span>
+                            </div>
+                                <div class="profile-hover-action-item">
                                 <form method="post" class="inline-action-form profile-hover-action-form">
                                     <input type="hidden" name="action" value="toggle_save">
                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
@@ -695,6 +702,8 @@ $showFollowingPanel = $panel === 'following';
                                         <img src="icon/dark theme/favourites.png" alt="Избранное">
                                     </button>
                                 </form>
+                                <span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span>
+                            </div>
                             </div>
 
                             <div class="post-card-copy">
@@ -775,6 +784,7 @@ $showFollowingPanel = $panel === 'following';
                                 <div class="post-card-media"></div>
                             <?php endif; ?>
                             <div class="post-hover-overlay">
+                                <div class="profile-hover-action-item">
                                 <form method="post" class="inline-action-form profile-hover-action-form">
                                     <input type="hidden" name="action" value="toggle_like">
                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
@@ -782,6 +792,9 @@ $showFollowingPanel = $panel === 'following';
                                         <img src="icon/dark theme/like.png" alt="Лайк">
                                     </button>
                                 </form>
+                                <span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span>
+                            </div>
+                                <div class="profile-hover-action-item">
                                 <form method="post" class="inline-action-form profile-hover-action-form">
                                     <input type="hidden" name="action" value="add_repost">
                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
@@ -789,6 +802,9 @@ $showFollowingPanel = $panel === 'following';
                                         <img src="icon/dark theme/repost.png" alt="Репост">
                                     </button>
                                 </form>
+                                <span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span>
+                            </div>
+                                <div class="profile-hover-action-item">
                                 <form method="post" class="inline-action-form profile-hover-action-form">
                                     <input type="hidden" name="action" value="toggle_save">
                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
@@ -796,6 +812,8 @@ $showFollowingPanel = $panel === 'following';
                                         <img src="icon/dark theme/favourites.png" alt="Избранное">
                                     </button>
                                 </form>
+                                <span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span>
+                            </div>
                             </div>
                             <div class="post-card-copy">
                                 <div class="feed-card-header">
@@ -868,6 +886,7 @@ $showFollowingPanel = $panel === 'following';
                                 <div class="post-card-media"></div>
                             <?php endif; ?>
                             <div class="post-hover-overlay">
+                                <div class="profile-hover-action-item">
                                 <form method="post" class="inline-action-form profile-hover-action-form">
                                     <input type="hidden" name="action" value="toggle_like">
                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
@@ -875,6 +894,9 @@ $showFollowingPanel = $panel === 'following';
                                         <img src="icon/dark theme/like.png" alt="Лайк">
                                     </button>
                                 </form>
+                                <span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span>
+                            </div>
+                                <div class="profile-hover-action-item">
                                 <form method="post" class="inline-action-form profile-hover-action-form">
                                     <input type="hidden" name="action" value="add_repost">
                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
@@ -882,6 +904,9 @@ $showFollowingPanel = $panel === 'following';
                                         <img src="icon/dark theme/repost.png" alt="Репост">
                                     </button>
                                 </form>
+                                <span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span>
+                            </div>
+                                <div class="profile-hover-action-item">
                                 <form method="post" class="inline-action-form profile-hover-action-form">
                                     <input type="hidden" name="action" value="toggle_save">
                                     <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
@@ -889,6 +914,8 @@ $showFollowingPanel = $panel === 'following';
                                         <img src="icon/dark theme/favourites.png" alt="Избранное">
                                     </button>
                                 </form>
+                                <span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span>
+                            </div>
                             </div>
                             <div class="post-card-copy">
                                 <div class="feed-card-header">
