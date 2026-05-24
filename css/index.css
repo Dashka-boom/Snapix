@@ -2961,7 +2961,7 @@ body[data-page="clips"].has-side-menu {
         padding: 12px 14px !important;
         display: block !important;
         z-index: 10 !important;
-        pointer-events: none !important;
+        pointer-events: auto !important;
     }
 
     .clips-author-row {
@@ -5316,6 +5316,7 @@ body[data-page="profile"] .post-card-media {
     aspect-ratio: auto !important;
     background-size: cover !important;
     background-position: center !important;
+    background-repeat: no-repeat !important;
     object-fit: cover !important;
     display: block !important;
 }
@@ -5351,7 +5352,7 @@ body[data-page="profile"] .post-hover-overlay {
     justify-content: center !important;
     gap: 22px !important;
     opacity: 0 !important;
-    pointer-events: none !important;
+    pointer-events: auto !important;
     transition: opacity 0.2s ease !important;
     z-index: 7 !important;
 }
@@ -5365,6 +5366,59 @@ body[data-page="profile"] .post-hover-overlay img {
     height: 28px !important;
     object-fit: contain !important;
     filter: brightness(0) invert(1) !important;
+}
+
+
+body[data-page="profile"] .profile-hover-action-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+}
+
+body[data-page="profile"] .profile-hover-action-item .feed-action-count {
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+body[data-page="profile"] .profile-hover-action-form {
+    margin: 0 !important;
+    pointer-events: auto !important;
+}
+
+body[data-page="profile"] .profile-hover-action-btn {
+    width: 48px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    border-radius: 50% !important;
+    border: 0 !important;
+    background: transparent !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+}
+
+body[data-page="profile"] .profile-hover-action-btn img {
+    width: 28px !important;
+    height: 28px !important;
+    object-fit: contain !important;
+    filter: brightness(0) invert(1) !important;
+}
+
+body[data-page="profile"] .profile-hover-like-btn.is-active img {
+    filter: brightness(0) saturate(100%) invert(36%) sepia(96%) saturate(1913%) hue-rotate(336deg) brightness(99%) contrast(98%) !important;
+}
+
+body[data-page="profile"] .profile-hover-save-btn.is-saved img {
+    filter: brightness(0) saturate(100%) invert(86%) sepia(35%) saturate(1847%) hue-rotate(334deg) brightness(104%) contrast(98%) !important;
+}
+
+body[data-page="profile"] .profile-hover-repost-btn.is-reposted img {
+    filter: brightness(0) saturate(100%) invert(62%) sepia(90%) saturate(430%) hue-rotate(83deg) brightness(90%) contrast(92%) !important;
 }
 
 /* нижний блок действий не должен ломать сетку */
