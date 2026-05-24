@@ -469,17 +469,18 @@ $showFollowingPanel = $panel === 'following';
     <?php render_side_menu($user); ?>
 
     <main class="profile-page">
-        <section class="profile-cover card-surface<?php echo !empty($user['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($user['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['background_image']); ?>');"<?php endif; ?>></section>
+        <section class="profile-hero">
+            <section class="profile-cover card-surface<?php echo !empty($user['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($user['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['background_image']); ?>');"<?php endif; ?>></section>
 
-        <section class="profile-summary">
-            <div class="profile-header">
+            <section class="profile-summary">
                 <div class="profile-avatar-shell">
-                    <?php if (!empty($user['avatar'])): ?>
-                        <div class="profile-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></div>
-                    <?php else: ?>
-                        <div class="profile-avatar"><?php echo htmlspecialchars(mb_substr($user['login'], 0, 1)); ?></div>
-                    <?php endif; ?>
-                </div>
+                        <?php if (!empty($user['avatar'])): ?>
+                            <div class="profile-avatar" style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"></div>
+                        <?php else: ?>
+                            <div class="profile-avatar"><?php echo htmlspecialchars(mb_substr($user['login'], 0, 1)); ?></div>
+                        <?php endif; ?>
+                    </div>
+                <div class="profile-header">
 
                 <div class="profile-main">
                     <div class="profile-name-row">
@@ -505,7 +506,18 @@ $showFollowingPanel = $panel === 'following';
                     <a href="edit-profile.php" class="secondary-link profile-edit-btn">Изменить профиль</a>
                     <a href="create-post.php" class="secondary-link profile-logout-btn">Добавить публикацию</a>
                 </div>
-            </div>
+                </div>
+            </section>
+
+            <section class="profile-tabs-line">
+                <div class="profile-post-tabs home-feed-tabs" role="tablist" aria-label="Разделы профиля">
+                    <button type="button" class="profile-post-tab home-feed-tab is-active" data-profile-tab-button="publications">Посты</button>
+                    <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="reposts">Репосты</button>
+                    <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="favourites">Избранное</button>
+                    <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="likes">Нравится</button>
+                    <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="archives">Архивы</button>
+                </div>
+            </section>
         </section>
 
         <div class="notification-popover" id="notificationPopover">
@@ -631,16 +643,6 @@ $showFollowingPanel = $panel === 'following';
             </section>
         <?php endif; ?>
 
-        <section class="profile-tabs-line">
-            <div class="profile-post-tabs home-feed-tabs" role="tablist" aria-label="Разделы профиля">
-                <button type="button" class="profile-post-tab home-feed-tab is-active" data-profile-tab-button="publications">Посты</button>
-                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="reposts">Репосты</button>
-                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="favourites">Избранное</button>
-                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="likes">Нравится</button>
-                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="archives">Архивы</button>
-            </div>
-        </section>
-
         <section class="profile-posts profile-posts-stream" data-profile-tab-panel="publications">
 
             <?php if ($postCreated): ?>
@@ -738,9 +740,6 @@ $showFollowingPanel = $panel === 'following';
         </section>
 
         <section class="profile-posts card-surface" data-profile-tab-panel="reposts" hidden>
-            <div class="section-heading">
-                <h2>Репосты</h2>
-            </div>
             <?php if ($repostedPosts): ?>
                 <div class="posts-grid">
                     <?php foreach ($repostedPosts as $post): ?>
@@ -807,9 +806,6 @@ $showFollowingPanel = $panel === 'following';
         </section>
 
         <section class="profile-posts card-surface" data-profile-tab-panel="favourites" hidden>
-            <div class="section-heading">
-                <h2>Избранное</h2>
-            </div>
 
             <?php if ($savedPosts): ?>
                 <div class="posts-grid">
@@ -886,16 +882,14 @@ $showFollowingPanel = $panel === 'following';
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>
-                <p class="empty-state">Здесь будут публикации, которые вы добавите в избранное.</p>
+                <p class="empty-state">Здесь будут публикации, которые вы добавите в избранное</p>
             <?php endif; ?>
         </section>
         <section class="profile-posts card-surface" data-profile-tab-panel="likes" hidden>
-            <div class="section-heading"><h2>Нравится</h2></div>
-            <p class="empty-state">Понравившиеся публикации появятся здесь.</p>
+            <p class="empty-state">Понравившиеся публикации появятся здесь</p>
         </section>
         <section class="profile-posts card-surface" data-profile-tab-panel="archives" hidden>
-            <div class="section-heading"><h2>Архивы</h2></div>
-            <p class="empty-state">Архивов пока нет.</p>
+            <p class="empty-state">Здесь будут архивы историй</p>
         </section>
 
     </main>
