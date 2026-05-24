@@ -2293,7 +2293,6 @@ body[data-page="clips"].has-side-menu {
 }
 
 .clips-follow-link,
-.clips-follow-link:hover,
 .clips-follow-link:focus-visible {
     position: relative;
     top: -2px;
@@ -4795,6 +4794,7 @@ body[data-page="clips"] .clips-author-row {
 
 body[data-page="clips"] .clips-author-link,
 body[data-page="clips"] .clips-author-link *,
+body[data-page="clips"] .clips-follow-link,
 body[data-page="clips"] .clips-menu-wrap,
 body[data-page="clips"] .clips-menu-wrap *,
 body[data-page="clips"] .clips-menu-toggle,
