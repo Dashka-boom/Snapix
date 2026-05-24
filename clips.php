@@ -534,6 +534,7 @@ foreach ($clipsRows as $clip) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/index.css">
+    
     <title>Snapix</title>
 </head>
 <body data-page="clips" class="has-side-menu">
@@ -766,7 +767,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             </section>
         <?php endif; ?>
     </main>
-
     <script>
     (function () {
         var clipsByCategory = <?php echo json_encode($clipsByCategory, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
@@ -947,6 +947,15 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 button.classList.remove('is-activating');
             }, 260);
         }
+function themedIcon(path) {
+    var isLight =
+        document.body.classList.contains('theme-light') ||
+        document.documentElement.classList.contains('theme-light');
+
+    return isLight
+        ? path.replace('icon/dark theme/', 'icon/light theme/')
+        : path;
+}
 
         function renderClip(index) {
             var clip = clips[index];
@@ -1025,11 +1034,19 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 }
                 if (clipsPinLabel && clipsPinIcon) {
                     clipsPinLabel.textContent = clip.state.pinned ? 'Открепить' : 'Закрепить';
-                    clipsPinIcon.src = clip.state.pinned ? 'icon/dark theme/nopinn.png' : 'icon/dark theme/pinn.png';
+                    clipsPinIcon.src = themedIcon(
+    clip.state.pinned
+        ? 'icon/dark theme/nopinn.png'
+        : 'icon/dark theme/pinn.png'
+);
                 }
                 if (clipsCommentsToggleLabel && clipsCommentsToggleIcon) {
                     clipsCommentsToggleLabel.textContent = clip.state.commentsClosed ? 'Открыть комментарии' : 'Закрыть комментарии';
-                    clipsCommentsToggleIcon.src = clip.state.commentsClosed ? 'icon/dark theme/addcommunication.png' : 'icon/dark theme/close comments.png';
+                    clipsCommentsToggleIcon.src = themedIcon(
+    clip.state.commentsClosed
+        ? 'icon/dark theme/addcommunication.png'
+        : 'icon/dark theme/close comments.png'
+);
                 }
                 if (clipsMenu) {
                     clipsMenu.classList.remove('is-open');
@@ -1570,14 +1587,22 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                             clip.state.pinned = !!data.is_pinned;
                             if (clipsPinLabel && clipsPinIcon) {
                                 clipsPinLabel.textContent = clip.state.pinned ? 'Открепить' : 'Закрепить';
-                                clipsPinIcon.src = clip.state.pinned ? 'icon/dark theme/nopinn.png' : 'icon/dark theme/pinn.png';
+                                clipsPinIcon.src = themedIcon(
+    clip.state.pinned
+        ? 'icon/dark theme/nopinn.png'
+        : 'icon/dark theme/pinn.png'
+);
                             }
                         }
                         if (action === 'toggle_comments_visibility') {
                             clip.state.commentsClosed = !!data.comments_closed;
                             if (clipsCommentsToggleLabel && clipsCommentsToggleIcon) {
                                 clipsCommentsToggleLabel.textContent = clip.state.commentsClosed ? 'Открыть комментарии' : 'Закрыть комментарии';
-                                clipsCommentsToggleIcon.src = clip.state.commentsClosed ? 'icon/dark theme/addcommunication.png' : 'icon/dark theme/close comments.png';
+                                clipsCommentsToggleIcon.src = themedIcon(
+    clip.state.commentsClosed
+        ? 'icon/dark theme/addcommunication.png'
+        : 'icon/dark theme/close comments.png'
+);
                             }
                         }
                     })
