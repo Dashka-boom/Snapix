@@ -4853,12 +4853,12 @@ body[data-page="clips"] video.clips-video {
 .profile-create-btn {margin-top: 4px; width:36px;height:36px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;border:0;background:#18cfd5;color:#062025;text-decoration:none;font-size:26px;line-height:1; align-self:flex-start;}
 .profile-actions {display:flex; gap:10px; padding-top: 8px; align-self:start; padding-right: 4px;}
 .profile-actions .secondary-link {background:#1ecfd4; color:#082126; border:0;} 
-.profile-tabs-line {border-bottom:0; margin-top: 2px; background: rgba(255,255,255,0.01); backdrop-filter: blur(8px);}
-.profile-post-tabs {display:flex; gap:2px; overflow-x:auto; white-space: nowrap;}
+.profile-tabs-line {margin-top: 10px; padding-top: 20px; padding-bottom: 0; background: transparent; border-bottom: 1px solid rgba(255,255,255,0.14);}
+.profile-post-tabs {display:flex; justify-content: space-evenly; align-items:center; gap:2px; overflow-x:auto; white-space: nowrap;}
 .profile-post-tab.home-feed-tab::after {display:none !important;}
 .profile-post-tab {position: relative; background: transparent !important; border: 0 !important; border-bottom: 0 !important; border-radius: 0 !important; padding: 12px 14px; color: #cfe4e8;}
-.profile-post-tab.is-active {color:#56f2f4;}
-.profile-post-tab.is-active::before {content:""; position:absolute; left:50%; bottom:0; width:28px; height:2px; background:#27d8dc; transform:translateX(-50%); border-radius:999px;}
+.profile-post-tab.is-active {color:#fff;}
+.profile-post-tab.is-active::before {content:""; position:absolute; left:50%; bottom:-1px; width:34px; height:2px; background:#20d6df; transform:translateX(-50%); border-radius:2px;}
 .profile-posts-stream {padding-top: 4px;}
 .profile-posts-stream .posts-grid {margin-top: 0;}
 .profile-page .profile-posts {background: transparent; border: 0; box-shadow: none; padding-left: 0; padding-right: 0;}
@@ -4877,6 +4877,7 @@ body[data-page="clips"] video.clips-video {
   .profile-page {max-width: 100%; padding: 0 10px 18px;}
   .profile-hero {border-radius: 12px;}
   .profile-summary {padding: 0 14px; min-height: 146px;}
+  .profile-tabs-line {padding-top: 14px;}
   .profile-header {grid-template-columns: minmax(0,1fr); row-gap: 10px; column-gap: 16px; padding: 20px 0 14px;}
   .profile-avatar-shell {left: 16px; top: -44px; width: 108px; height: 108px;}
   .profile-avatar {width:108px; height:108px;}
@@ -4891,6 +4892,7 @@ body[data-page="clips"] video.clips-video {
   .profile-avatar-shell {left: 12px; top: -34px; width:96px; height:96px;}
   .profile-main {padding-top: 4px; gap: 6px; padding-left: 110px;}
   .profile-metrics {gap:8px; font-size:13px; overflow-x:auto;}
+  .profile-post-tabs {justify-content:flex-start;}
   .profile-post-tab {padding: 10px 12px;}
   .profile-media-grid {grid-template-columns:1fr; gap:12px; justify-content:stretch;}
   .profile-media-grid .post-card {min-height: 220px;}
