@@ -5444,3 +5444,35 @@ body[data-page="profile"] .post-card-copy {
         height: 320px !important;
     }
 }
+.profile-post-viewer { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 11000; }
+.profile-post-viewer.is-open { display: flex; }
+.profile-post-viewer-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.65); }
+.profile-post-viewer-dialog { position: relative; z-index: 1; width: min(86vw,1200px); height: 86vh; border-radius: 18px; overflow: hidden; display: grid; grid-template-columns: 60% 40%; background: #040607; color:#fff; }
+body.light-theme .profile-post-viewer-dialog { background:#FCFBF8; color:#040607; }
+.profile-post-viewer-close { position:absolute; top:14px; right:14px; width:38px; height:38px; border-radius:50%; border:0; background:rgba(0,0,0,.45); color:#fff; font-size:24px; z-index:2; }
+.profile-post-viewer-media { background:#040607; display:flex; align-items:center; justify-content:center; min-width:0; }
+.profile-post-viewer-media img,.profile-post-viewer-media video { max-width:100%; max-height:100%; object-fit:contain; }
+.profile-post-viewer-side { display:grid; grid-template-rows:auto 1fr auto auto; min-height:0; }
+.profile-post-viewer-head { display:flex; align-items:center; justify-content:space-between; padding:16px; border-bottom:1px solid rgba(255,255,255,.12); }
+body.light-theme .profile-post-viewer-head{ border-bottom-color:rgba(4,6,7,.12); }
+.profile-post-viewer-author { display:flex; align-items:center; gap:10px; }
+.profile-post-viewer-avatar { width:34px; height:34px; border-radius:50%; background:#68C5DB; background-size:cover; background-position:center; display:inline-flex; align-items:center; justify-content:center; font-weight:700; }
+.profile-post-viewer-follow { color:#68C5DB; font-size:14px; }
+.profile-post-viewer-more { border:0; background:transparent; color:inherit; font-size:20px; }
+.profile-post-viewer-comments { min-height:0; overflow:auto; display:flex; align-items:center; justify-content:center; padding:18px; }
+.profile-post-viewer-empty { opacity:.7; }
+.profile-post-viewer-metrics { border-top:1px solid rgba(255,255,255,.12); border-bottom:1px solid rgba(255,255,255,.12); padding:14px 10px; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+body.light-theme .profile-post-viewer-metrics{ border-color:rgba(4,6,7,.12); }
+.profile-post-viewer-metric { display:grid; justify-items:center; gap:6px; font-size:13px; }
+.profile-post-viewer-metric img { width:20px; height:20px; object-fit:contain; }
+.profile-post-viewer-input-row { display:flex; align-items:center; gap:10px; padding:14px; }
+.profile-post-viewer-round-btn { width:46px; height:46px; border-radius:50%; border:0; background:rgba(255,255,255,.07); display:flex; align-items:center; justify-content:center; }
+body.light-theme .profile-post-viewer-round-btn{ background:rgba(4,6,7,.07); }
+.profile-post-viewer-round-btn img { width:20px; height:20px; }
+.profile-post-viewer-input-shell { flex:1; min-height:52px; border-radius:26px; background:rgba(255,255,255,.07); display:flex; align-items:center; padding:6px 8px 6px 16px; }
+body.light-theme .profile-post-viewer-input-shell{ background:rgba(4,6,7,.07); }
+.profile-post-viewer-input-shell input { flex:1; border:0; background:transparent; color:inherit; outline:none; }
+.profile-post-viewer-send-btn { width:42px; height:42px; border-radius:50%; border:0; background:#68C5DB; display:flex; align-items:center; justify-content:center; }
+.profile-post-viewer-send-btn img { width:18px; height:18px; }
+.icon-light{display:none;} body.light-theme .icon-dark{display:none;} body.light-theme .icon-light{display:block;}
+@media (max-width: 920px){ .profile-post-viewer-dialog{ grid-template-columns:1fr; height:min(92vh,900px);} .profile-post-viewer-media{ min-height:40vh; } }
