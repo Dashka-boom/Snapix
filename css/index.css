@@ -5316,6 +5316,7 @@ body[data-page="profile"] .post-card-media {
     aspect-ratio: auto !important;
     background-size: cover !important;
     background-position: center !important;
+    background-repeat: no-repeat !important;
     object-fit: cover !important;
     display: block !important;
 }

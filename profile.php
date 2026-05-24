@@ -741,11 +741,14 @@ $showFollowingPanel = $panel === 'following';
 
         <section class="profile-posts card-surface" data-profile-tab-panel="reposts" hidden>
             <?php if ($repostedPosts): ?>
-                <div class="posts-grid">
+                <div class="posts-grid profile-media-grid">
                     <?php foreach ($repostedPosts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                         <article class="post-card" id="repost-<?php echo (int) $post['id']; ?>">
+                            <span class="post-type-badge" aria-hidden="true">
+                                <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
+                            </span>
                             <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                 <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                             <?php elseif (!empty($post['media_url'])): ?>
@@ -753,6 +756,11 @@ $showFollowingPanel = $panel === 'following';
                             <?php else: ?>
                                 <div class="post-card-media"></div>
                             <?php endif; ?>
+                            <div class="post-hover-overlay" aria-hidden="true">
+                                <img src="icon/dark theme/like.png" alt="">
+                                <img src="icon/dark theme/repost.png" alt="">
+                                <img src="icon/dark theme/favourites.png" alt="">
+                            </div>
                             <div class="post-card-copy">
                                 <div class="feed-card-header">
                                     <div class="feed-header-main"><strong><?php echo htmlspecialchars($post['author_login']); ?></strong></div>
@@ -808,11 +816,14 @@ $showFollowingPanel = $panel === 'following';
         <section class="profile-posts card-surface" data-profile-tab-panel="favourites" hidden>
 
             <?php if ($savedPosts): ?>
-                <div class="posts-grid">
+                <div class="posts-grid profile-media-grid">
                     <?php foreach ($savedPosts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                         <article class="post-card" id="post-<?php echo (int) $post['id']; ?>">
+                            <span class="post-type-badge" aria-hidden="true">
+                                <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
+                            </span>
                             <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                 <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                             <?php elseif (!empty($post['media_url'])): ?>
@@ -820,6 +831,11 @@ $showFollowingPanel = $panel === 'following';
                             <?php else: ?>
                                 <div class="post-card-media"></div>
                             <?php endif; ?>
+                            <div class="post-hover-overlay" aria-hidden="true">
+                                <img src="icon/dark theme/like.png" alt="">
+                                <img src="icon/dark theme/repost.png" alt="">
+                                <img src="icon/dark theme/favourites.png" alt="">
+                            </div>
                             <div class="post-card-copy">
                                 <div class="feed-card-header">
                                     <div class="feed-header-main"><strong><?php echo htmlspecialchars($post['author_login']); ?></strong></div>
