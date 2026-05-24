@@ -254,7 +254,7 @@ function render_side_menu(?array $sideMenuUser = null): void
 
         <nav class="side-menu-nav" aria-label="Навигация по сайту">
             <a href="index.php" class="side-menu-item" aria-label="Главная">
-                <img src="icon/logo.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/logo.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Главная</span>
             </a>
             <a href="<?php echo htmlspecialchars($clipsUrl, ENT_QUOTES); ?>" class="side-menu-item" aria-label="Clips">
@@ -351,6 +351,9 @@ function render_side_menu(?array $sideMenuUser = null): void
         </section>
     </div>
 
+    <script>
+        window.IS_AUTH = <?php echo $sideMenuUser ? 'true' : 'false'; ?>;
+    </script>
     <script src="js/notifications-drawer.js" defer></script>
     <script src="js/moderation-alert.js" defer></script>
     <script src="js/report-modal.js" defer></script>

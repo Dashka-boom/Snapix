@@ -468,12 +468,10 @@ $showFollowingPanel = $panel === 'following';
 <body data-page="profile" class="has-side-menu">
     <?php render_side_menu($user); ?>
 
-    <div class="page-glass-nav" aria-hidden="true"></div>
-
     <main class="profile-page">
         <section class="profile-cover card-surface<?php echo !empty($user['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($user['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['background_image']); ?>');"<?php endif; ?>></section>
 
-        <section class="profile-summary card-surface">
+        <section class="profile-summary">
             <div class="profile-header">
                 <div class="profile-avatar-shell">
                     <?php if (!empty($user['avatar'])): ?>
@@ -486,7 +484,9 @@ $showFollowingPanel = $panel === 'following';
                 <div class="profile-main">
                     <div class="profile-name-row">
                         <h1 class="profile-username"><?php echo htmlspecialchars($user['login']); ?></h1>
-                        <a href="create-post.php" class="profile-create-btn" aria-label="Создать публикацию">+</a>
+                        <?php if (!empty($user['is_private'])): ?>
+                            <img src="icon/light theme/closed account.png" alt="Закрытый профиль" class="profile-private-icon">
+                        <?php endif; ?>
                     </div>
 
                     <?php if (!empty($user['bio'])): ?>
@@ -494,28 +494,16 @@ $showFollowingPanel = $panel === 'following';
                     <?php endif; ?>
 
                     <div class="profile-metrics">
-                        <a href="connections.php?view=following" class="profile-metric profile-metric-link">
-                            <strong><?php echo $followingCount; ?></strong>
-                            <span>Подписки</span>
-                        </a>
-                        <a href="connections.php?view=followers" class="profile-metric profile-metric-link">
-                            <strong><?php echo $followersCount; ?></strong>
-                            <span>Подписчики</span>
-                        </a>
-                        <div class="profile-metric">
-                            <strong><?php echo $postsCount; ?></strong>
-                            <span>Публикации</span>
-                        </div>
-                        <div class="profile-metric">
-                            <strong><?php echo $savedPostsCount; ?></strong>
-                            <span>Избранное</span>
-                        </div>
+                        <span><strong><?php echo $postsCount; ?></strong> публикаций</span>
+                        <a href="connections.php?view=followers" class="profile-metric-inline-link"><strong><?php echo $followersCount; ?></strong> смотрители</a>
+                        <a href="connections.php?view=following" class="profile-metric-inline-link"><strong><?php echo $followingCount; ?></strong> смотримые</a>
                     </div>
+                    <a href="create-post.php" class="profile-create-btn" aria-label="Создать публикацию">+</a>
                 </div>
 
                 <div class="profile-actions">
                     <a href="edit-profile.php" class="secondary-link profile-edit-btn">Изменить профиль</a>
-                    <a href="logout.php" class="secondary-link profile-logout-btn">Выйти</a>
+                    <a href="create-post.php" class="secondary-link profile-logout-btn">Добавить публикацию</a>
                 </div>
             </div>
         </section>
@@ -643,19 +631,17 @@ $showFollowingPanel = $panel === 'following';
             </section>
         <?php endif; ?>
 
-        <section class="profile-posts card-surface">
-            <div class="profile-post-tabs" role="tablist" aria-label="Разделы профиля">
-                <button type="button" class="profile-post-tab is-active" data-profile-tab-button="publications">Публикации</button>
-                <button type="button" class="profile-post-tab profile-post-tab-icon" data-profile-tab-button="reposts" aria-label="Репосты" title="Репосты">
-                    <?php echo snapix_icon('repeat'); ?>
-                </button>
+        <section class="profile-tabs-line">
+            <div class="profile-post-tabs home-feed-tabs" role="tablist" aria-label="Разделы профиля">
+                <button type="button" class="profile-post-tab home-feed-tab is-active" data-profile-tab-button="publications">Посты</button>
+                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="reposts">Репосты</button>
+                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="favourites">Избранное</button>
+                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="likes">Нравится</button>
+                <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="archives">Архивы</button>
             </div>
         </section>
 
-        <section class="profile-posts card-surface" data-profile-tab-panel="publications">
-            <div class="section-heading">
-                <h2>Публикации</h2>
-            </div>
+        <section class="profile-posts profile-posts-stream" data-profile-tab-panel="publications">
 
             <?php if ($postCreated): ?>
                 <p class="form-status is-success">Публикация успешно добавлена.</p>
@@ -670,11 +656,14 @@ $showFollowingPanel = $panel === 'following';
             <?php endif; ?>
 
             <?php if ($posts): ?>
-                <div class="posts-grid">
+                <div class="posts-grid profile-media-grid">
                     <?php foreach ($posts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                         <article class="post-card" id="post-<?php echo (int) $post['id']; ?>">
+                            <span class="post-type-badge" aria-hidden="true">
+                                <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
+                            </span>
                             <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                 <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                             <?php elseif (!empty($post['media_url'])): ?>
@@ -682,6 +671,11 @@ $showFollowingPanel = $panel === 'following';
                             <?php else: ?>
                                 <div class="post-card-media"></div>
                             <?php endif; ?>
+                            <div class="post-hover-overlay" aria-hidden="true">
+                                <img src="icon/dark theme/like.png" alt="">
+                                <img src="icon/dark theme/repost.png" alt="">
+                                <img src="icon/dark theme/favourites.png" alt="">
+                            </div>
 
                             <div class="post-card-copy">
                                 <div class="feed-card-header">
@@ -812,7 +806,7 @@ $showFollowingPanel = $panel === 'following';
             <?php endif; ?>
         </section>
 
-        <section class="profile-posts card-surface">
+        <section class="profile-posts card-surface" data-profile-tab-panel="favourites" hidden>
             <div class="section-heading">
                 <h2>Избранное</h2>
             </div>
@@ -895,6 +889,15 @@ $showFollowingPanel = $panel === 'following';
                 <p class="empty-state">Здесь будут публикации, которые вы добавите в избранное.</p>
             <?php endif; ?>
         </section>
+        <section class="profile-posts card-surface" data-profile-tab-panel="likes" hidden>
+            <div class="section-heading"><h2>Нравится</h2></div>
+            <p class="empty-state">Понравившиеся публикации появятся здесь.</p>
+        </section>
+        <section class="profile-posts card-surface" data-profile-tab-panel="archives" hidden>
+            <div class="section-heading"><h2>Архивы</h2></div>
+            <p class="empty-state">Архивов пока нет.</p>
+        </section>
+
     </main>
     <div class="share-modal" id="share-post-modal">
         <div class="share-modal-overlay js-close-share-modal"></div>
