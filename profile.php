@@ -740,9 +740,6 @@ $showFollowingPanel = $panel === 'following';
         </section>
 
         <section class="profile-posts card-surface" data-profile-tab-panel="reposts" hidden>
-            <div class="section-heading">
-                <h2>Репосты</h2>
-            </div>
             <?php if ($repostedPosts): ?>
                 <div class="posts-grid">
                     <?php foreach ($repostedPosts as $post): ?>
@@ -809,9 +806,6 @@ $showFollowingPanel = $panel === 'following';
         </section>
 
         <section class="profile-posts card-surface" data-profile-tab-panel="favourites" hidden>
-            <div class="section-heading">
-                <h2>Избранное</h2>
-            </div>
 
             <?php if ($savedPosts): ?>
                 <div class="posts-grid">
@@ -888,16 +882,14 @@ $showFollowingPanel = $panel === 'following';
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>
-                <p class="empty-state">Здесь будут публикации, которые вы добавите в избранное.</p>
+                <p class="empty-state">Здесь будут публикации, которые вы добавите в избранное</p>
             <?php endif; ?>
         </section>
         <section class="profile-posts card-surface" data-profile-tab-panel="likes" hidden>
-            <div class="section-heading"><h2>Нравится</h2></div>
-            <p class="empty-state">Понравившиеся публикации появятся здесь.</p>
+            <p class="empty-state">Понравившиеся публикации появятся здесь</p>
         </section>
         <section class="profile-posts card-surface" data-profile-tab-panel="archives" hidden>
-            <div class="section-heading"><h2>Архивы</h2></div>
-            <p class="empty-state">Архивов пока нет.</p>
+            <p class="empty-state">Здесь будут архивы историй</p>
         </section>
 
     </main>
