@@ -5450,8 +5450,8 @@ body[data-page="profile"] .post-card-copy {
 .profile-post-viewer-dialog { position: relative; z-index: 1; width: min(86vw,1200px); height: 86vh; border-radius: 18px; overflow: hidden; display: grid; grid-template-columns: 60% 40%; background: #040607; color:#fff; }
 body.light-theme .profile-post-viewer-dialog { background:#FCFBF8; color:#040607; }
 .profile-post-viewer-close { position:absolute; top:14px; right:14px; width:38px; height:38px; border-radius:50%; border:0; background:rgba(0,0,0,.45); color:#fff; font-size:24px; z-index:2; }
-.profile-post-viewer-media { background:#040607; display:flex; align-items:center; justify-content:center; min-width:0; }
-.profile-post-viewer-media img,.profile-post-viewer-media video { max-width:100%; max-height:100%; object-fit:contain; }
+.profile-post-viewer-media { width:100%; height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#000; min-width:0; min-height:0; padding:0; margin:0; }
+.profile-post-viewer-media img,.profile-post-viewer-media video { width:100%; height:100%; object-fit:cover; display:block; }
 .profile-post-viewer-side { display:grid; grid-template-rows:auto 1fr auto auto; min-height:0; }
 .profile-post-viewer-head { display:flex; align-items:center; justify-content:space-between; padding:16px; border-bottom:1px solid rgba(255,255,255,.12); }
 body.light-theme .profile-post-viewer-head{ border-bottom-color:rgba(4,6,7,.12); }
