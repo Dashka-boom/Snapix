@@ -4853,7 +4853,7 @@ body[data-page="clips"] video.clips-video {
 .profile-create-btn {margin-top: 4px; width:36px;height:36px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;border:0;background:#18cfd5;color:#062025;text-decoration:none;font-size:26px;line-height:1; align-self:flex-start;}
 .profile-actions {display:flex; gap:10px; padding-top: 8px; align-self:start; padding-right: 4px;}
 .profile-actions .secondary-link {background:#1ecfd4; color:#082126; border:0;} 
-.profile-tabs-line {border-bottom:1px solid rgba(148,165,176,.25); margin-top: 2px; background: rgba(255,255,255,0.01); backdrop-filter: blur(8px);}
+.profile-tabs-line {border-bottom:0; margin-top: 2px; background: rgba(255,255,255,0.01); backdrop-filter: blur(8px);}
 .profile-post-tabs {display:flex; gap:2px; overflow-x:auto; white-space: nowrap;}
 .profile-post-tab.home-feed-tab::after {display:none !important;}
 .profile-post-tab {position: relative; background: transparent !important; border: 0 !important; border-bottom: 0 !important; border-radius: 0 !important; padding: 12px 14px; color: #cfe4e8;}
