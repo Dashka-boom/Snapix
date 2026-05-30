@@ -5554,3 +5554,39 @@ body.light-theme .profile-post-viewer-input-shell{ background:rgba(4,6,7,.07); }
     height: 22px !important;
     object-fit: contain !important;
 }
+
+.profile-post-viewer-action {
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color .18s ease, transform .18s ease;
+}
+
+.profile-post-viewer-action:hover,
+.profile-post-viewer-action:focus-visible {
+    background: rgba(104, 197, 219, .16) !important;
+    outline: none;
+}
+
+.profile-post-viewer-action.is-activating img {
+    animation: feed-action-pop .24s ease-out;
+}
+
+.profile-post-viewer-action.is-active img {
+    filter: brightness(0) saturate(100%) invert(36%) sepia(96%) saturate(1913%) hue-rotate(336deg) brightness(99%) contrast(98%);
+}
+
+.profile-post-viewer-action.is-saved img {
+    filter: brightness(0) saturate(100%) invert(86%) sepia(35%) saturate(1847%) hue-rotate(334deg) brightness(104%) contrast(98%);
+}
+
+.profile-post-viewer-action.is-reposted img {
+    filter: brightness(0) saturate(100%) invert(62%) sepia(90%) saturate(430%) hue-rotate(83deg) brightness(90%) contrast(92%);
+}
