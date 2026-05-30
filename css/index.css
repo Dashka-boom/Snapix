@@ -4833,8 +4833,9 @@ body[data-page="clips"] video.clips-video {
     width: 40px !important;
     height: 40px !important;
     flex: 0 0 40px !important;
+    filter: none !important;
 }
-/* Profile redesign */
+
 .profile-page {
     max-width: 1160px;
     margin: 0 auto;
@@ -5458,11 +5459,63 @@ body.light-theme .profile-post-viewer-head{ border-bottom-color:rgba(4,6,7,.12);
 .profile-post-viewer-author { display:flex; align-items:center; gap:10px; }
 .profile-post-viewer-avatar { width:34px; height:34px; border-radius:50%; background:#68C5DB; background-size:cover; background-position:center; display:inline-flex; align-items:center; justify-content:center; font-weight:700; }
 .profile-post-viewer-login { color: inherit; font-weight: 700; text-decoration: none; }
-.profile-post-viewer-follow { display:inline !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; background:transparent !important; background-color:transparent !important; border:0 !important; outline:none !important; box-shadow:none !important; border-radius:0 !important; padding:0 !important; margin-left:6px !important; color:#68C5DB !important; font-size:15px !important; font-weight:600 !important; line-height:1 !important; cursor:pointer !important; text-decoration:none !important; appearance:none !important; -webkit-appearance:none !important; }
+.profile-post-viewer-follow {
+    display: inline !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+
+    padding: 0 !important;
+    margin: 0 0 0 6px !important;
+
+    color: #68C5DB !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+
+    cursor: pointer !important;
+    text-decoration: none !important;
+
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    filter: none !important;
+    transform: none !important;
+}
+
 .profile-post-viewer-follow:hover,
 .profile-post-viewer-follow:focus,
 .profile-post-viewer-follow:focus-visible,
-.profile-post-viewer-follow:active { display:inline !important; visibility:visible !important; opacity:.75 !important; background:transparent !important; background-color:transparent !important; border:0 !important; outline:none !important; box-shadow:none !important; color:#68C5DB !important; text-decoration:none !important; }
+.profile-post-viewer-follow:active {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+
+    color: #68C5DB !important;
+    opacity: 0.75 !important;
+    filter: none !important;
+    transform: none !important;
+}
+.profile-post-viewer-follow.is-hidden,
+.profile-post-viewer-follow[hidden] {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
 .profile-post-viewer-follow.is-success-anim { animation: profileFollowPulseFade 1s ease forwards; }
 @keyframes profileFollowPulseFade {
     0% { transform: scale(1); opacity: 1; text-shadow: 0 0 0 rgba(104,197,219,0); }

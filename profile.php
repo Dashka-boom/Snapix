@@ -1173,11 +1173,12 @@ $showFollowingPanel = $panel === 'following';
                     const avatarUrl = card.dataset.postAuthorAvatar || '';
                     avatar.style.backgroundImage = avatarUrl ? `url('${avatarUrl}')` : '';
                     avatar.textContent = avatarUrl ? '' : (login.textContent || '?').slice(0, 1).toUpperCase();
-                    const followStatus = card.dataset.postFollowStatus || '';
-                    const isOwnPost = activeAuthorId === currentUserId;
-                    const shouldShowFollow = activeAuthorId > 0 && !isOwnPost && followStatus !== 'accepted';
-                    followBtn.style.display = shouldShowFollow ? 'inline' : 'none';
-                    followBtn.classList.remove('is-success-anim');
+                 const followStatus = card.dataset.postFollowStatus || '';
+const isOwnPost = Number(activeAuthorId) === Number(currentUserId);
+const shouldShowFollow = activeAuthorId > 0 && !isOwnPost && followStatus !== 'accepted';
+
+followBtn.classList.toggle('is-hidden', !shouldShowFollow);
+followBtn.classList.remove('is-success-anim');
                     likes.textContent = card.dataset.postLikesCount || '0';
                     comments.textContent = card.dataset.postCommentsCount || '0';
                     reposts.textContent = card.dataset.postRepostsCount || '0';
@@ -1210,10 +1211,16 @@ $showFollowingPanel = $panel === 'following';
                     followBtn.classList.remove('is-success-anim');
                     void followBtn.offsetWidth;
                     followBtn.classList.add('is-success-anim');
-                    window.setTimeout(() => {
-                        followBtn.style.display = 'none';
-                        followBtn.classList.remove('is-success-anim');
-                    }, 1000);
+                  window.setTimeout(() => {
+    followBtn.classList.add('is-hidden');
+    followBtn.classList.remove('is-success-anim');
+
+    document
+        .querySelectorAll('.post-card[data-post-author-id="' + activeAuthorId + '"]')
+        .forEach((card) => {
+            card.dataset.postFollowStatus = 'accepted';
+        });
+}, 1000);
                 }).finally(() => {
                     followBtn.dataset.loading = '0';
                 });
