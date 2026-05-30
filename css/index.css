@@ -5498,7 +5498,6 @@ body.light-theme .profile-post-viewer-input-shell{ background:rgba(4,6,7,.07); }
 .icon-light{display:none;} body.light-theme .icon-dark{display:none;} body.light-theme .icon-light{display:block;}
 @media (max-width: 920px){ .profile-post-viewer-dialog{ grid-template-columns:1fr; height:min(92vh,900px);} .profile-post-viewer-media{ min-height:40vh; } }
 
-/* FIX profile post viewer send button position */
 .profile-post-viewer-input-row {
     display: flex !important;
     align-items: center !important;
