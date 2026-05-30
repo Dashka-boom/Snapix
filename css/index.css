@@ -5558,9 +5558,11 @@ body.light-theme .profile-post-viewer-input-shell{ background:rgba(4,6,7,.07); }
 .profile-post-viewer-action {
     width: 38px;
     height: 38px;
-    border: 0;
-    border-radius: 999px;
+    border: 0 !important;
+    border-radius: 0;
     background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
     color: inherit;
     display: inline-flex;
     align-items: center;
@@ -5571,7 +5573,10 @@ body.light-theme .profile-post-viewer-input-shell{ background:rgba(4,6,7,.07); }
 
 .profile-post-viewer-action:hover,
 .profile-post-viewer-action:focus-visible {
+    border: 0 !important;
     background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
     outline: none;
 }
 
