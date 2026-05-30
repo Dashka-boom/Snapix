@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'get_post_counts'], true);
     $ajaxExtra = [];
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
     $postExists = false;
@@ -613,7 +613,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                         <?php foreach ($posts as $post): ?>
                             <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                             <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>">
+                            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>">
                                 <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                     <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                                 <?php elseif (!empty($post['media_url'])): ?>
@@ -728,7 +728,8 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
         </div>
     <?php endif; ?>
 
-    <script>
+    <script src="js/post-sync.js"></script>
+<script>
         (() => {
             const bell = document.querySelector('[data-notification-toggle]');
             const popover = document.getElementById('notificationPopover');
