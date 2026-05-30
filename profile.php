@@ -1106,7 +1106,8 @@ $showFollowingPanel = $panel === 'following';
             </div>
         </div>
     </div>
-    <script>
+    <script src="js/post-sync.js"></script>
+<script>
         (() => {
             const bell = document.querySelector('[data-notification-toggle]');
             const popover = document.getElementById('notificationPopover');
