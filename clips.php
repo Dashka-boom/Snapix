@@ -62,6 +62,37 @@ function clips_fetch_comments(PDO $pdo, int $postId, ?int $currentUserId): array
     return $comments;
 }
 
+function clips_fetch_follow_relation_map(PDO $pdo, int $currentUserId): array
+{
+    $relationMap = [];
+    if ($currentUserId <= 0) {
+        return $relationMap;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT following_id AS uid
+        FROM followers
+        WHERE follower_id = :user_id
+          AND status = 'accepted'
+          AND following_id <> :user_id
+
+        UNION
+
+        SELECT follower_id AS uid
+        FROM followers
+        WHERE following_id = :user_id
+          AND status = 'accepted'
+          AND follower_id <> :user_id
+    ");
+    $stmt->execute(['user_id' => $currentUserId]);
+
+    foreach (($stmt->fetchAll(PDO::FETCH_COLUMN) ?: []) as $uid) {
+        $relationMap[(int) $uid] = true;
+    }
+
+    return $relationMap;
+}
+
 $user = null;
 
 if (isset($_SESSION['user_id'])) {
@@ -73,8 +104,8 @@ if (isset($_SESSION['user_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'toggle_pin', 'toggle_comments_visibility', 'delete_post'], true);
-    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment', 'toggle_pin', 'toggle_comments_visibility', 'delete_post'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'toggle_pin', 'toggle_comments_visibility', 'delete_post', 'toggle_follow_user'], true);
+    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment', 'toggle_pin', 'toggle_comments_visibility', 'delete_post', 'toggle_follow_user', 'get_follow_relations'], true);
 
     if ($requiresAuth && !$user) {
         snapix_send_post_action_error('login_required', 401);
@@ -286,6 +317,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         snapix_send_post_action_json($pdo, $postId, (int) $user['id'], ['comment' => $comment]);
     }
 
+    if ($action === 'get_follow_relations') {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'relation_map' => clips_fetch_follow_relation_map($pdo, (int) $user['id']),
+        ]);
+        exit;
+    }
+
+    if ($action === 'toggle_follow_user') {
+        $targetUserId = (int) ($_POST['target_user_id'] ?? 0);
+        if ($targetUserId <= 0 || $targetUserId === (int) $user['id']) {
+            snapix_send_post_action_error('follow_invalid_target', 422);
+        }
+
+        $existsStmt = $pdo->prepare('SELECT id FROM users WHERE id = :id LIMIT 1');
+        $existsStmt->execute(['id' => $targetUserId]);
+        if (!$existsStmt->fetchColumn()) {
+            snapix_send_post_action_error('follow_target_not_found', 404);
+        }
+
+        $relationStmt = $pdo->prepare("
+            SELECT id
+            FROM followers
+            WHERE follower_id = :follower_id
+              AND following_id = :following_id
+            LIMIT 1
+        ");
+        $relationStmt->execute([
+            'follower_id' => (int) $user['id'],
+            'following_id' => $targetUserId,
+        ]);
+        $relationId = (int) $relationStmt->fetchColumn();
+
+        if ($relationId > 0) {
+            $pdo->prepare('DELETE FROM followers WHERE id = :id LIMIT 1')->execute(['id' => $relationId]);
+            $isFollowing = false;
+        } else {
+            $pdo->prepare("
+                INSERT IGNORE INTO followers (follower_id, following_id, status, declined_until)
+                VALUES (:follower_id, :following_id, 'accepted', NULL)
+            ")->execute([
+                'follower_id' => (int) $user['id'],
+                'following_id' => $targetUserId,
+            ]);
+            $isFollowing = true;
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'is_following' => $isFollowing,
+            'relation_map' => clips_fetch_follow_relation_map($pdo, (int) $user['id']),
+        ]);
+        exit;
+    }
+
     if ($isAjaxPostAction) {
         if ($postId <= 0 || !$postExists) {
             snapix_send_post_action_error('post_not_found', 404);
@@ -299,32 +387,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $currentUserId = (int) ($user['id'] ?? 0);
-$relatedUserIds = [];
-
-if ($currentUserId > 0) {
-  $relatedUserIdsStmt = $pdo->prepare("
-    SELECT following_id AS uid
-    FROM followers
-    WHERE follower_id = :user_id
-      AND following_id <> :user_id
-
-    UNION
-
-    SELECT follower_id AS uid
-    FROM followers
-    WHERE following_id = :user_id
-      AND follower_id <> :user_id
-");
-
-    $relatedUserIdsStmt->execute([
-        'user_id' => $currentUserId
-    ]);
-
-    $relatedUserIds = array_map(
-        'intval',
-        $relatedUserIdsStmt->fetchAll(PDO::FETCH_COLUMN) ?: []
-    );
-}
+$relatedUserIds = clips_fetch_follow_relation_map($pdo, $currentUserId);
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS clips_post_settings (
     post_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
@@ -434,6 +497,7 @@ foreach ($clipsRows as $clip) {
             'login' => (string) $clip['login'],
             'avatar' => (string) ($clip['avatar'] ?? ''),
             'profileUrl' => clips_build_profile_url($clipUserId, $user ? (int) $user['id'] : null),
+            'canFollow' => $currentUserId > 0 && $clipUserId !== $currentUserId && !isset($relatedUserIds[$clipUserId]),
         ],
         'counts' => [
             'likes' => (int) $clip['likes_count'],
@@ -459,7 +523,7 @@ foreach ($clipsRows as $clip) {
         $clipsByCategory['authored'][] = $preparedClip;
     }
 
-    if ($currentUserId > 0 && $clipUserId !== $currentUserId && in_array($clipUserId, $relatedUserIds, true)) {
+    if ($currentUserId > 0 && $clipUserId !== $currentUserId && isset($relatedUserIds[$clipUserId])) {
         $clipsByCategory['following'][] = $preparedClip;
     }
 }
@@ -500,6 +564,9 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                                 <span data-clips-time></span>
                             </span>
                         </a>
+                        <?php if ($user): ?>
+                            <button type="button" class="clips-follow-link is-hidden" data-clips-follow-btn>Подписаться</button>
+                        <?php endif; ?>
                         <div class="clips-menu-wrap">
                             <button type="button" class="clips-menu-toggle" data-clips-menu-toggle aria-label="Действия с clips">
                                 <span></span>
@@ -791,8 +858,10 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         var commentActionsDialog = document.querySelector('[data-clips-comment-actions-dialog]');
         var commentFavoriteButton = document.querySelector('[data-clips-comment-favorite-btn]');
         var shareModal = document.querySelector('[data-clips-share-modal]');
+        var followButton = document.querySelector('[data-clips-follow-btn]');
         var shareTabButtons = document.querySelectorAll('[data-clips-share-tab]');
         var sharePanels = document.querySelectorAll('[data-clips-share-panel]');
+        var followRelationMap = <?php echo json_encode($relatedUserIds, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?> || {};
 
         function getEmptyStateMarkup() {
             if (activeCategory === 'authored') {
@@ -904,6 +973,12 @@ function themedIcon(path) {
                 time.textContent = formatClipTime(clip.createdAt);
                 description.textContent = clip.description || '';
 
+                if (followButton) {
+                    var canFollowClipAuthor = !!clip.author.canFollow && !followRelationMap[String(clip.author.id)];
+                    followButton.classList.toggle('is-hidden', !canFollowClipAuthor);
+                    followButton.setAttribute('data-follow-user-id', String(clip.author.id));
+                }
+
                 if (clip.author.avatar) {
                     avatar.style.backgroundImage = "url('" + clip.author.avatar.replace(/'/g, "\\'") + "')";
                     avatar.textContent = '';
@@ -979,6 +1054,32 @@ function themedIcon(path) {
 
                 shell.classList.add('is-visible');
             }, 110);
+        }
+
+        function applyRelationMap(nextMap) {
+            followRelationMap = nextMap && typeof nextMap === 'object' ? nextMap : {};
+            Object.keys(clipsByCategory).forEach(function (categoryKey) {
+                (clipsByCategory[categoryKey] || []).forEach(function (clipItem) {
+                    var authorId = String(clipItem.author.id);
+                    clipItem.author.canFollow = !clipItem.isOwn && !followRelationMap[authorId];
+                });
+            });
+        }
+
+        function syncFollowRelations() {
+            var formData = new FormData();
+            formData.append('action', 'get_follow_relations');
+            return fetch('clips.php', { method: 'POST', body: formData, credentials: 'same-origin' })
+                .then(function (response) { return response.json(); })
+                .then(function (payload) {
+                    if (!payload || !payload.ok) {
+                        return;
+                    }
+                    applyRelationMap(payload.relation_map);
+                    if (clips.length) {
+                        renderClip(currentIndex);
+                    }
+                });
         }
 
         function goToClip(nextIndex) {
@@ -1563,6 +1664,41 @@ function themedIcon(path) {
             event.preventDefault();
             navigateClip(event.deltaY > 0 ? 1 : -1);
         }, { passive: false });
+
+        if (followButton) {
+            followButton.addEventListener('click', function () {
+                var clip = clips[currentIndex];
+                if (!clip || !clip.author || !clip.author.id) {
+                    return;
+                }
+
+                var formData = new FormData();
+                formData.append('action', 'toggle_follow_user');
+                formData.append('target_user_id', String(clip.author.id));
+                fetch('clips.php', { method: 'POST', body: formData, credentials: 'same-origin' })
+                    .then(function (response) { return response.json(); })
+                    .then(function (payload) {
+                        if (!payload || !payload.ok) {
+                            return;
+                        }
+                        applyRelationMap(payload.relation_map || {});
+                        if (clips.length) {
+                            renderClip(currentIndex);
+                        }
+                        window.localStorage.setItem('snapix_follow_sync', String(Date.now()));
+                    })
+                    .catch(function () {});
+            });
+
+            window.addEventListener('focus', function () {
+                syncFollowRelations().catch(function () {});
+            });
+            window.addEventListener('storage', function (event) {
+                if (event && event.key === 'snapix_follow_sync') {
+                    syncFollowRelations().catch(function () {});
+                }
+            });
+        }
 
         toggleEmptyState();
         if (clips.length) {
