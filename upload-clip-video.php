@@ -1,7 +1,4 @@
 <?php
-// Endpoint для загрузки и кодирования видео Clips/Reels.
-// Ожидает POST multipart/form-data с полем $_FILES['video'].
-
 declare(strict_types=1);
 
 ini_set('display_errors', '0');
@@ -14,13 +11,10 @@ require './config/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Настройки загрузки. При необходимости можно увеличить лимит.
-$maxFileSize = 200 * 1024 * 1024; // 200 МБ.
+$maxFileSize = 200 * 1024 * 1024;
 $targetWidth = 720;
 $targetHeight = 1280;
 
-// Для OpenServer/Windows обычно достаточно ffmpeg из PATH.
-// Если ffmpeg не в PATH, можно задать переменные окружения FFMPEG_PATH и FFPROBE_PATH.
 $ffmpegBinary = getenv('FFMPEG_PATH') ?: 'ffmpeg';
 $ffprobeBinary = getenv('FFPROBE_PATH') ?: 'ffprobe';
 
@@ -30,7 +24,6 @@ $encodedDirectory = $projectRoot . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_S
 $logDirectory = $projectRoot . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'videos' . DIRECTORY_SEPARATOR . 'logs';
 $logFile = $logDirectory . DIRECTORY_SEPARATOR . 'ffmpeg.log';
 
-// Разрешенные расширения и MIME-типы. MIME проверяется по содержимому через finfo_file.
 $allowedExtensions = ['mp4', 'webm', 'mov'];
 $allowedMimeTypes = [
     'video/mp4' => 'mp4',
@@ -94,7 +87,6 @@ function clips_detect_duration(string $videoPath, string $ffprobeBinary): ?float
 
 function clips_encode_video(string $sourcePath, string $targetPath, string $ffmpegBinary, int $width, int $height): void
 {
-    // scale сохраняет пропорции, pad добавляет черные поля до ровного 9:16.
     $videoFilter = sprintf(
         'scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black,fps=30',
         $width,
@@ -202,7 +194,6 @@ if (!is_string($mimeType) || !isset($allowedMimeTypes[$mimeType])) {
     ], 422);
 }
 
-// Дополнительная проверка: расширение должно соответствовать MIME-типу.
 if ($allowedMimeTypes[$mimeType] !== $extension) {
     clips_json_response([
         'success' => false,
@@ -243,8 +234,6 @@ $originalUrl = clips_public_path($originalPath);
 $encodedUrl = clips_public_path($encodedPath);
 $postId = null;
 
-// Опциональное сохранение в текущую БД Snapix.
-// Чтобы не ломать текущую загрузку публикаций, блок включается только при save_to_db=1.
 if (isset($_POST['save_to_db']) && $_POST['save_to_db'] === '1') {
     if (!isset($_SESSION['user_id'])) {
         clips_json_response([
