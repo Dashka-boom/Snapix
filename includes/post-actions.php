@@ -10,9 +10,10 @@ function snapix_post_action_counts(PDO $pdo, int $postId, int $userId): array
     $countsStmt = $pdo->prepare('
         SELECT
             (SELECT COUNT(*) FROM likes WHERE post_id = :likes_post_id) AS likes_count,
-            (SELECT COUNT(*) FROM comments WHERE post_id = :comments_post_id AND is_deleted = 0) AS comments_count,
+            (SELECT COUNT(*) FROM comments WHERE post_id = :comments_post_id AND is_deleted = 0 AND status = \'published\') AS comments_count,
             (SELECT COUNT(*) FROM saved_posts WHERE post_id = :saves_post_id) AS saves_count,
             (SELECT COUNT(*) FROM reposts WHERE post_id = :reposts_post_id) AS reposts_count,
+            (SELECT COUNT(*) FROM messages WHERE post_id = :shares_post_id) AS shares_count,
             (SELECT COUNT(*) FROM likes WHERE post_id = :liked_post_id AND user_id = :liked_user_id) AS is_liked,
             (SELECT COUNT(*) FROM saved_posts WHERE post_id = :saved_post_id AND user_id = :saved_user_id) AS is_saved,
             (SELECT COUNT(*) FROM reposts WHERE post_id = :reposted_post_id AND user_id = :reposted_user_id) AS is_reposted
@@ -22,6 +23,7 @@ function snapix_post_action_counts(PDO $pdo, int $postId, int $userId): array
         'comments_post_id' => $postId,
         'saves_post_id' => $postId,
         'reposts_post_id' => $postId,
+        'shares_post_id' => $postId,
         'liked_post_id' => $postId,
         'liked_user_id' => $userId,
         'saved_post_id' => $postId,
@@ -36,6 +38,7 @@ function snapix_post_action_counts(PDO $pdo, int $postId, int $userId): array
         'comments_count' => (int) ($counts['comments_count'] ?? 0),
         'saves_count' => (int) ($counts['saves_count'] ?? 0),
         'reposts_count' => (int) ($counts['reposts_count'] ?? 0),
+        'shares_count' => (int) ($counts['shares_count'] ?? 0),
         'liked' => (int) ($counts['is_liked'] ?? 0) > 0,
         'saved' => (int) ($counts['is_saved'] ?? 0) > 0,
         'reposted' => (int) ($counts['is_reposted'] ?? 0) > 0,
