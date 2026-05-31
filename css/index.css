@@ -5936,9 +5936,9 @@ body.light-theme .profile-viewer-comment-menu-toggle:active {
     padding: 6px;
     border: 1px solid rgba(255,255,255,.12);
     border-radius: 12px;
-    background: rgba(4,6,7,.96);
+    background: #040607;
     box-shadow: 0 12px 28px rgba(0,0,0,.24);
-    color: #fff;
+    color: #fff !important;
     display: none;
 }
 
@@ -5961,12 +5961,16 @@ body.light-theme .profile-viewer-comment-menu-toggle:active {
     cursor: pointer;
 }
 
-.profile-viewer-comment-edit {
-    color: inherit;
+.profile-viewer-comment-edit,
+.profile-viewer-comment-edit:hover,
+.profile-viewer-comment-edit:focus-visible {
+    color: #fff !important;
 }
 
-.profile-viewer-comment-delete {
-    color: #ef4444;
+.profile-viewer-comment-delete,
+.profile-viewer-comment-delete:hover,
+.profile-viewer-comment-delete:focus-visible {
+    color: #ef4444 !important;
 }
 
 .profile-viewer-comment-edit:hover,
@@ -5983,7 +5987,13 @@ body.light-theme .profile-viewer-comment-menu-panel {
     border-color: rgba(4,6,7,.12);
     background: rgba(252,251,248,.98);
     box-shadow: 0 12px 28px rgba(4,6,7,.14);
-    color: #040607;
+    color: #040607 !important;
+}
+
+body.light-theme .profile-viewer-comment-edit,
+body.light-theme .profile-viewer-comment-edit:hover,
+body.light-theme .profile-viewer-comment-edit:focus-visible {
+    color: #040607 !important;
 }
 
 .profile-viewer-comment-like,
