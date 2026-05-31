@@ -10,7 +10,7 @@ function snapix_post_action_counts(PDO $pdo, int $postId, int $userId): array
     $countsStmt = $pdo->prepare('
         SELECT
             (SELECT COUNT(*) FROM likes WHERE post_id = :likes_post_id) AS likes_count,
-            (SELECT COUNT(*) FROM comments WHERE post_id = :comments_post_id AND is_deleted = 0) AS comments_count,
+            (SELECT COUNT(*) FROM comments WHERE post_id = :comments_post_id AND is_deleted = 0 AND status = \'published\') AS comments_count,
             (SELECT COUNT(*) FROM saved_posts WHERE post_id = :saves_post_id) AS saves_count,
             (SELECT COUNT(*) FROM reposts WHERE post_id = :reposts_post_id) AS reposts_count,
             (SELECT COUNT(*) FROM messages WHERE post_id = :shares_post_id) AS shares_count,
