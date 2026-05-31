@@ -1072,7 +1072,8 @@ $showFollowingPanel = $panel === 'following';
                 <form method="post" class="profile-post-viewer-input-row" id="profilePostViewerCommentForm">
                     <input type="hidden" name="action" value="add_comment">
                     <input type="hidden" name="post_id" value="">
-                    <button type="button" class="profile-post-viewer-round-btn"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
+                    <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerAttachmentButton" aria-label="Прикрепить фото"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
+                    <input class="profile-post-viewer-file-input" id="profilePostViewerAttachmentInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
                     <div class="profile-post-viewer-emoji-wrap">
                         <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerEmojiButton" aria-label="Выбрать эмодзи" aria-expanded="false" aria-controls="profilePostViewerEmojiPicker"><img class="icon-dark" src="icon/dark theme/add stickers.png" alt=""><img class="icon-light" src="icon/light theme/add stickers.png" alt=""></button>
                         <div class="profile-post-viewer-emoji-picker" id="profilePostViewerEmojiPicker" hidden>
@@ -1090,7 +1091,7 @@ $showFollowingPanel = $panel === 'following';
                             <button type="button" data-emoji="🎉">🎉</button>
                         </div>
                     </div>
-                    <div class="profile-post-viewer-input-shell"><input class="profile-post-viewer-input" name="comment_text" type="text" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
+                    <div class="profile-post-viewer-input-shell" id="profilePostViewerInputShell"><div class="profile-post-viewer-attachment-preview" id="profilePostViewerAttachmentPreview" hidden><img src="" alt="Предпросмотр вложения"><button type="button" id="profilePostViewerAttachmentRemove" aria-label="Удалить вложение">×</button></div><input class="profile-post-viewer-input" name="comment_text" type="text" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
                 </form>
             </aside>
         </div>
@@ -1198,6 +1199,7 @@ $showFollowingPanel = $panel === 'following';
                         const commentInput = commentForm.querySelector('[name="comment_text"]');
                         if (postIdInput) postIdInput.value = postId;
                         if (commentInput) commentInput.value = '';
+                        if (window.snapixClearViewerAttachment) window.snapixClearViewerAttachment();
                     }
                     likes.textContent = card.dataset.postLikesCount || '0';
                     comments.textContent = card.dataset.postCommentsCount || '0';
@@ -1266,6 +1268,59 @@ $showFollowingPanel = $panel === 'following';
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') closeEmojiPicker();
             });
+        })();
+
+        (() => {
+            const attachmentButton = document.getElementById('profilePostViewerAttachmentButton');
+            const attachmentInput = document.getElementById('profilePostViewerAttachmentInput');
+            const preview = document.getElementById('profilePostViewerAttachmentPreview');
+            const previewImage = preview ? preview.querySelector('img') : null;
+            const removeButton = document.getElementById('profilePostViewerAttachmentRemove');
+            const inputShell = document.getElementById('profilePostViewerInputShell');
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+            let previewUrl = '';
+
+            if (!attachmentButton || !attachmentInput || !preview || !previewImage || !removeButton || !inputShell) return;
+
+            const clearAttachment = () => {
+                if (previewUrl) {
+                    URL.revokeObjectURL(previewUrl);
+                    previewUrl = '';
+                }
+                attachmentInput.value = '';
+                previewImage.removeAttribute('src');
+                preview.hidden = true;
+                inputShell.classList.remove('has-attachment');
+            };
+
+            window.snapixClearViewerAttachment = clearAttachment;
+
+            attachmentButton.addEventListener('click', () => {
+                attachmentInput.click();
+            });
+
+            attachmentInput.addEventListener('change', () => {
+                const file = attachmentInput.files && attachmentInput.files[0] ? attachmentInput.files[0] : null;
+                if (!file) {
+                    clearAttachment();
+                    return;
+                }
+
+                const extension = (file.name.split('.').pop() || '').toLowerCase();
+                if (allowedTypes.indexOf(file.type) === -1 || allowedExtensions.indexOf(extension) === -1) {
+                    clearAttachment();
+                    return;
+                }
+
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                previewUrl = URL.createObjectURL(file);
+                previewImage.src = previewUrl;
+                preview.hidden = false;
+                inputShell.classList.add('has-attachment');
+            });
+
+            removeButton.addEventListener('click', clearAttachment);
         })();
 
         document.querySelectorAll('.js-open-comments-modal').forEach((button) => {
