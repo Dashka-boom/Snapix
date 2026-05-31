@@ -1073,7 +1073,23 @@ $showFollowingPanel = $panel === 'following';
                     <input type="hidden" name="action" value="add_comment">
                     <input type="hidden" name="post_id" value="">
                     <button type="button" class="profile-post-viewer-round-btn"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
-                    <button type="button" class="profile-post-viewer-round-btn"><img class="icon-dark" src="icon/dark theme/add stickers.png" alt=""><img class="icon-light" src="icon/light theme/add stickers.png" alt=""></button>
+                    <div class="profile-post-viewer-emoji-wrap">
+                        <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerEmojiButton" aria-label="Выбрать эмодзи" aria-expanded="false" aria-controls="profilePostViewerEmojiPicker"><img class="icon-dark" src="icon/dark theme/add stickers.png" alt=""><img class="icon-light" src="icon/light theme/add stickers.png" alt=""></button>
+                        <div class="profile-post-viewer-emoji-picker" id="profilePostViewerEmojiPicker" hidden>
+                            <button type="button" data-emoji="😀">😀</button>
+                            <button type="button" data-emoji="😂">😂</button>
+                            <button type="button" data-emoji="😍">😍</button>
+                            <button type="button" data-emoji="🥰">🥰</button>
+                            <button type="button" data-emoji="😎">😎</button>
+                            <button type="button" data-emoji="😢">😢</button>
+                            <button type="button" data-emoji="😡">😡</button>
+                            <button type="button" data-emoji="👍">👍</button>
+                            <button type="button" data-emoji="🔥">🔥</button>
+                            <button type="button" data-emoji="❤️">❤️</button>
+                            <button type="button" data-emoji="✨">✨</button>
+                            <button type="button" data-emoji="🎉">🎉</button>
+                        </div>
+                    </div>
                     <div class="profile-post-viewer-input-shell"><input class="profile-post-viewer-input" name="comment_text" type="text" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
                 </form>
             </aside>
@@ -1200,6 +1216,55 @@ $showFollowingPanel = $panel === 'following';
             viewer.querySelectorAll('[data-post-viewer-close]').forEach((node) => node.addEventListener('click', closeViewer));
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape' && viewer.classList.contains('is-open')) closeViewer();
+            });
+        })();
+
+        (() => {
+            const emojiButton = document.getElementById('profilePostViewerEmojiButton');
+            const emojiPicker = document.getElementById('profilePostViewerEmojiPicker');
+            const commentForm = document.getElementById('profilePostViewerCommentForm');
+            const commentInput = commentForm ? commentForm.querySelector('[name="comment_text"]') : null;
+            if (!emojiButton || !emojiPicker || !commentInput) return;
+
+            const closeEmojiPicker = () => {
+                emojiPicker.hidden = true;
+                emojiButton.setAttribute('aria-expanded', 'false');
+            };
+
+            const openEmojiPicker = () => {
+                emojiPicker.hidden = false;
+                emojiButton.setAttribute('aria-expanded', 'true');
+            };
+
+            emojiButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                if (emojiPicker.hidden) {
+                    openEmojiPicker();
+                } else {
+                    closeEmojiPicker();
+                }
+            });
+
+            emojiPicker.addEventListener('click', (event) => {
+                const emoji = event.target.closest('[data-emoji]')?.getAttribute('data-emoji');
+                if (!emoji) return;
+
+                const start = commentInput.selectionStart ?? commentInput.value.length;
+                const end = commentInput.selectionEnd ?? commentInput.value.length;
+                commentInput.value = commentInput.value.slice(0, start) + emoji + commentInput.value.slice(end);
+                const nextCursorPosition = start + emoji.length;
+                commentInput.focus();
+                commentInput.setSelectionRange(nextCursorPosition, nextCursorPosition);
+                closeEmojiPicker();
+            });
+
+            document.addEventListener('click', (event) => {
+                if (emojiPicker.hidden || emojiPicker.contains(event.target) || emojiButton.contains(event.target)) return;
+                closeEmojiPicker();
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeEmojiPicker();
             });
         })();
 

@@ -5595,3 +5595,59 @@ body.light-theme .profile-post-viewer-input-shell{ background:rgba(4,6,7,.07); }
 .profile-post-viewer-action.is-reposted img {
     filter: brightness(0) saturate(100%) invert(62%) sepia(90%) saturate(430%) hue-rotate(83deg) brightness(90%) contrast(92%);
 }
+
+.profile-post-viewer-emoji-wrap {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.profile-post-viewer-emoji-picker {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 10px);
+    z-index: 3;
+    width: 188px;
+    padding: 10px;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 16px;
+    background: rgba(4,6,7,.96);
+    box-shadow: 0 16px 40px rgba(0,0,0,.28);
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+}
+
+.profile-post-viewer-emoji-picker[hidden] {
+    display: none !important;
+}
+
+.profile-post-viewer-emoji-picker button {
+    width: 26px;
+    height: 26px;
+    min-height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    box-shadow: none;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.profile-post-viewer-emoji-picker button:hover,
+.profile-post-viewer-emoji-picker button:focus-visible {
+    background: rgba(255,255,255,.10) !important;
+    outline: none;
+}
+
+body.light-theme .profile-post-viewer-emoji-picker {
+    border-color: rgba(4,6,7,.12);
+    background: rgba(252,251,248,.98);
+    box-shadow: 0 16px 40px rgba(4,6,7,.16);
+}
+
+body.light-theme .profile-post-viewer-emoji-picker button:hover,
+body.light-theme .profile-post-viewer-emoji-picker button:focus-visible {
+    background: rgba(4,6,7,.08) !important;
+}
