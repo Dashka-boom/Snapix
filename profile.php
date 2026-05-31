@@ -148,7 +148,7 @@ function moderateCommentText(string $text): array
     $rejectedPatterns = [
         '/\b(?:fuck|shit|bitch|asshole)\b/iu',
         '/(?:сука|бляд|хуй|пизд|еба|ёба|мудак|долбоеб|долбоёб)/iu',
-        '/(?:убей\s+себя|сдохни|ненавижу\s+тебя)/iu',
+        '/(?:убей\s+себя|убейся|сдохни|ненавижу\s+тебя)/iu',
     ];
 
     foreach ($rejectedPatterns as $pattern) {
