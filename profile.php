@@ -212,16 +212,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $commentText = trim($_POST['comment_text'] ?? '');
             if ($commentText !== '') {
                 $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text) VALUES (:post_id, :user_id, :comment_text)');
+                $commentValue = mb_substr($commentText, 0, 1000);
                 $insertCommentStmt->execute([
                     'post_id' => $postId,
                     'user_id' => $user['id'],
-                    'comment_text' => mb_substr($commentText, 0, 1000),
+                    'comment_text' => $commentValue,
                 ]);
+                $commentId = (int) $pdo->lastInsertId();
                 $commentsPostId = $postId;
                 $ajaxExtra['comment'] = [
+                    'comment_id' => $commentId,
+                    'user_id' => (int) $user['id'],
                     'login' => (string) $user['login'],
+                    'avatar_url' => (string) ($user['avatar'] ?? ''),
                     'profile_url' => buildProfileUrl((int) $user['id'], (int) $user['id']),
-                    'text' => mb_substr($commentText, 0, 1000),
+                    'comment_text' => $commentValue,
+                    'text' => $commentValue,
+                    'attachment_url' => null,
+                    'attachment_type' => null,
+                    'created_at' => 'только что',
                 ];
             } elseif ($isAjaxPostAction) {
                 snapix_send_post_action_error('empty_comment');
@@ -461,14 +470,15 @@ $stmt->execute(['id' => $user['id']]);
 $followingList = $stmt->fetchAll();
 
 $commentMap = [];
+$viewerCommentMap = [];
 $repostMap = [];
-$allProfilePosts = array_merge($posts, $savedPosts);
+$allProfilePosts = array_merge($posts, $savedPosts, $repostedPosts);
 if ($allProfilePosts) {
     $postIds = array_values(array_unique(array_map(static fn($post): int => (int) $post['id'], $allProfilePosts)));
     $placeholders = implode(',', array_fill(0, count($postIds), '?'));
 
     $commentsStmt = $pdo->prepare("
-        SELECT comments.id, comments.post_id, comments.comment_text, users.id AS user_id, users.login
+        SELECT comments.id, comments.post_id, comments.comment_text, comments.created_at, users.id AS user_id, users.login, users.avatar
         FROM comments
         INNER JOIN users ON users.id = comments.user_id
         WHERE comments.is_deleted = 0
@@ -482,6 +492,21 @@ if ($allProfilePosts) {
             $commentMap[$currentPostId] = [];
         }
         $commentMap[$currentPostId][] = $comment;
+        if (!isset($viewerCommentMap[$currentPostId])) {
+            $viewerCommentMap[$currentPostId] = [];
+        }
+        $viewerCommentMap[$currentPostId][] = [
+            'comment_id' => (int) $comment['id'],
+            'user_id' => (int) $comment['user_id'],
+            'login' => (string) $comment['login'],
+            'avatar_url' => (string) ($comment['avatar'] ?? ''),
+            'profile_url' => buildProfileUrl((int) $comment['user_id'], (int) $user['id']),
+            'comment_text' => (string) $comment['comment_text'],
+            'text' => (string) $comment['comment_text'],
+            'attachment_url' => null,
+            'attachment_type' => null,
+            'created_at' => !empty($comment['created_at']) ? date('d.m.Y H:i', strtotime((string) $comment['created_at'])) : '',
+        ];
     }
 
     $repostsStmt = $pdo->prepare("
@@ -1128,6 +1153,7 @@ $showFollowingPanel = $panel === 'following';
     </div>
     <script src="js/post-sync.js"></script>
 <script>
+        window.snapixProfileComments = <?php echo json_encode($viewerCommentMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
         (() => {
             const bell = document.querySelector('[data-notification-toggle]');
             const popover = document.getElementById('notificationPopover');
@@ -1144,6 +1170,97 @@ $showFollowingPanel = $panel === 'following';
                 if (popover.contains(event.target) || bell.contains(event.target)) return;
                 popover.classList.remove('is-open');
             });
+        })();
+
+        (() => {
+            function buildAvatar(comment) {
+                var avatar = document.createElement('a');
+                avatar.className = 'profile-viewer-comment-avatar';
+                avatar.href = comment.profile_url || 'profile.php';
+                var avatarUrl = comment.avatar_url || '';
+                if (avatarUrl) {
+                    avatar.style.backgroundImage = "url('" + String(avatarUrl).replace(/'/g, "\\'") + "')";
+                    avatar.textContent = '';
+                } else {
+                    avatar.textContent = (comment.login || '?').slice(0, 1).toUpperCase();
+                }
+                return avatar;
+            }
+
+            function buildViewerComment(comment) {
+                var item = document.createElement('div');
+                item.className = 'profile-viewer-comment';
+
+                item.appendChild(buildAvatar(comment));
+
+                var body = document.createElement('div');
+                body.className = 'profile-viewer-comment-body';
+
+                var login = document.createElement('a');
+                login.className = 'profile-viewer-comment-login';
+                login.href = comment.profile_url || 'profile.php';
+                login.textContent = comment.login || '';
+                body.appendChild(login);
+
+                var commentText = typeof comment.comment_text !== 'undefined' ? comment.comment_text : (comment.text || '');
+                if (commentText) {
+                    var text = document.createElement('div');
+                    text.className = 'profile-viewer-comment-text';
+                    text.textContent = commentText;
+                    body.appendChild(text);
+                }
+
+                if (comment.attachment_url) {
+                    var attachment = document.createElement('div');
+                    attachment.className = 'profile-viewer-comment-attachment';
+                    if (comment.attachment_type) {
+                        attachment.setAttribute('data-attachment-type', comment.attachment_type);
+                    }
+                    var image = document.createElement('img');
+                    image.src = comment.attachment_url;
+                    image.alt = '';
+                    attachment.appendChild(image);
+                    body.appendChild(attachment);
+                }
+
+                var date = document.createElement('span');
+                date.className = 'profile-viewer-comment-date';
+                date.textContent = comment.created_at || 'только что';
+                body.appendChild(date);
+
+                item.appendChild(body);
+                return item;
+            }
+
+            window.snapixAppendViewerComment = function (comment) {
+                var commentsHost = document.getElementById('profilePostViewerComments');
+                if (!commentsHost || !comment) return;
+
+                var empty = commentsHost.querySelector('.profile-post-viewer-empty');
+                if (empty) empty.remove();
+                commentsHost.classList.add('has-comments');
+                commentsHost.appendChild(buildViewerComment(comment));
+                commentsHost.scrollTop = commentsHost.scrollHeight;
+            };
+
+            window.snapixRenderViewerComments = function (postId) {
+                var commentsHost = document.getElementById('profilePostViewerComments');
+                if (!commentsHost) return;
+
+                commentsHost.classList.remove('has-comments');
+                commentsHost.innerHTML = '';
+
+                var comments = (window.snapixProfileComments || {})[String(postId)] || [];
+                if (!comments.length) {
+                    commentsHost.innerHTML = '<p class="profile-post-viewer-empty">Комментариев нет</p>';
+                    return;
+                }
+
+                commentsHost.classList.add('has-comments');
+                comments.forEach(function (comment) {
+                    commentsHost.appendChild(buildViewerComment(comment));
+                });
+            };
         })();
 
 
@@ -1190,11 +1307,8 @@ $showFollowingPanel = $panel === 'following';
                     const avatarUrl = card.dataset.postAuthorAvatar || '';
                     avatar.style.backgroundImage = avatarUrl ? `url('${avatarUrl}')` : '';
                     avatar.textContent = avatarUrl ? '' : (login.textContent || '?').slice(0, 1).toUpperCase();
-                    if (viewerComments) {
-                        viewerComments.classList.remove('has-comments');
-                        viewerComments.innerHTML = '<p class="profile-post-viewer-empty">Комментариев нет</p>';
-                    }
                     const postId = card.dataset.postId || '';
+                    if (window.snapixRenderViewerComments) window.snapixRenderViewerComments(postId);
                     viewer.dataset.postId = postId;
                     viewer.querySelectorAll('[data-post-action], [data-post-count], .profile-post-viewer-metrics').forEach((node) => {
                         node.setAttribute('data-post-id', postId);
@@ -1285,6 +1399,8 @@ $showFollowingPanel = $panel === 'following';
             const allowedTypes = ['image/gif', 'image/jpeg', 'image/png', 'image/webp'];
             const allowedExtensions = ['gif', 'jpg', 'jpeg', 'png', 'webp'];
             let previewUrl = '';
+            let selectedAttachmentFile = null;
+            let selectedAttachmentType = '';
 
             if (!attachmentButton || !attachmentInput || !preview || !previewImage || !removeButton || !inputShell) return;
 
@@ -1293,6 +1409,8 @@ $showFollowingPanel = $panel === 'following';
                     URL.revokeObjectURL(previewUrl);
                     previewUrl = '';
                 }
+                selectedAttachmentFile = null;
+                selectedAttachmentType = '';
                 attachmentInput.value = '';
                 previewImage.removeAttribute('src');
                 preview.hidden = true;
@@ -1300,6 +1418,13 @@ $showFollowingPanel = $panel === 'following';
             };
 
             window.snapixClearViewerAttachment = clearAttachment;
+            window.snapixGetViewerAttachment = () => {
+                if (!selectedAttachmentFile) return null;
+                return {
+                    attachment_url: URL.createObjectURL(selectedAttachmentFile),
+                    attachment_type: selectedAttachmentType
+                };
+            };
 
             attachmentButton.addEventListener('click', () => {
                 attachmentInput.click();
@@ -1318,6 +1443,8 @@ $showFollowingPanel = $panel === 'following';
                     return;
                 }
 
+                selectedAttachmentFile = file;
+                selectedAttachmentType = extension === 'gif' ? 'gif' : 'image';
                 if (previewUrl) URL.revokeObjectURL(previewUrl);
                 previewUrl = URL.createObjectURL(file);
                 previewImage.src = previewUrl;
@@ -1657,28 +1784,9 @@ $showFollowingPanel = $panel === 'following';
 
     var viewerCommentForm = document.getElementById('profilePostViewerCommentForm');
     function appendViewerComment(comment) {
-        var commentsHost = document.getElementById('profilePostViewerComments');
-        if (!commentsHost || !comment) return;
-
-        var empty = commentsHost.querySelector('.profile-post-viewer-empty');
-        if (empty) empty.remove();
-        commentsHost.classList.add('has-comments');
-
-        var item = document.createElement('div');
-        item.className = 'profile-post-viewer-comment-item';
-
-        var author = document.createElement('a');
-        author.className = 'profile-post-viewer-comment-author';
-        author.href = comment.profile_url || 'profile.php';
-        author.textContent = comment.login || '';
-
-        var text = document.createElement('p');
-        text.textContent = comment.text || '';
-
-        item.appendChild(author);
-        item.appendChild(text);
-        commentsHost.appendChild(item);
-        commentsHost.scrollTop = commentsHost.scrollHeight;
+        if (window.snapixAppendViewerComment) {
+            window.snapixAppendViewerComment(comment);
+        }
     }
 
     if (viewerCommentForm) {
@@ -1704,9 +1812,20 @@ $showFollowingPanel = $panel === 'following';
             var text = input ? input.value.trim() : '';
             if (!postId || !text) return;
 
+            var pendingAttachment = window.snapixGetViewerAttachment ? window.snapixGetViewerAttachment() : null;
+
             sendPostAction(postId, 'add_comment', {comment_text: text})
                 .then(function (data) {
                     if (!data || !data.ok) return;
+                    if (pendingAttachment && data.comment) {
+                        data.comment.attachment_url = pendingAttachment.attachment_url;
+                        data.comment.attachment_type = pendingAttachment.attachment_type;
+                    }
+                    if (data.comment) {
+                        window.snapixProfileComments = window.snapixProfileComments || {};
+                        window.snapixProfileComments[String(postId)] = window.snapixProfileComments[String(postId)] || [];
+                        window.snapixProfileComments[String(postId)].push(data.comment);
+                    }
                     if (input) input.value = '';
                     if (window.snapixClearViewerAttachment) window.snapixClearViewerAttachment();
                     appendViewerComment(data.comment);

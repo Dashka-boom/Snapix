@@ -5746,3 +5746,75 @@ body.light-theme .profile-post-viewer-attachment-preview button {
     white-space: pre-wrap;
     word-break: break-word;
 }
+
+.profile-viewer-comment {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
+    width: 100%;
+}
+
+.profile-viewer-comment-avatar {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    background: #68C5DB;
+    background-position: center;
+    background-size: cover;
+    color: #040607;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.profile-viewer-comment-body {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.profile-viewer-comment-login {
+    color: inherit;
+    display: inline-block;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.25;
+    margin-bottom: 4px;
+    text-decoration: none;
+}
+
+.profile-viewer-comment-text {
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.profile-viewer-comment-attachment {
+    margin: 4px 0 8px;
+}
+
+.profile-viewer-comment-attachment img {
+    max-width: 220px;
+    max-height: 220px;
+    border-radius: 12px;
+    display: block;
+    object-fit: cover;
+}
+
+.profile-viewer-comment-date {
+    color: rgba(255,255,255,.5);
+    display: block;
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+body.light-theme .profile-viewer-comment-date {
+    color: rgba(4,6,7,.45);
+}
