@@ -343,7 +343,7 @@ if (!in_array($panel, $allowedPanels, true)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_comment', 'toggle_comment_like', 'add_repost', 'modal_follow_author'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_comment', 'edit_comment', 'toggle_comment_like', 'add_repost', 'modal_follow_author'], true);
     $ajaxExtra = [];
     $postId = (int) ($_POST['post_id'] ?? 0);
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
@@ -433,6 +433,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         header('Location: profile.php');
+        exit;
+    }
+
+
+    if ($action === 'edit_comment') {
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        $commentText = trim($_POST['comment_text'] ?? '');
+        if ($commentId <= 0) {
+            snapix_send_post_action_error('invalid_comment', 422);
+        }
+        if ($commentText === '') {
+            snapix_send_post_action_error('empty_comment', 422);
+        }
+
+        $commentStmt = $pdo->prepare("SELECT id, post_id, user_id FROM comments WHERE id = :id AND is_deleted = 0 AND status = 'published' LIMIT 1");
+        $commentStmt->execute(['id' => $commentId]);
+        $comment = $commentStmt->fetch();
+        if (!$comment) {
+            snapix_send_post_action_error('comment_not_found', 404);
+        }
+        if ((int) $comment['user_id'] !== (int) $user['id']) {
+            snapix_send_post_action_error('comment_edit_forbidden', 403);
+        }
+
+        $commentValue = mb_substr($commentText, 0, 1000);
+        $updateCommentStmt = $pdo->prepare('UPDATE comments SET comment_text = :comment_text WHERE id = :id AND user_id = :user_id LIMIT 1');
+        $updateCommentStmt->execute([
+            'comment_text' => $commentValue,
+            'id' => $commentId,
+            'user_id' => $user['id'],
+        ]);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'comment_id' => $commentId,
+            'post_id' => (int) $comment['post_id'],
+            'comment_text' => $commentValue,
+            'text' => $commentValue,
+        ]);
         exit;
     }
 
@@ -1622,10 +1662,15 @@ $showFollowingPanel = $panel === 'following';
         })();
 
         (() => {
+            function canEditComment(comment) {
+                var currentUser = window.snapixCurrentUser || {};
+                return Number(comment.user_id || 0) === Number(currentUser.id || 0);
+            }
+
             function canDeleteComment(comment) {
                 var currentUser = window.snapixCurrentUser || {};
                 var role = currentUser.role || '';
-                return Number(comment.user_id || 0) === Number(currentUser.id || 0) || role === 'admin' || role === 'moderator';
+                return canEditComment(comment) || role === 'admin' || role === 'moderator';
             }
 
             function showEmptyCommentsIfNeeded(commentsHost) {
@@ -1661,6 +1706,17 @@ $showFollowingPanel = $panel === 'following';
                         if (Number(comment.comment_id || 0) === Number(commentId || 0)) {
                             comment.is_liked = !!isLiked;
                             comment.likes_count = Number(likesCount || 0);
+                        }
+                    });
+                });
+            }
+
+            function updateCommentTextCache(commentId, commentText) {
+                Object.keys(window.snapixProfileComments || {}).forEach(function (postId) {
+                    (window.snapixProfileComments[postId] || []).forEach(function (comment) {
+                        if (Number(comment.comment_id || 0) === Number(commentId || 0)) {
+                            comment.comment_text = commentText;
+                            comment.text = commentText;
                         }
                     });
                 });
@@ -1702,6 +1758,7 @@ $showFollowingPanel = $panel === 'following';
                 if (commentText) {
                     var text = document.createElement('div');
                     text.className = 'profile-viewer-comment-text';
+                    text.dataset.commentText = '1';
                     text.textContent = commentText;
                     body.appendChild(text);
                 }
@@ -1743,7 +1800,7 @@ $showFollowingPanel = $panel === 'following';
                 likeCount.textContent = String(Number(comment.likes_count || 0));
                 meta.appendChild(likeButton);
 
-                if (canDeleteComment(comment)) {
+                if (canDeleteComment(comment) || canEditComment(comment)) {
                     var menu = document.createElement('div');
                     menu.className = 'profile-viewer-comment-menu';
 
@@ -1757,11 +1814,21 @@ $showFollowingPanel = $panel === 'following';
                     var panel = document.createElement('div');
                     panel.className = 'profile-viewer-comment-menu-panel';
 
-                    var deleteButton = document.createElement('button');
-                    deleteButton.type = 'button';
-                    deleteButton.className = 'profile-viewer-comment-delete';
-                    deleteButton.textContent = 'Удалить комментарий';
-                    panel.appendChild(deleteButton);
+                    if (canEditComment(comment)) {
+                        var editButton = document.createElement('button');
+                        editButton.type = 'button';
+                        editButton.className = 'profile-viewer-comment-edit';
+                        editButton.textContent = 'Редактировать';
+                        panel.appendChild(editButton);
+                    }
+
+                    if (canDeleteComment(comment)) {
+                        var deleteButton = document.createElement('button');
+                        deleteButton.type = 'button';
+                        deleteButton.className = 'profile-viewer-comment-delete';
+                        deleteButton.textContent = 'Удалить комментарий';
+                        panel.appendChild(deleteButton);
+                    }
 
                     menu.appendChild(panel);
                     meta.appendChild(menu);
@@ -1924,6 +1991,55 @@ $showFollowingPanel = $panel === 'following';
                             var countNode = likeButton.querySelector('[data-comment-like-count]');
                             if (countNode) countNode.textContent = String(Number(data.comment_likes_count || 0));
                             updateCommentLikeCache(likeCommentId, data.liked, data.comment_likes_count);
+                        })
+                        .catch(function () {});
+                    return;
+                }
+
+                var editButton = event.target.closest('.profile-viewer-comment-edit');
+                if (editButton) {
+                    event.preventDefault();
+                    var editCommentNode = editButton.closest('.profile-viewer-comment');
+                    var editCommentId = editCommentNode ? editCommentNode.dataset.commentId : '';
+                    var editBody = editCommentNode ? editCommentNode.querySelector('.profile-viewer-comment-body') : null;
+                    var editTextNode = editBody ? editBody.querySelector('[data-comment-text]') : null;
+                    var currentText = editTextNode ? editTextNode.textContent : '';
+                    var nextText = window.prompt('Редактировать комментарий', currentText);
+                    if (nextText === null) return;
+                    nextText = nextText.trim();
+                    if (!editCommentId || !nextText || nextText === currentText.trim()) return;
+
+                    var editParams = new URLSearchParams();
+                    editParams.set('action', 'edit_comment');
+                    editParams.set('comment_id', editCommentId);
+                    editParams.set('comment_text', nextText);
+
+                    fetch(window.location.pathname || 'profile.php', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'Accept': 'application/json'
+                        },
+                        body: editParams.toString()
+                    })
+                        .then(function (response) { return response.json(); })
+                        .then(function (data) {
+                            if (!data || !data.ok) return;
+                            var updatedText = data.comment_text || nextText;
+                            if (!editTextNode) {
+                                editTextNode = document.createElement('div');
+                                editTextNode.className = 'profile-viewer-comment-text';
+                                editTextNode.dataset.commentText = '1';
+                                var body = editBody || (editCommentNode ? editCommentNode.querySelector('.profile-viewer-comment-body') : null);
+                                var meta = body ? body.querySelector('.profile-viewer-comment-meta') : null;
+                                if (body) body.insertBefore(editTextNode, meta || null);
+                            }
+                            if (editTextNode) editTextNode.textContent = updatedText;
+                            updateCommentTextCache(editCommentId, updatedText);
+                            var openMenu = editButton.closest('.profile-viewer-comment-menu');
+                            if (openMenu) openMenu.classList.remove('is-open');
                         })
                         .catch(function () {});
                     return;

@@ -5938,6 +5938,7 @@ body.light-theme .profile-viewer-comment-menu-toggle:active {
     border-radius: 12px;
     background: rgba(4,6,7,.96);
     box-shadow: 0 12px 28px rgba(0,0,0,.24);
+    color: #fff;
     display: none;
 }
 
@@ -5945,6 +5946,7 @@ body.light-theme .profile-viewer-comment-menu-toggle:active {
     display: block;
 }
 
+.profile-viewer-comment-edit,
 .profile-viewer-comment-delete {
     width: 100%;
     min-height: 32px;
@@ -5952,23 +5954,36 @@ body.light-theme .profile-viewer-comment-menu-toggle:active {
     border: 0 !important;
     border-radius: 8px;
     background: transparent !important;
-    color: #ef4444;
+    color: inherit;
     font: inherit;
     font-size: 13px;
     text-align: left;
     cursor: pointer;
 }
 
+.profile-viewer-comment-edit {
+    color: inherit;
+}
+
+.profile-viewer-comment-delete {
+    color: #ef4444;
+}
+
+.profile-viewer-comment-edit:hover,
+.profile-viewer-comment-edit:focus-visible,
 .profile-viewer-comment-delete:hover,
 .profile-viewer-comment-delete:focus-visible {
-    background: rgba(239,68,68,.12) !important;
+    background: transparent !important;
+    filter: none !important;
     outline: none;
+    transform: none !important;
 }
 
 body.light-theme .profile-viewer-comment-menu-panel {
     border-color: rgba(4,6,7,.12);
     background: rgba(252,251,248,.98);
     box-shadow: 0 12px 28px rgba(4,6,7,.14);
+    color: #040607;
 }
 
 .profile-viewer-comment-like,
