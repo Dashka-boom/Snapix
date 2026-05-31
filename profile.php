@@ -1665,26 +1665,6 @@ $showFollowingPanel = $panel === 'following';
     </div>
 
 
-    <div class="comment-report-modal" id="commentReportModal" aria-hidden="true" hidden>
-        <div class="comment-report-modal-overlay" data-comment-report-close></div>
-        <div class="comment-report-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="commentReportTitle">
-            <button type="button" class="comment-report-modal-close" data-comment-report-close aria-label="Закрыть">×</button>
-            <h3 id="commentReportTitle">Пожаловаться на комментарий</h3>
-            <form id="commentReportForm" class="comment-report-form">
-                <input type="hidden" name="comment_id" value="">
-                <label><input type="radio" name="reason" value="Спам" required> <span>Спам</span></label>
-                <label><input type="radio" name="reason" value="Оскорбления или ненависть"> <span>Оскорбления или ненависть</span></label>
-                <label><input type="radio" name="reason" value="Насилие"> <span>Насилие</span></label>
-                <label><input type="radio" name="reason" value="Ложная информация"> <span>Ложная информация</span></label>
-                <label><input type="radio" name="reason" value="Нежелательный контент"> <span>Нежелательный контент</span></label>
-                <label><input type="radio" name="reason" value="Нарушение авторских прав"> <span>Нарушение авторских прав</span></label>
-                <label><input type="radio" name="reason" value="Другое"> <span>Другое</span></label>
-                <p class="comment-report-message" data-comment-report-message hidden></p>
-                <button type="submit" class="comment-report-submit">Отправить жалобу</button>
-            </form>
-        </div>
-    </div>
-
     <div class="share-modal" id="share-post-modal">
         <div class="share-modal-overlay js-close-share-modal"></div>
         <div class="share-modal-dialog">
@@ -1919,6 +1899,8 @@ $showFollowingPanel = $panel === 'following';
                         var reportButton = document.createElement('button');
                         reportButton.type = 'button';
                         reportButton.className = 'profile-viewer-comment-report';
+                        reportButton.dataset.reportLogin = comment.login || '';
+                        reportButton.dataset.reportUserId = String(comment.user_id || '');
                         reportButton.textContent = 'Пожаловаться';
                         panel.appendChild(reportButton);
                     }
@@ -2016,91 +1998,6 @@ $showFollowingPanel = $panel === 'following';
             };
 
 
-            var commentReportModal = document.getElementById('commentReportModal');
-            var commentReportForm = document.getElementById('commentReportForm');
-            var commentReportMessage = commentReportModal ? commentReportModal.querySelector('[data-comment-report-message]') : null;
-
-            function closeCommentReportModal() {
-                if (!commentReportModal) return;
-                commentReportModal.hidden = true;
-                commentReportModal.classList.remove('is-open');
-                commentReportModal.setAttribute('aria-hidden', 'true');
-                if (commentReportForm) commentReportForm.reset();
-                if (commentReportMessage) {
-                    commentReportMessage.hidden = true;
-                    commentReportMessage.textContent = '';
-                    commentReportMessage.classList.remove('is-error');
-                }
-            }
-
-            function openCommentReportModal(commentId) {
-                if (!commentReportModal || !commentReportForm || !commentId) return;
-                commentReportForm.reset();
-                var idInput = commentReportForm.querySelector('input[name="comment_id"]');
-                if (idInput) idInput.value = commentId;
-                if (commentReportMessage) {
-                    commentReportMessage.hidden = true;
-                    commentReportMessage.textContent = '';
-                    commentReportMessage.classList.remove('is-error');
-                }
-                commentReportModal.hidden = false;
-                commentReportModal.classList.add('is-open');
-                commentReportModal.setAttribute('aria-hidden', 'false');
-                var firstReason = commentReportForm.querySelector('input[name="reason"]');
-                if (firstReason) firstReason.focus();
-            }
-
-            function setCommentReportMessage(message, isError) {
-                if (!commentReportMessage) return;
-                commentReportMessage.textContent = message;
-                commentReportMessage.hidden = false;
-                commentReportMessage.classList.toggle('is-error', !!isError);
-            }
-
-            if (commentReportModal) {
-                commentReportModal.querySelectorAll('[data-comment-report-close]').forEach(function (node) {
-                    node.addEventListener('click', closeCommentReportModal);
-                });
-            }
-
-            if (commentReportForm) {
-                commentReportForm.addEventListener('submit', function (event) {
-                    event.preventDefault();
-                    var commentIdInput = commentReportForm.querySelector('input[name="comment_id"]');
-                    var checkedReason = commentReportForm.querySelector('input[name="reason"]:checked');
-                    var commentId = commentIdInput ? commentIdInput.value : '';
-                    if (!commentId || !checkedReason) return;
-
-                    var params = new URLSearchParams();
-                    params.set('action', 'report_comment');
-                    params.set('comment_id', commentId);
-                    params.set('reason', checkedReason.value);
-
-                    fetch(window.location.pathname || 'profile.php', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                            'Accept': 'application/json'
-                        },
-                        body: params.toString()
-                    })
-                        .then(function (response) { return response.json(); })
-                        .then(function (data) {
-                            if (!data || !data.ok) {
-                                setCommentReportMessage(data && data.error === 'duplicate_comment_report' ? 'Жалоба уже отправлена' : 'Не удалось отправить жалобу', true);
-                                return;
-                            }
-                            setCommentReportMessage(data.message || 'Жалоба отправлена', false);
-                            window.setTimeout(closeCommentReportModal, 900);
-                        })
-                        .catch(function () {
-                            setCommentReportMessage('Не удалось отправить жалобу', true);
-                        });
-                });
-            }
-
             document.addEventListener('click', function (event) {
                 document.querySelectorAll('.profile-viewer-comment-menu.is-open').forEach(function (menu) {
                     if (!menu.contains(event.target)) {
@@ -2180,9 +2077,38 @@ $showFollowingPanel = $panel === 'following';
                     event.preventDefault();
                     var reportCommentNode = reportButton.closest('.profile-viewer-comment');
                     var reportCommentId = reportCommentNode ? reportCommentNode.dataset.commentId : '';
+                    var reportLogin = reportButton.dataset.reportLogin || '';
+                    var reportUserId = reportButton.dataset.reportUserId || '';
                     var openMenu = reportButton.closest('.profile-viewer-comment-menu');
                     if (openMenu) openMenu.classList.remove('is-open');
-                    openCommentReportModal(reportCommentId);
+                    if (reportCommentId && window.SnapixReportModal) {
+                        window.SnapixReportModal.open({
+                            login: reportLogin || 'user',
+                            userId: reportUserId || 0,
+                            onSubmit: function (reason, api) {
+                                var params = new URLSearchParams();
+                                params.set('action', 'report_comment');
+                                params.set('comment_id', reportCommentId);
+                                params.set('reason', reason);
+                                fetch(window.location.pathname || 'profile.php', {
+                                    method: 'POST',
+                                    credentials: 'same-origin',
+                                    headers: {
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                        'Accept': 'application/json'
+                                    },
+                                    body: params.toString()
+                                })
+                                    .then(function (response) { return response.json(); })
+                                    .then(function (data) {
+                                        if (!data || !data.ok) return;
+                                        api.showSuccess();
+                                    })
+                                    .catch(function () {});
+                            }
+                        });
+                    }
                     return;
                 }
 
