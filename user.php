@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'get_post_counts'], true);
     $ajaxExtra = [];
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
     $postExists = false;
@@ -210,11 +210,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
         }
 
         if ($postExists && $action === 'report_post' && $ownerId !== (int) $currentUser['id']) {
+            $reportReason = trim((string) ($_POST['report_reason'] ?? ''));
             $pdo->prepare('INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text) VALUES (:reporter_user_id, :target_user_id, :reason_text)')
                 ->execute([
                     'reporter_user_id' => $currentUser['id'],
                     'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                    'reason_text' => 'Жалоба на пост #' . $postId,
+                    'reason_text' => mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000),
                 ]);
         }
 
@@ -612,7 +613,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                         <?php foreach ($posts as $post): ?>
                             <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                             <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>">
+                            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>">
                                 <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                     <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                                 <?php elseif (!empty($post['media_url'])): ?>
@@ -627,7 +628,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                             <button type="button" class="post-menu-toggle" data-post-menu="user-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-horizontal'); ?></button>
                                             <div class="post-menu" id="user-post-menu-<?php echo (int) $post['id']; ?>">
                                                 <?php if ($currentUser): ?>
-                                                    <form method="post"><input type="hidden" name="action" value="report_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit">Жалоба на пост</button></form>
+                                                    <form method="post"><input type="hidden" name="action" value="report_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" data-report-trigger data-report-login="<?php echo htmlspecialchars((string) ($profileUser['login'] ?? 'user')); ?>" data-report-user-id="<?php echo (int) $profileUser['id']; ?>">Жалоба на пост</button></form>
                                                     <form method="post"><input type="hidden" name="action" value="report_post_user"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit">Жалоба на пользователя</button></form>
                                                     <form method="post"><input type="hidden" name="action" value="hide_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit">Мне не интересна эта публикация</button></form>
                                                 <?php else: ?>
@@ -727,7 +728,8 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
         </div>
     <?php endif; ?>
 
-    <script>
+    <script src="js/post-sync.js"></script>
+<script>
         (() => {
             const bell = document.querySelector('[data-notification-toggle]');
             const popover = document.getElementById('notificationPopover');

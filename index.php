@@ -52,7 +52,7 @@ $reportReasons = $reportReasonsStmt->fetchAll();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     $action = $_POST['action'] ?? '';
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'get_post_counts'], true);
     $ajaxExtra = [];
 
     if ($action === 'report_comment') {
@@ -220,10 +220,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text)
                 VALUES (:reporter_user_id, :target_user_id, :reason_text)
             ');
+            $reportReason = trim((string) ($_POST['report_reason'] ?? ''));
             $reportPostStmt->execute([
                 'reporter_user_id' => $user['id'],
                 'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                'reason_text' => 'Жалоба на пост #' . $postId,
+                'reason_text' => mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000),
             ]);
         }
 
@@ -419,6 +420,7 @@ if ($feedPosts) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/index.css">
+    <link rel="icon" href="icon/light theme/logo.png" type="image/png">
     <title>Snapix</title>
 </head>
 <body data-page="home">
@@ -439,7 +441,7 @@ if ($feedPosts) {
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                         <?php $authorProfileUrl = $user ? buildProfileUrl((int) $post['user_id'], (int) $user['id']) : 'login.php'; ?>
                         <?php $feedScope = (int) $post['is_following_author'] > 0 ? 'following' : 'for-you'; ?>
-                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
+                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
                             <header class="feed-card-header">
                                 <div class="feed-header-main">
                                     <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-avatar-link" aria-label="Открыть профиль <?php echo htmlspecialchars($post['login']); ?>">
@@ -499,7 +501,7 @@ if ($feedPosts) {
                                                         <input type="hidden" name="action" value="report_post">
                                                         <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
                                                         <input type="hidden" name="owner_id" value="<?php echo (int) $post['user_id']; ?>">
-                                                        <button type="submit" class="post-menu-item post-menu-item-danger">
+                                                        <button type="submit" class="post-menu-item post-menu-item-danger" data-report-trigger data-report-login="<?php echo htmlspecialchars((string) ($post['login'] ?? 'user')); ?>" data-report-user-id="<?php echo (int) $post['user_id']; ?>">
                                                             <img src="icon/complaint.png" alt="">
                                                             <span>Пожаловаться</span>
                                                         </button>
@@ -664,6 +666,7 @@ if ($feedPosts) {
     </div>
 </div>
 <?php endif; ?>
+<script src="js/post-sync.js"></script>
 <script>
 (function () {
     var tabs = document.querySelectorAll('.home-feed-tab');
