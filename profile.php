@@ -28,6 +28,102 @@ function formatBlockedUntil(?string $value): string
     return date('d.m.Y H:i', $timestamp);
 }
 
+function ensureCommentAttachmentColumns(PDO $pdo): void
+{
+    try {
+        $pdo->exec('ALTER TABLE comments ADD COLUMN attachment_url VARCHAR(255) NULL AFTER comment_text');
+    } catch (PDOException $exception) {
+        if (($exception->errorInfo[1] ?? null) !== 1060) {
+            throw $exception;
+        }
+    }
+
+    try {
+        $pdo->exec("ALTER TABLE comments ADD COLUMN attachment_type ENUM('image','gif') NULL AFTER attachment_url");
+    } catch (PDOException $exception) {
+        if (($exception->errorInfo[1] ?? null) !== 1060) {
+            throw $exception;
+        }
+    }
+}
+
+function uploadCommentAttachment(array $file): ?array
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        snapix_send_post_action_error('attachment_upload_failed', 422);
+    }
+
+    $tmpPath = (string) ($file['tmp_name'] ?? '');
+    $size = (int) ($file['size'] ?? 0);
+    $originalName = (string) ($file['name'] ?? '');
+    $maxSize = 8 * 1024 * 1024;
+
+    if ($tmpPath === '' || !is_uploaded_file($tmpPath) || $size <= 0 || $size > $maxSize) {
+        snapix_send_post_action_error('invalid_attachment_size', 422);
+    }
+
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    if (!in_array($extension, $allowedExtensions, true)) {
+        snapix_send_post_action_error('invalid_attachment_extension', 422);
+    }
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = $finfo ? (string) finfo_file($finfo, $tmpPath) : '';
+    if ($finfo) {
+        finfo_close($finfo);
+    }
+
+    $allowedMimeTypes = [
+        'image/jpeg' => ['ext' => 'jpg', 'type' => 'image'],
+        'image/png' => ['ext' => 'png', 'type' => 'image'],
+        'image/webp' => ['ext' => 'webp', 'type' => 'image'],
+        'image/gif' => ['ext' => 'gif', 'type' => 'gif'],
+    ];
+
+    if (!isset($allowedMimeTypes[$mimeType])) {
+        snapix_send_post_action_error('invalid_attachment_mime', 422);
+    }
+
+    if ($extension === 'gif' && $mimeType !== 'image/gif') {
+        snapix_send_post_action_error('invalid_attachment_type', 422);
+    }
+
+    if ($extension !== 'gif' && $mimeType === 'image/gif') {
+        snapix_send_post_action_error('invalid_attachment_type', 422);
+    }
+
+    if (@getimagesize($tmpPath) === false) {
+        snapix_send_post_action_error('invalid_attachment_image', 422);
+    }
+
+    $uploadDirectory = __DIR__ . '/uploads/comment_attachments';
+    if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0775, true)) {
+        snapix_send_post_action_error('attachment_directory_failed', 500);
+    }
+
+    $extension = $allowedMimeTypes[$mimeType]['ext'];
+    $filename = 'comment_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+    $targetPath = $uploadDirectory . '/' . $filename;
+    $publicPath = 'uploads/comment_attachments/' . $filename;
+
+    if (!move_uploaded_file($tmpPath, $targetPath)) {
+        snapix_send_post_action_error('attachment_save_failed', 500);
+    }
+
+    return [
+        'path' => $publicPath,
+        'type' => $allowedMimeTypes[$mimeType]['type'],
+        'target_path' => $targetPath,
+    ];
+}
+
+ensureCommentAttachmentColumns($pdo);
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -210,14 +306,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($postExists && $action === 'add_comment') {
             $commentText = trim($_POST['comment_text'] ?? '');
-            if ($commentText !== '') {
-                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text) VALUES (:post_id, :user_id, :comment_text)');
+            $attachment = uploadCommentAttachment($_FILES['attachment'] ?? ['error' => UPLOAD_ERR_NO_FILE]);
+
+            if ($commentText !== '' || $attachment !== null) {
+                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text, attachment_url, attachment_type) VALUES (:post_id, :user_id, :comment_text, :attachment_url, :attachment_type)');
                 $commentValue = mb_substr($commentText, 0, 1000);
-                $insertCommentStmt->execute([
-                    'post_id' => $postId,
-                    'user_id' => $user['id'],
-                    'comment_text' => $commentValue,
-                ]);
+
+                try {
+                    $insertCommentStmt->execute([
+                        'post_id' => $postId,
+                        'user_id' => $user['id'],
+                        'comment_text' => $commentValue,
+                        'attachment_url' => $attachment['path'] ?? null,
+                        'attachment_type' => $attachment['type'] ?? null,
+                    ]);
+                } catch (Throwable $exception) {
+                    if ($attachment && !empty($attachment['target_path']) && is_file($attachment['target_path'])) {
+                        unlink($attachment['target_path']);
+                    }
+                    throw $exception;
+                }
+
                 $commentId = (int) $pdo->lastInsertId();
                 $commentsPostId = $postId;
                 $ajaxExtra['comment'] = [
@@ -228,8 +337,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'profile_url' => buildProfileUrl((int) $user['id'], (int) $user['id']),
                     'comment_text' => $commentValue,
                     'text' => $commentValue,
-                    'attachment_url' => null,
-                    'attachment_type' => null,
+                    'attachment_url' => $attachment['path'] ?? null,
+                    'attachment_type' => $attachment['type'] ?? null,
                     'created_at' => 'только что',
                 ];
             } elseif ($isAjaxPostAction) {
@@ -478,7 +587,7 @@ if ($allProfilePosts) {
     $placeholders = implode(',', array_fill(0, count($postIds), '?'));
 
     $commentsStmt = $pdo->prepare("
-        SELECT comments.id, comments.post_id, comments.comment_text, comments.created_at, users.id AS user_id, users.login, users.avatar
+        SELECT comments.id, comments.post_id, comments.comment_text, comments.attachment_url, comments.attachment_type, comments.created_at, users.id AS user_id, users.login, users.avatar
         FROM comments
         INNER JOIN users ON users.id = comments.user_id
         WHERE comments.is_deleted = 0
@@ -503,8 +612,8 @@ if ($allProfilePosts) {
             'profile_url' => buildProfileUrl((int) $comment['user_id'], (int) $user['id']),
             'comment_text' => (string) $comment['comment_text'],
             'text' => (string) $comment['comment_text'],
-            'attachment_url' => null,
-            'attachment_type' => null,
+            'attachment_url' => (string) ($comment['attachment_url'] ?? ''),
+            'attachment_type' => (string) ($comment['attachment_type'] ?? ''),
             'created_at' => !empty($comment['created_at']) ? date('d.m.Y H:i', strtotime((string) $comment['created_at'])) : '',
         ];
     }
@@ -1421,7 +1530,7 @@ $showFollowingPanel = $panel === 'following';
             window.snapixGetViewerAttachment = () => {
                 if (!selectedAttachmentFile) return null;
                 return {
-                    attachment_url: URL.createObjectURL(selectedAttachmentFile),
+                    file: selectedAttachmentFile,
                     attachment_type: selectedAttachmentType
                 };
             };
@@ -1810,17 +1919,31 @@ $showFollowingPanel = $panel === 'following';
             var postIdInput = viewerCommentForm.querySelector('input[name="post_id"]');
             var postId = postIdInput ? postIdInput.value : '';
             var text = input ? input.value.trim() : '';
-            if (!postId || !text) return;
-
             var pendingAttachment = window.snapixGetViewerAttachment ? window.snapixGetViewerAttachment() : null;
+            if (!postId || (!text && !pendingAttachment)) return;
 
-            sendPostAction(postId, 'add_comment', {comment_text: text})
+            var formData = new FormData();
+            formData.set('action', 'add_comment');
+            formData.set('post_id', postId);
+            formData.set('comment_text', text);
+            if (pendingAttachment && pendingAttachment.file) {
+                formData.set('attachment', pendingAttachment.file, pendingAttachment.file.name);
+            }
+
+            fetch(window.location.pathname || 'profile.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+                .then(function (response) {
+                    return response.json();
+                })
                 .then(function (data) {
                     if (!data || !data.ok) return;
-                    if (pendingAttachment && data.comment) {
-                        data.comment.attachment_url = pendingAttachment.attachment_url;
-                        data.comment.attachment_type = pendingAttachment.attachment_type;
-                    }
                     if (data.comment) {
                         window.snapixProfileComments = window.snapixProfileComments || {};
                         window.snapixProfileComments[String(postId)] = window.snapixProfileComments[String(postId)] || [];
