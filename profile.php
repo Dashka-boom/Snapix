@@ -305,11 +305,12 @@ if (!in_array($panel, $allowedPanels, true)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'modal_follow_author'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_comment', 'edit_comment', 'report_comment', 'toggle_comment_like', 'add_repost', 'modal_follow_author'], true);
     $ajaxExtra = [];
     $postId = (int) ($_POST['post_id'] ?? 0);
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
     $postExists = false;
+    $postOwnerId = 0;
     $requestId = (int) ($_POST['request_id'] ?? 0);
     $redirectPanel = $_POST['redirect_panel'] ?? $panel;
 
@@ -356,6 +357,176 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'show_panel' && in_array($redirectPanel, $allowedPanels, true)) {
         header('Location: profile.php?panel=' . $redirectPanel . '#connections-panel');
+        exit;
+    }
+
+    if ($action === 'delete_comment') {
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        if ($commentId <= 0) {
+            snapix_send_post_action_error('invalid_comment', 422);
+        }
+
+        $commentStmt = $pdo->prepare('SELECT comments.id, comments.post_id, comments.user_id, comments.attachment_url, posts.user_id AS post_owner_id FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id LIMIT 1');
+        $commentStmt->execute(['id' => $commentId]);
+        $comment = $commentStmt->fetch();
+        if (!$comment) {
+            snapix_send_post_action_error('comment_not_found', 404);
+        }
+
+        $canModerateComments = in_array((string) ($user['role'] ?? ''), ['admin', 'moderator'], true);
+        $isPostOwner = (int) ($comment['post_owner_id'] ?? 0) === (int) $user['id'];
+        if ((int) $comment['user_id'] !== (int) $user['id'] && !$isPostOwner && !$canModerateComments) {
+            snapix_send_post_action_error('comment_delete_forbidden', 403);
+        }
+
+        $deleteCommentStmt = $pdo->prepare('DELETE FROM comments WHERE id = :id LIMIT 1');
+        $deleteCommentStmt->execute(['id' => $commentId]);
+
+        $attachmentUrl = (string) ($comment['attachment_url'] ?? '');
+        if ($attachmentUrl !== '' && str_starts_with($attachmentUrl, 'uploads/comment_attachments/')) {
+            $attachmentPath = __DIR__ . '/' . $attachmentUrl;
+            if (is_file($attachmentPath)) {
+                unlink($attachmentPath);
+            }
+        }
+
+        if ($isAjaxPostAction) {
+            snapix_send_post_action_json($pdo, (int) $comment['post_id'], (int) $user['id'], [
+                'deleted_comment_id' => $commentId,
+            ]);
+        }
+
+        header('Location: profile.php');
+        exit;
+    }
+
+
+    if ($action === 'report_comment') {
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        $reportReason = trim((string) ($_POST['reason'] ?? ''));
+        $allowedReasons = ['Спам', 'Оскорбления или ненависть', 'Насилие', 'Ложная информация', 'Нежелательный контент', 'Нарушение авторских прав', 'Другое'];
+        if ($commentId <= 0) {
+            snapix_send_post_action_error('invalid_comment', 422);
+        }
+        if (!in_array($reportReason, $allowedReasons, true)) {
+            snapix_send_post_action_error('invalid_report_reason', 422);
+        }
+
+        $commentStmt = $pdo->prepare("SELECT comments.id, comments.user_id, comments.post_id FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id AND comments.is_deleted = 0 AND comments.status = 'published' LIMIT 1");
+        $commentStmt->execute(['id' => $commentId]);
+        $comment = $commentStmt->fetch();
+        if (!$comment) {
+            snapix_send_post_action_error('comment_not_found', 404);
+        }
+        if ((int) $comment['user_id'] === (int) $user['id']) {
+            snapix_send_post_action_error('own_comment_report_forbidden', 403);
+        }
+
+        $duplicateReportStmt = $pdo->prepare('SELECT id FROM moderation_reports WHERE reporter_user_id = :reporter_user_id AND target_comment_id = :target_comment_id LIMIT 1');
+        $duplicateReportStmt->execute([
+            'reporter_user_id' => $user['id'],
+            'target_comment_id' => $commentId,
+        ]);
+        if ($duplicateReportStmt->fetchColumn()) {
+            snapix_send_post_action_error('duplicate_comment_report', 409);
+        }
+
+        $insertReportStmt = $pdo->prepare('INSERT INTO moderation_reports (reporter_user_id, target_user_id, target_comment_id, reason_text) VALUES (:reporter_user_id, :target_user_id, :target_comment_id, :reason_text)');
+        $insertReportStmt->execute([
+            'reporter_user_id' => $user['id'],
+            'target_user_id' => (int) $comment['user_id'],
+            'target_comment_id' => $commentId,
+            'reason_text' => mb_substr($reportReason, 0, 1000),
+        ]);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'comment_id' => $commentId,
+            'message' => 'Жалоба отправлена',
+        ]);
+        exit;
+    }
+
+    if ($action === 'edit_comment') {
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        $commentText = trim($_POST['comment_text'] ?? '');
+        if ($commentId <= 0) {
+            snapix_send_post_action_error('invalid_comment', 422);
+        }
+        if ($commentText === '') {
+            snapix_send_post_action_error('empty_comment', 422);
+        }
+
+        $commentStmt = $pdo->prepare("SELECT id, post_id, user_id FROM comments WHERE id = :id AND is_deleted = 0 AND status = 'published' LIMIT 1");
+        $commentStmt->execute(['id' => $commentId]);
+        $comment = $commentStmt->fetch();
+        if (!$comment) {
+            snapix_send_post_action_error('comment_not_found', 404);
+        }
+        if ((int) $comment['user_id'] !== (int) $user['id']) {
+            snapix_send_post_action_error('comment_edit_forbidden', 403);
+        }
+
+        $commentValue = mb_substr($commentText, 0, 1000);
+        $updateCommentStmt = $pdo->prepare('UPDATE comments SET comment_text = :comment_text WHERE id = :id AND user_id = :user_id LIMIT 1');
+        $updateCommentStmt->execute([
+            'comment_text' => $commentValue,
+            'id' => $commentId,
+            'user_id' => $user['id'],
+        ]);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'comment_id' => $commentId,
+            'post_id' => (int) $comment['post_id'],
+            'comment_text' => $commentValue,
+            'text' => $commentValue,
+        ]);
+        exit;
+    }
+
+    if ($action === 'toggle_comment_like') {
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        if ($commentId <= 0) {
+            snapix_send_post_action_error('invalid_comment', 422);
+        }
+
+        $commentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND is_deleted = 0 AND status = 'published' LIMIT 1");
+        $commentStmt->execute(['id' => $commentId]);
+        if (!$commentStmt->fetchColumn()) {
+            snapix_send_post_action_error('comment_not_found', 404);
+        }
+
+        $likeStmt = $pdo->prepare('SELECT id FROM comment_likes WHERE comment_id = :comment_id AND user_id = :user_id LIMIT 1');
+        $likeStmt->execute([
+            'comment_id' => $commentId,
+            'user_id' => $user['id'],
+        ]);
+        $likeId = $likeStmt->fetchColumn();
+
+        if ($likeId) {
+            $pdo->prepare('DELETE FROM comment_likes WHERE id = :id')->execute(['id' => $likeId]);
+            $liked = false;
+        } else {
+            $pdo->prepare('INSERT INTO comment_likes (comment_id, user_id) VALUES (:comment_id, :user_id)')->execute([
+                'comment_id' => $commentId,
+                'user_id' => $user['id'],
+            ]);
+            $liked = true;
+        }
+
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM comment_likes WHERE comment_id = :comment_id');
+        $countStmt->execute(['comment_id' => $commentId]);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'comment_id' => $commentId,
+            'liked' => $liked,
+            'comment_likes_count' => (int) $countStmt->fetchColumn(),
+        ]);
         exit;
     }
 
@@ -413,9 +584,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($postId > 0) {
-        $postExistsStmt = $pdo->prepare('SELECT id FROM posts WHERE id = :id AND is_deleted = 0');
+        $postExistsStmt = $pdo->prepare('SELECT id, user_id FROM posts WHERE id = :id AND is_deleted = 0');
         $postExistsStmt->execute(['id' => $postId]);
-        $postExists = (bool) $postExistsStmt->fetchColumn();
+        $postRow = $postExistsStmt->fetch();
+        $postExists = (bool) $postRow;
+        $postOwnerId = $postExists ? (int) $postRow['user_id'] : 0;
 
         if ($postExists && $action === 'toggle_like') {
             $likeExistsStmt = $pdo->prepare('SELECT id FROM likes WHERE user_id = :user_id AND post_id = :post_id');
@@ -776,12 +949,14 @@ if ($allProfilePosts) {
         SELECT comments.id, comments.post_id, comments.comment_text, comments.attachment_url, comments.attachment_type, comments.created_at, users.id AS user_id, users.login, users.avatar
         FROM comments
         INNER JOIN users ON users.id = comments.user_id
+        INNER JOIN posts comment_posts ON comment_posts.id = comments.post_id
         WHERE comments.is_deleted = 0
           AND comments.status = 'published'
           AND comments.post_id IN ($placeholders)
         ORDER BY comments.post_id ASC, comments.created_at DESC, comments.id DESC
     ");
-    $commentsStmt->execute($postIds);
+    $commentsParams = array_merge([(int) $user['id']], $postIds);
+    $commentsStmt->execute($commentsParams);
     foreach ($commentsStmt->fetchAll() as $comment) {
         $currentPostId = (int) $comment['post_id'];
         if (!isset($commentMap[$currentPostId])) {
@@ -1418,6 +1593,7 @@ $showFollowingPanel = $panel === 'following';
             </aside>
         </div>
     </div>
+
 
     <div class="share-modal" id="share-post-modal">
         <div class="share-modal-overlay js-close-share-modal"></div>
