@@ -5835,36 +5835,32 @@ body.light-theme .profile-viewer-comment-date {
     margin-bottom: 0;
 }
 
-.profile-viewer-comment-reply {
+.profile-viewer-comment-reply,
+.profile-viewer-comment-reply:hover,
+.profile-viewer-comment-reply:focus-visible {
     min-height: 20px;
     padding: 0;
     border: 0 !important;
     background: transparent !important;
-    color: rgba(255,255,255,.55);
+    color: rgba(255,255,255,.5) !important;
     box-shadow: none !important;
     cursor: pointer;
+    filter: none !important;
     font: inherit;
     font-size: 12px;
     line-height: 1;
-}
-
-.profile-viewer-comment-reply:hover,
-.profile-viewer-comment-reply:focus-visible {
-    color: #68C5DB;
     outline: none;
+    transform: none !important;
 }
 
 body.light-theme .profile-viewer-comment-replies {
     border-left-color: rgba(4,6,7,.12);
 }
 
-body.light-theme .profile-viewer-comment-reply {
-    color: rgba(4,6,7,.55);
-}
-
+body.light-theme .profile-viewer-comment-reply,
 body.light-theme .profile-viewer-comment-reply:hover,
 body.light-theme .profile-viewer-comment-reply:focus-visible {
-    color: #2ca9c2;
+    color: rgba(4,6,7,.45) !important;
 }
 
 .profile-post-viewer-moderation-message {
@@ -5948,31 +5944,38 @@ body.light-theme .profile-viewer-comment-menu-panel {
     box-shadow: 0 12px 28px rgba(4,6,7,.14);
 }
 
-.profile-viewer-comment-like {
+.profile-viewer-comment-like,
+.profile-viewer-comment-like:hover,
+.profile-viewer-comment-like:focus-visible {
     min-height: 20px;
     padding: 0;
     border: 0 !important;
     background: transparent !important;
-    color: rgba(255,255,255,.55);
+    color: rgba(255,255,255,.55) !important;
     box-shadow: none !important;
     display: inline-flex;
     align-items: center;
     gap: 4px;
     cursor: pointer;
+    filter: none !important;
     font: inherit;
     font-size: 12px;
     line-height: 1;
+    outline: none;
+    transform: none !important;
 }
 
 .profile-viewer-comment-like img {
     width: 15px;
     height: 15px;
     object-fit: contain;
-    transition: filter .18s ease, transform .18s ease;
+    transition: none;
 }
 
-.profile-viewer-comment-like.is-active {
-    color: #ef4444;
+.profile-viewer-comment-like.is-active,
+.profile-viewer-comment-like.is-active:hover,
+.profile-viewer-comment-like.is-active:focus-visible {
+    color: #ef4444 !important;
 }
 
 .profile-viewer-comment-like.is-active img {
@@ -5980,13 +5983,17 @@ body.light-theme .profile-viewer-comment-menu-panel {
 }
 
 .profile-viewer-comment-like:active img {
-    transform: scale(.9);
+    transform: none;
 }
 
-body.light-theme .profile-viewer-comment-like {
-    color: rgba(4,6,7,.55);
+body.light-theme .profile-viewer-comment-like,
+body.light-theme .profile-viewer-comment-like:hover,
+body.light-theme .profile-viewer-comment-like:focus-visible {
+    color: rgba(4,6,7,.55) !important;
 }
 
-body.light-theme .profile-viewer-comment-like.is-active {
-    color: #ef4444;
+body.light-theme .profile-viewer-comment-like.is-active,
+body.light-theme .profile-viewer-comment-like.is-active:hover,
+body.light-theme .profile-viewer-comment-like.is-active:focus-visible {
+    color: #ef4444 !important;
 }
