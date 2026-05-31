@@ -84,4 +84,11 @@ try {
 
 $pdo->prepare('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = :chat_id')->execute(['chat_id' => $chatId]);
 
-echo json_encode(['ok' => true]);
+$sharesCountStmt = $pdo->prepare('SELECT COUNT(*) FROM messages WHERE post_id = :post_id');
+$sharesCountStmt->execute(['post_id' => (int) $post['id']]);
+
+echo json_encode([
+    'ok' => true,
+    'post_id' => (int) $post['id'],
+    'shares_count' => (int) $sharesCountStmt->fetchColumn(),
+]);
