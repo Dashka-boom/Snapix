@@ -5901,17 +5901,30 @@ body.light-theme .profile-viewer-comment-reply:focus-visible {
     margin-left: auto;
 }
 
-.profile-viewer-comment-menu-toggle {
+.profile-viewer-comment-menu-toggle,
+.profile-viewer-comment-menu-toggle:hover,
+.profile-viewer-comment-menu-toggle:focus-visible,
+.profile-viewer-comment-menu-toggle:active {
     width: 24px;
     height: 20px;
     min-height: 20px;
     padding: 0;
     border: 0 !important;
     background: transparent !important;
-    color: inherit;
+    color: rgba(255,255,255,.5) !important;
     box-shadow: none !important;
     cursor: pointer;
+    filter: none !important;
     line-height: 1;
+    outline: none;
+    transform: none !important;
+}
+
+body.light-theme .profile-viewer-comment-menu-toggle,
+body.light-theme .profile-viewer-comment-menu-toggle:hover,
+body.light-theme .profile-viewer-comment-menu-toggle:focus-visible,
+body.light-theme .profile-viewer-comment-menu-toggle:active {
+    color: rgba(4,6,7,.45) !important;
 }
 
 .profile-viewer-comment-menu-panel {
