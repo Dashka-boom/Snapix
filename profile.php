@@ -955,7 +955,7 @@ if ($allProfilePosts) {
           AND comments.post_id IN ($placeholders)
         ORDER BY comments.post_id ASC, comments.created_at DESC, comments.id DESC
     ");
-    $commentsParams = array_merge([(int) $user['id']], $postIds);
+    $commentsParams = $postIds;
     $commentsStmt->execute($commentsParams);
     foreach ($commentsStmt->fetchAll() as $comment) {
         $currentPostId = (int) $comment['post_id'];
@@ -2416,3 +2416,4 @@ document.addEventListener('click', (event) => {
     </script>
 </body>
 </html>
+
