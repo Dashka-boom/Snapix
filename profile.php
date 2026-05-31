@@ -54,30 +54,6 @@ function ensureCommentModerationStorage(PDO $pdo): void
         }
     }
 
-    try {
-        $pdo->exec('ALTER TABLE comments ADD COLUMN parent_comment_id BIGINT UNSIGNED NULL AFTER post_id');
-    } catch (PDOException $exception) {
-        if (($exception->errorInfo[1] ?? null) !== 1060) {
-            throw $exception;
-        }
-    }
-
-    try {
-        $pdo->exec('ALTER TABLE comments ADD KEY idx_comments_parent (parent_comment_id)');
-    } catch (PDOException $exception) {
-        if (!in_array(($exception->errorInfo[1] ?? null), [1061, 1060], true)) {
-            throw $exception;
-        }
-    }
-
-    try {
-        $pdo->exec('ALTER TABLE comments ADD CONSTRAINT fk_comments_parent FOREIGN KEY (parent_comment_id) REFERENCES comments(id) ON DELETE CASCADE');
-    } catch (PDOException $exception) {
-        if (!in_array(($exception->errorInfo[1] ?? null), [1005, 1215, 1826], true)) {
-            throw $exception;
-        }
-    }
-
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS moderation_queue (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -91,20 +67,6 @@ function ensureCommentModerationStorage(PDO $pdo): void
             KEY idx_moderation_queue_comment (comment_id),
             KEY idx_moderation_queue_status (status, created_at),
             CONSTRAINT fk_moderation_queue_comment FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-    ");
-
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS comment_likes (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            comment_id BIGINT UNSIGNED NOT NULL,
-            user_id BIGINT UNSIGNED NOT NULL,
-            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            UNIQUE KEY uq_comment_likes_comment_user (comment_id, user_id),
-            KEY idx_comment_likes_user (user_id),
-            CONSTRAINT fk_comment_likes_comment FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE,
-            CONSTRAINT fk_comment_likes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     ");
 }
@@ -148,7 +110,7 @@ function moderateCommentText(string $text): array
     $rejectedPatterns = [
         '/\b(?:fuck|shit|bitch|asshole)\b/iu',
         '/(?:сука|бляд|хуй|пизд|еба|ёба|мудак|долбоеб|долбоёб)/iu',
-        '/(?:убей\s+себя|убейся|сдохни|ненавижу\s+тебя)/iu',
+        '/(?:убей\s+себя|сдохни|ненавижу\s+тебя)/iu',
     ];
 
     foreach ($rejectedPatterns as $pattern) {
@@ -674,25 +636,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($postExists && $action === 'add_comment') {
             $commentText = trim($_POST['comment_text'] ?? '');
-            $parentCommentId = max(0, (int) ($_POST['parent_comment_id'] ?? 0));
             $attachment = uploadCommentAttachment($_FILES['attachment'] ?? ['error' => UPLOAD_ERR_NO_FILE]);
-
-            if ($parentCommentId > 0) {
-                $parentCommentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND post_id = :post_id AND is_deleted = 0 AND status = 'published' LIMIT 1");
-                $parentCommentStmt->execute([
-                    'id' => $parentCommentId,
-                    'post_id' => $postId,
-                ]);
-                if (!$parentCommentStmt->fetchColumn()) {
-                    if ($attachment && !empty($attachment['target_path']) && is_file($attachment['target_path'])) {
-                        unlink($attachment['target_path']);
-                    }
-                    if ($isAjaxPostAction) {
-                        snapix_send_post_action_error('invalid_parent_comment');
-                    }
-                    $parentCommentId = 0;
-                }
-            }
 
             if ($commentText !== '' || $attachment !== null) {
                 $commentValue = mb_substr($commentText, 0, 1000);
@@ -713,12 +657,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $attachment['target_path'] = null;
                 }
 
-                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, parent_comment_id, user_id, comment_text, attachment_url, attachment_type, status) VALUES (:post_id, :parent_comment_id, :user_id, :comment_text, :attachment_url, :attachment_type, :status)');
+                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text, attachment_url, attachment_type, status) VALUES (:post_id, :user_id, :comment_text, :attachment_url, :attachment_type, :status)');
 
                 try {
                     $insertCommentStmt->execute([
                         'post_id' => $postId,
-                        'parent_comment_id' => $parentCommentId > 0 ? $parentCommentId : null,
                         'user_id' => $user['id'],
                         'comment_text' => $commentValue,
                         'attachment_url' => $commentStatus === 'rejected' ? null : ($attachment['path'] ?? null),
@@ -746,9 +689,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ajaxExtra['moderation_message'] = moderationMessage($commentStatus);
                 $ajaxExtra['comment'] = $commentStatus === 'published' ? [
                     'comment_id' => $commentId,
-                    'post_id' => $postId,
-                    'post_owner_id' => $postOwnerId,
-                    'parent_comment_id' => $parentCommentId,
                     'user_id' => (int) $user['id'],
                     'login' => (string) $user['login'],
                     'avatar_url' => (string) ($user['avatar'] ?? ''),
@@ -759,8 +699,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'attachment_type' => $attachment['type'] ?? null,
                     'created_at' => 'только что',
                     'status' => $commentStatus,
-                    'likes_count' => 0,
-                    'is_liked' => false,
                 ] : null;
             } elseif ($isAjaxPostAction) {
                 snapix_send_post_action_error('empty_comment');
@@ -1008,9 +946,7 @@ if ($allProfilePosts) {
     $placeholders = implode(',', array_fill(0, count($postIds), '?'));
 
     $commentsStmt = $pdo->prepare("
-        SELECT comments.id, comments.post_id, comment_posts.user_id AS post_owner_id, comments.parent_comment_id, comments.comment_text, comments.attachment_url, comments.attachment_type, comments.created_at, users.id AS user_id, users.login, users.avatar,
-               (SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.id) AS likes_count,
-               (SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.id AND comment_likes.user_id = ?) AS is_liked
+        SELECT comments.id, comments.post_id, comments.comment_text, comments.attachment_url, comments.attachment_type, comments.created_at, users.id AS user_id, users.login, users.avatar
         FROM comments
         INNER JOIN users ON users.id = comments.user_id
         INNER JOIN posts comment_posts ON comment_posts.id = comments.post_id
@@ -1032,9 +968,6 @@ if ($allProfilePosts) {
         }
         $viewerCommentMap[$currentPostId][] = [
             'comment_id' => (int) $comment['id'],
-            'post_id' => $currentPostId,
-            'post_owner_id' => (int) ($comment['post_owner_id'] ?? 0),
-            'parent_comment_id' => (int) ($comment['parent_comment_id'] ?? 0),
             'user_id' => (int) $comment['user_id'],
             'login' => (string) $comment['login'],
             'avatar_url' => (string) ($comment['avatar'] ?? ''),
@@ -1045,8 +978,6 @@ if ($allProfilePosts) {
             'attachment_type' => (string) ($comment['attachment_type'] ?? ''),
             'created_at' => !empty($comment['created_at']) ? date('d.m.Y H:i', strtotime((string) $comment['created_at'])) : '',
             'status' => 'published',
-            'likes_count' => (int) ($comment['likes_count'] ?? 0),
-            'is_liked' => (int) ($comment['is_liked'] ?? 0) > 0,
         ];
     }
 
@@ -1283,7 +1214,7 @@ $showFollowingPanel = $panel === 'following';
                     <?php foreach ($posts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                        <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? $user['login'])); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['author_avatar'] ?? $user['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>">
+                        <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? $user['login'])); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['author_avatar'] ?? $user['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>">
                             <span class="post-type-badge" aria-hidden="true">
                                 <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
                             </span>
@@ -1393,7 +1324,7 @@ $showFollowingPanel = $panel === 'following';
                     <?php foreach ($repostedPosts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                        <article class="post-card" id="repost-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? $user['login'])); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['author_avatar'] ?? $user['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>">
+                        <article class="post-card" id="repost-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? $user['login'])); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['author_avatar'] ?? $user['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>">
                             <span class="post-type-badge" aria-hidden="true">
                                 <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
                             </span>
@@ -1495,7 +1426,7 @@ $showFollowingPanel = $panel === 'following';
                     <?php foreach ($savedPosts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                        <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? $user['login'])); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['author_avatar'] ?? $user['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>">
+                        <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? $user['login'])); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['author_avatar'] ?? $user['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>">
                             <span class="post-type-badge" aria-hidden="true">
                                 <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
                             </span>
@@ -1638,7 +1569,6 @@ $showFollowingPanel = $panel === 'following';
                 <form method="post" class="profile-post-viewer-input-row" id="profilePostViewerCommentForm">
                     <input type="hidden" name="action" value="add_comment">
                     <input type="hidden" name="post_id" value="">
-                    <input type="hidden" name="parent_comment_id" value="">
                     <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerAttachmentButton" aria-label="Прикрепить фото"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
                     <input class="profile-post-viewer-file-input" id="profilePostViewerAttachmentInput" type="file" accept="image/gif,image/jpeg,image/png,image/webp" hidden>
                     <div class="profile-post-viewer-emoji-wrap">
@@ -1697,7 +1627,6 @@ $showFollowingPanel = $panel === 'following';
     <script src="js/post-sync.js"></script>
 <script>
         window.snapixProfileComments = <?php echo json_encode($viewerCommentMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
-        window.snapixCurrentUser = <?php echo json_encode(['id' => (int) $user['id'], 'role' => (string) ($user['role'] ?? 'user')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
         (() => {
             const bell = document.querySelector('[data-notification-toggle]');
             const popover = document.getElementById('notificationPopover');
@@ -1717,76 +1646,6 @@ $showFollowingPanel = $panel === 'following';
         })();
 
         (() => {
-            function canEditComment(comment) {
-                var currentUser = window.snapixCurrentUser || {};
-                return Number(comment.user_id || 0) === Number(currentUser.id || 0);
-            }
-
-            function isOwnComment(comment) {
-                var currentUser = window.snapixCurrentUser || {};
-                return Number(comment.user_id || 0) === Number(currentUser.id || 0);
-            }
-
-            function canReportComment(comment) {
-                return !isOwnComment(comment);
-            }
-
-            function canDeleteComment(comment) {
-                var currentUser = window.snapixCurrentUser || {};
-                var role = currentUser.role || '';
-                var isPostOwner = Number(comment.post_owner_id || 0) === Number(currentUser.id || 0);
-                return canEditComment(comment) || isPostOwner || role === 'admin' || role === 'moderator';
-            }
-
-            function showEmptyCommentsIfNeeded(commentsHost) {
-                if (!commentsHost || commentsHost.querySelector('.profile-viewer-comment')) return;
-                commentsHost.classList.remove('has-comments');
-                commentsHost.innerHTML = '<p class="profile-post-viewer-empty">Комментариев нет</p>';
-            }
-
-            function removeCommentFromCache(postId, commentId) {
-                var key = String(postId || '');
-                var comments = (window.snapixProfileComments || {})[key] || [];
-                var idsToRemove = [Number(commentId || 0)];
-                var changed = true;
-                while (changed) {
-                    changed = false;
-                    comments.forEach(function (comment) {
-                        var currentId = Number(comment.comment_id || 0);
-                        var parentId = Number(comment.parent_comment_id || 0);
-                        if (idsToRemove.indexOf(parentId) !== -1 && idsToRemove.indexOf(currentId) === -1) {
-                            idsToRemove.push(currentId);
-                            changed = true;
-                        }
-                    });
-                }
-                window.snapixProfileComments[key] = comments.filter(function (comment) {
-                    return idsToRemove.indexOf(Number(comment.comment_id || 0)) === -1;
-                });
-            }
-
-            function updateCommentLikeCache(commentId, isLiked, likesCount) {
-                Object.keys(window.snapixProfileComments || {}).forEach(function (postId) {
-                    (window.snapixProfileComments[postId] || []).forEach(function (comment) {
-                        if (Number(comment.comment_id || 0) === Number(commentId || 0)) {
-                            comment.is_liked = !!isLiked;
-                            comment.likes_count = Number(likesCount || 0);
-                        }
-                    });
-                });
-            }
-
-            function updateCommentTextCache(commentId, commentText) {
-                Object.keys(window.snapixProfileComments || {}).forEach(function (postId) {
-                    (window.snapixProfileComments[postId] || []).forEach(function (comment) {
-                        if (Number(comment.comment_id || 0) === Number(commentId || 0)) {
-                            comment.comment_text = commentText;
-                            comment.text = commentText;
-                        }
-                    });
-                });
-            }
-
             function buildAvatar(comment) {
                 var avatar = document.createElement('a');
                 avatar.className = 'profile-viewer-comment-avatar';
@@ -1801,12 +1660,9 @@ $showFollowingPanel = $panel === 'following';
                 return avatar;
             }
 
-            function buildViewerComment(comment, repliesByParent) {
+            function buildViewerComment(comment) {
                 var item = document.createElement('div');
                 item.className = 'profile-viewer-comment';
-                item.dataset.commentId = String(comment.comment_id || '');
-                item.dataset.postId = String(comment.post_id || '');
-                item.dataset.parentCommentId = String(comment.parent_comment_id || '');
 
                 item.appendChild(buildAvatar(comment));
 
@@ -1823,7 +1679,6 @@ $showFollowingPanel = $panel === 'following';
                 if (commentText) {
                     var text = document.createElement('div');
                     text.className = 'profile-viewer-comment-text';
-                    text.dataset.commentText = '1';
                     text.textContent = commentText;
                     body.appendChild(text);
                 }
@@ -1841,108 +1696,13 @@ $showFollowingPanel = $panel === 'following';
                     body.appendChild(attachment);
                 }
 
-                var meta = document.createElement('div');
-                meta.className = 'profile-viewer-comment-meta';
-
                 var date = document.createElement('span');
                 date.className = 'profile-viewer-comment-date';
                 date.textContent = comment.created_at || 'только что';
-                meta.appendChild(date);
-
-                var replyButton = document.createElement('button');
-                replyButton.type = 'button';
-                replyButton.className = 'profile-viewer-comment-reply';
-                replyButton.dataset.replyLogin = comment.login || '';
-                replyButton.textContent = 'Ответить';
-                meta.appendChild(replyButton);
-
-                var likeButton = document.createElement('button');
-                likeButton.type = 'button';
-                likeButton.className = 'profile-viewer-comment-like' + (comment.is_liked ? ' is-active' : '');
-                likeButton.setAttribute('aria-label', 'Лайк комментария');
-                likeButton.innerHTML = '<img src="icon/dark theme/like.png" alt=""><span data-comment-like-count></span>';
-                var likeCount = likeButton.querySelector('[data-comment-like-count]');
-                likeCount.textContent = String(Number(comment.likes_count || 0));
-                meta.appendChild(likeButton);
-
-                if (canDeleteComment(comment) || canEditComment(comment) || canReportComment(comment)) {
-                    var menu = document.createElement('div');
-                    menu.className = 'profile-viewer-comment-menu';
-
-                    var toggle = document.createElement('button');
-                    toggle.type = 'button';
-                    toggle.className = 'profile-viewer-comment-menu-toggle';
-                    toggle.setAttribute('aria-label', 'Действия с комментарием');
-                    toggle.textContent = '⋯';
-                    menu.appendChild(toggle);
-
-                    var panel = document.createElement('div');
-                    panel.className = 'profile-viewer-comment-menu-panel';
-
-                    if (canEditComment(comment)) {
-                        var editButton = document.createElement('button');
-                        editButton.type = 'button';
-                        editButton.className = 'profile-viewer-comment-edit';
-                        editButton.textContent = 'Редактировать';
-                        panel.appendChild(editButton);
-                    }
-
-                    if (canDeleteComment(comment)) {
-                        var deleteButton = document.createElement('button');
-                        deleteButton.type = 'button';
-                        deleteButton.className = 'profile-viewer-comment-delete';
-                        deleteButton.textContent = 'Удалить комментарий';
-                        panel.appendChild(deleteButton);
-                    }
-
-                    if (canReportComment(comment)) {
-                        var reportButton = document.createElement('button');
-                        reportButton.type = 'button';
-                        reportButton.className = 'profile-viewer-comment-report';
-                        reportButton.dataset.reportLogin = comment.login || '';
-                        reportButton.dataset.reportUserId = String(comment.user_id || '');
-                        reportButton.textContent = 'Пожаловаться';
-                        panel.appendChild(reportButton);
-                    }
-
-                    menu.appendChild(panel);
-                    meta.appendChild(menu);
-                }
-
-                body.appendChild(meta);
+                body.appendChild(date);
 
                 item.appendChild(body);
-
-                var replies = repliesByParent ? (repliesByParent[String(comment.comment_id || '')] || []) : [];
-                if (replies.length) {
-                    var repliesWrap = document.createElement('div');
-                    repliesWrap.className = 'profile-viewer-comment-replies';
-                    replies.forEach(function (reply) {
-                        repliesWrap.appendChild(buildViewerComment(reply, repliesByParent));
-                    });
-                    item.appendChild(repliesWrap);
-                }
-
                 return item;
-            }
-
-            function splitCommentsByParent(comments) {
-                var repliesByParent = {};
-                var ids = {};
-                comments.forEach(function (comment) {
-                    ids[String(comment.comment_id || '')] = true;
-                });
-                var roots = [];
-                comments.forEach(function (comment) {
-                    var parentId = String(comment.parent_comment_id || '');
-                    if (parentId && parentId !== '0' && ids[parentId]) {
-                        repliesByParent[parentId] = repliesByParent[parentId] || [];
-                        repliesByParent[parentId].push(comment);
-                    } else {
-                        roots.push(comment);
-                    }
-                });
-                return {roots: roots, repliesByParent: repliesByParent};
             }
 
             window.snapixAppendViewerComment = function (comment) {
@@ -1952,28 +1712,7 @@ $showFollowingPanel = $panel === 'following';
                 var empty = commentsHost.querySelector('.profile-post-viewer-empty');
                 if (empty) empty.remove();
                 commentsHost.classList.add('has-comments');
-                var parentId = Number(comment.parent_comment_id || 0);
-                if (parentId > 0) {
-                    var parentNode = commentsHost.querySelector('.profile-viewer-comment[data-comment-id="' + String(parentId) + '"]');
-                    if (parentNode) {
-                        var repliesWrap = null;
-                        Array.prototype.forEach.call(parentNode.children, function (child) {
-                            if (child.classList && child.classList.contains('profile-viewer-comment-replies')) {
-                                repliesWrap = child;
-                            }
-                        });
-                        if (!repliesWrap) {
-                            repliesWrap = document.createElement('div');
-                            repliesWrap.className = 'profile-viewer-comment-replies';
-                            parentNode.appendChild(repliesWrap);
-                        }
-                        repliesWrap.appendChild(buildViewerComment(comment));
-                    } else {
-                        commentsHost.appendChild(buildViewerComment(comment));
-                    }
-                } else {
-                    commentsHost.appendChild(buildViewerComment(comment));
-                }
+                commentsHost.appendChild(buildViewerComment(comment));
                 commentsHost.scrollTop = commentsHost.scrollHeight;
             };
 
@@ -1991,212 +1730,10 @@ $showFollowingPanel = $panel === 'following';
                 }
 
                 commentsHost.classList.add('has-comments');
-                var grouped = splitCommentsByParent(comments);
-                grouped.roots.forEach(function (comment) {
-                    commentsHost.appendChild(buildViewerComment(comment, grouped.repliesByParent));
+                comments.forEach(function (comment) {
+                    commentsHost.appendChild(buildViewerComment(comment));
                 });
             };
-
-
-            document.addEventListener('click', function (event) {
-                document.querySelectorAll('.profile-viewer-comment-menu.is-open').forEach(function (menu) {
-                    if (!menu.contains(event.target)) {
-                        menu.classList.remove('is-open');
-                    }
-                });
-
-                var toggle = event.target.closest('.profile-viewer-comment-menu-toggle');
-                if (toggle) {
-                    event.preventDefault();
-                    var menu = toggle.closest('.profile-viewer-comment-menu');
-                    if (menu) menu.classList.toggle('is-open');
-                    return;
-                }
-
-                var replyButton = event.target.closest('.profile-viewer-comment-reply');
-                if (replyButton) {
-                    event.preventDefault();
-                    var replyCommentNode = replyButton.closest('.profile-viewer-comment');
-                    var replyCommentId = replyCommentNode ? replyCommentNode.dataset.commentId : '';
-                    var replyLogin = replyButton.dataset.replyLogin || '';
-                    var form = document.getElementById('profilePostViewerCommentForm');
-                    if (!form || !replyCommentId) return;
-                    var parentInput = form.querySelector('input[name="parent_comment_id"]');
-                    var textInput = form.querySelector('[name="comment_text"]');
-                    if (parentInput) parentInput.value = replyCommentId;
-                    if (textInput) {
-                        var prefix = replyLogin ? '@' + replyLogin + ' ' : '';
-                        if (prefix && textInput.value.indexOf(prefix) !== 0) {
-                            var start = textInput.selectionStart || 0;
-                            var end = textInput.selectionEnd || start;
-                            var value = textInput.value;
-                            textInput.value = value.slice(0, start) + prefix + value.slice(end);
-                            var cursor = start + prefix.length;
-                            textInput.setSelectionRange(cursor, cursor);
-                        }
-                        textInput.focus();
-                    }
-                    return;
-                }
-
-                var likeButton = event.target.closest('.profile-viewer-comment-like');
-                if (likeButton) {
-                    event.preventDefault();
-                    var likeCommentNode = likeButton.closest('.profile-viewer-comment');
-                    var likeCommentId = likeCommentNode ? likeCommentNode.dataset.commentId : '';
-                    if (!likeCommentId) return;
-
-                    var likeParams = new URLSearchParams();
-                    likeParams.set('action', 'toggle_comment_like');
-                    likeParams.set('comment_id', likeCommentId);
-
-                    fetch(window.location.pathname || 'profile.php', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                            'Accept': 'application/json'
-                        },
-                        body: likeParams.toString()
-                    })
-                        .then(function (response) { return response.json(); })
-                        .then(function (data) {
-                            if (!data || !data.ok) return;
-                            likeButton.classList.toggle('is-active', !!data.liked);
-                            var countNode = likeButton.querySelector('[data-comment-like-count]');
-                            if (countNode) countNode.textContent = String(Number(data.comment_likes_count || 0));
-                            updateCommentLikeCache(likeCommentId, data.liked, data.comment_likes_count);
-                        })
-                        .catch(function () {});
-                    return;
-                }
-
-                var reportButton = event.target.closest('.profile-viewer-comment-report');
-                if (reportButton) {
-                    event.preventDefault();
-                    var reportCommentNode = reportButton.closest('.profile-viewer-comment');
-                    var reportCommentId = reportCommentNode ? reportCommentNode.dataset.commentId : '';
-                    var reportLogin = reportButton.dataset.reportLogin || '';
-                    var reportUserId = reportButton.dataset.reportUserId || '';
-                    var openMenu = reportButton.closest('.profile-viewer-comment-menu');
-                    if (openMenu) openMenu.classList.remove('is-open');
-                    if (reportCommentId && window.SnapixReportModal) {
-                        window.SnapixReportModal.open({
-                            login: reportLogin || 'user',
-                            userId: reportUserId || 0,
-                            onSubmit: function (reason, api) {
-                                var params = new URLSearchParams();
-                                params.set('action', 'report_comment');
-                                params.set('comment_id', reportCommentId);
-                                params.set('reason', reason);
-                                fetch(window.location.pathname || 'profile.php', {
-                                    method: 'POST',
-                                    credentials: 'same-origin',
-                                    headers: {
-                                        'X-Requested-With': 'XMLHttpRequest',
-                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                        'Accept': 'application/json'
-                                    },
-                                    body: params.toString()
-                                })
-                                    .then(function (response) { return response.json(); })
-                                    .then(function (data) {
-                                        if (!data || !data.ok) return;
-                                        api.showSuccess();
-                                    })
-                                    .catch(function () {});
-                            }
-                        });
-                    }
-                    return;
-                }
-
-                var editButton = event.target.closest('.profile-viewer-comment-edit');
-                if (editButton) {
-                    event.preventDefault();
-                    var editCommentNode = editButton.closest('.profile-viewer-comment');
-                    var editCommentId = editCommentNode ? editCommentNode.dataset.commentId : '';
-                    var editBody = editCommentNode ? editCommentNode.querySelector('.profile-viewer-comment-body') : null;
-                    var editTextNode = editBody ? editBody.querySelector('[data-comment-text]') : null;
-                    var currentText = editTextNode ? editTextNode.textContent : '';
-                    var nextText = window.prompt('Редактировать комментарий', currentText);
-                    if (nextText === null) return;
-                    nextText = nextText.trim();
-                    if (!editCommentId || !nextText || nextText === currentText.trim()) return;
-
-                    var editParams = new URLSearchParams();
-                    editParams.set('action', 'edit_comment');
-                    editParams.set('comment_id', editCommentId);
-                    editParams.set('comment_text', nextText);
-
-                    fetch(window.location.pathname || 'profile.php', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                            'Accept': 'application/json'
-                        },
-                        body: editParams.toString()
-                    })
-                        .then(function (response) { return response.json(); })
-                        .then(function (data) {
-                            if (!data || !data.ok) return;
-                            var updatedText = data.comment_text || nextText;
-                            if (!editTextNode) {
-                                editTextNode = document.createElement('div');
-                                editTextNode.className = 'profile-viewer-comment-text';
-                                editTextNode.dataset.commentText = '1';
-                                var body = editBody || (editCommentNode ? editCommentNode.querySelector('.profile-viewer-comment-body') : null);
-                                var meta = body ? body.querySelector('.profile-viewer-comment-meta') : null;
-                                if (body) body.insertBefore(editTextNode, meta || null);
-                            }
-                            if (editTextNode) editTextNode.textContent = updatedText;
-                            updateCommentTextCache(editCommentId, updatedText);
-                            var openMenu = editButton.closest('.profile-viewer-comment-menu');
-                            if (openMenu) openMenu.classList.remove('is-open');
-                        })
-                        .catch(function () {});
-                    return;
-                }
-
-                var deleteButton = event.target.closest('.profile-viewer-comment-delete');
-                if (!deleteButton) return;
-
-                event.preventDefault();
-                var commentNode = deleteButton.closest('.profile-viewer-comment');
-                var commentsHost = commentNode ? commentNode.closest('#profilePostViewerComments') : null;
-                var commentId = commentNode ? commentNode.dataset.commentId : '';
-                var postId = commentNode ? (commentNode.dataset.postId || document.getElementById('profilePostViewer')?.dataset.postId || '') : '';
-                if (!commentId || !postId) return;
-
-                var params = new URLSearchParams();
-                params.set('action', 'delete_comment');
-                params.set('comment_id', commentId);
-
-                fetch(window.location.pathname || 'profile.php', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                        'Accept': 'application/json'
-                    },
-                    body: params.toString()
-                })
-                    .then(function (response) { return response.json(); })
-                    .then(function (data) {
-                        if (!data || !data.ok) return;
-                        removeCommentFromCache(postId, commentId);
-                        if (commentNode) commentNode.remove();
-                        showEmptyCommentsIfNeeded(commentsHost);
-                        if (window.snapixSyncPostState) {
-                            window.snapixSyncPostState(postId, data);
-                        }
-                    })
-                    .catch(function () {});
-            });
         })();
 
 
@@ -2246,16 +1783,13 @@ $showFollowingPanel = $panel === 'following';
                     const postId = card.dataset.postId || '';
                     if (window.snapixRenderViewerComments) window.snapixRenderViewerComments(postId);
                     viewer.dataset.postId = postId;
-                    viewer.dataset.postAuthorId = card.dataset.postAuthorId || '';
                     viewer.querySelectorAll('[data-post-action], [data-post-count], .profile-post-viewer-metrics').forEach((node) => {
                         node.setAttribute('data-post-id', postId);
                     });
                     if (commentForm) {
                         const postIdInput = commentForm.querySelector('input[name="post_id"]');
-                        const parentCommentInput = commentForm.querySelector('input[name="parent_comment_id"]');
                         const commentInput = commentForm.querySelector('[name="comment_text"]');
                         if (postIdInput) postIdInput.value = postId;
-                        if (parentCommentInput) parentCommentInput.value = '';
                         if (commentInput) commentInput.value = '';
                         if (window.snapixClearViewerAttachment) window.snapixClearViewerAttachment();
                     }
@@ -2764,9 +2298,7 @@ $showFollowingPanel = $panel === 'following';
             event.preventDefault();
             var input = viewerCommentForm.querySelector('[name="comment_text"]');
             var postIdInput = viewerCommentForm.querySelector('input[name="post_id"]');
-            var parentCommentInput = viewerCommentForm.querySelector('input[name="parent_comment_id"]');
             var postId = postIdInput ? postIdInput.value : '';
-            var parentCommentId = parentCommentInput ? parentCommentInput.value : '';
             var text = input ? input.value.trim() : '';
             var pendingAttachment = window.snapixGetViewerAttachment ? window.snapixGetViewerAttachment() : null;
             if (!postId || (!text && !pendingAttachment)) return;
@@ -2775,9 +2307,6 @@ $showFollowingPanel = $panel === 'following';
             formData.set('action', 'add_comment');
             formData.set('post_id', postId);
             formData.set('comment_text', text);
-            if (parentCommentId) {
-                formData.set('parent_comment_id', parentCommentId);
-            }
             if (pendingAttachment && pendingAttachment.file) {
                 formData.set('attachment', pendingAttachment.file, pendingAttachment.file.name);
             }
@@ -2805,7 +2334,6 @@ $showFollowingPanel = $panel === 'following';
                         window.snapixProfileComments[String(postId)].push(data.comment);
                     }
                     if (input) input.value = '';
-                    if (parentCommentInput) parentCommentInput.value = '';
                     if (window.snapixClearViewerAttachment) window.snapixClearViewerAttachment();
                     if (data.comment) {
                         appendViewerComment(data.comment);
