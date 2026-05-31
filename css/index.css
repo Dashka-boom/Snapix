@@ -5712,3 +5712,37 @@ body.light-theme .profile-post-viewer-attachment-preview button {
     background: rgba(252,251,248,.92) !important;
     color: #040607;
 }
+
+.profile-post-viewer-input-shell textarea.profile-post-viewer-input {
+    resize: none !important;
+    overflow-y: auto !important;
+    line-height: 1.35 !important;
+    padding-top: 16px !important;
+    padding-bottom: 12px !important;
+}
+
+.profile-post-viewer-comments.has-comments {
+    display: block;
+    align-items: initial;
+    justify-content: initial;
+}
+
+.profile-post-viewer-comment-item {
+    margin-bottom: 14px;
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.profile-post-viewer-comment-author {
+    color: inherit;
+    display: inline-block;
+    font-weight: 700;
+    margin-bottom: 4px;
+    text-decoration: none;
+}
+
+.profile-post-viewer-comment-item p {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}

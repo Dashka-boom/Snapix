@@ -1091,7 +1091,7 @@ $showFollowingPanel = $panel === 'following';
                             <button type="button" data-emoji="🎉">🎉</button>
                         </div>
                     </div>
-                    <div class="profile-post-viewer-input-shell" id="profilePostViewerInputShell"><div class="profile-post-viewer-attachment-preview" id="profilePostViewerAttachmentPreview" hidden><img src="" alt="Предпросмотр вложения"><button type="button" id="profilePostViewerAttachmentRemove" aria-label="Удалить вложение">×</button></div><input class="profile-post-viewer-input" name="comment_text" type="text" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
+                    <div class="profile-post-viewer-input-shell" id="profilePostViewerInputShell"><div class="profile-post-viewer-attachment-preview" id="profilePostViewerAttachmentPreview" hidden><img src="" alt="Предпросмотр вложения"><button type="button" id="profilePostViewerAttachmentRemove" aria-label="Удалить вложение">×</button></div><textarea class="profile-post-viewer-input" name="comment_text" rows="1" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"></textarea><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
                 </form>
             </aside>
         </div>
@@ -1157,6 +1157,7 @@ $showFollowingPanel = $panel === 'following';
             const reposts = document.getElementById('viewerRepostsCount');
             const shares = document.getElementById('viewerSharesCount');
             const saves = document.getElementById('viewerSavesCount');
+            const viewerComments = document.getElementById('profilePostViewerComments');
             const commentForm = document.getElementById('profilePostViewerCommentForm');
             if (!viewer || !mediaHost) return;
 
@@ -1189,6 +1190,10 @@ $showFollowingPanel = $panel === 'following';
                     const avatarUrl = card.dataset.postAuthorAvatar || '';
                     avatar.style.backgroundImage = avatarUrl ? `url('${avatarUrl}')` : '';
                     avatar.textContent = avatarUrl ? '' : (login.textContent || '?').slice(0, 1).toUpperCase();
+                    if (viewerComments) {
+                        viewerComments.classList.remove('has-comments');
+                        viewerComments.innerHTML = '<p class="profile-post-viewer-empty">Комментариев нет</p>';
+                    }
                     const postId = card.dataset.postId || '';
                     viewer.dataset.postId = postId;
                     viewer.querySelectorAll('[data-post-action], [data-post-count], .profile-post-viewer-metrics').forEach((node) => {
@@ -1651,7 +1656,46 @@ $showFollowingPanel = $panel === 'following';
     });
 
     var viewerCommentForm = document.getElementById('profilePostViewerCommentForm');
+    function appendViewerComment(comment) {
+        var commentsHost = document.getElementById('profilePostViewerComments');
+        if (!commentsHost || !comment) return;
+
+        var empty = commentsHost.querySelector('.profile-post-viewer-empty');
+        if (empty) empty.remove();
+        commentsHost.classList.add('has-comments');
+
+        var item = document.createElement('div');
+        item.className = 'profile-post-viewer-comment-item';
+
+        var author = document.createElement('a');
+        author.className = 'profile-post-viewer-comment-author';
+        author.href = comment.profile_url || 'profile.php';
+        author.textContent = comment.login || '';
+
+        var text = document.createElement('p');
+        text.textContent = comment.text || '';
+
+        item.appendChild(author);
+        item.appendChild(text);
+        commentsHost.appendChild(item);
+        commentsHost.scrollTop = commentsHost.scrollHeight;
+    }
+
     if (viewerCommentForm) {
+        var viewerCommentInput = viewerCommentForm.querySelector('[name="comment_text"]');
+
+        if (viewerCommentInput) {
+            viewerCommentInput.addEventListener('keydown', function (event) {
+                if (event.key !== 'Enter' || event.shiftKey) return;
+                event.preventDefault();
+                if (viewerCommentForm.requestSubmit) {
+                    viewerCommentForm.requestSubmit();
+                } else {
+                    viewerCommentForm.dispatchEvent(new Event('submit', {cancelable: true}));
+                }
+            });
+        }
+
         viewerCommentForm.addEventListener('submit', function (event) {
             event.preventDefault();
             var input = viewerCommentForm.querySelector('[name="comment_text"]');
@@ -1664,6 +1708,8 @@ $showFollowingPanel = $panel === 'following';
                 .then(function (data) {
                     if (!data || !data.ok) return;
                     if (input) input.value = '';
+                    if (window.snapixClearViewerAttachment) window.snapixClearViewerAttachment();
+                    appendViewerComment(data.comment);
                     syncPostState(postId, data);
                 })
                 .catch(function () {});
