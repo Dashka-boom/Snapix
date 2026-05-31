@@ -5721,6 +5721,20 @@ body.light-theme .profile-post-viewer-attachment-preview button {
     padding-bottom: 12px !important;
 }
 
+
+.profile-post-viewer-comments,
+.profile-post-viewer-input-shell textarea.profile-post-viewer-input {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.profile-post-viewer-comments::-webkit-scrollbar,
+.profile-post-viewer-input-shell textarea.profile-post-viewer-input::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
 .profile-post-viewer-comments.has-comments {
     display: block;
     align-items: initial;
