@@ -34,31 +34,29 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
     $requestsStmt->execute(['user_id' => $userId]);
     $empty['requests'] = $requestsStmt->fetchAll();
 
-    $likesStmt = $pdo->prepare("\n        SELECT likes.id, likes.created_at, users.id AS user_id, users.login, users.avatar\n        FROM likes\n        INNER JOIN posts ON posts.id = likes.post_id\n        INNER JOIN users ON users.id = likes.user_id\n        WHERE posts.user_id = :user_id\n          AND posts.is_deleted = 0\n          AND likes.user_id <> :user_id\n        ORDER BY likes.created_at DESC\n        LIMIT 30\n    ");
-    $likesStmt->execute(['user_id' => $userId]);
-    $empty['likes'] = $likesStmt->fetchAll();
+    $notificationStmt = $pdo->prepare("\n        SELECT\n            user_notifications.id,\n            user_notifications.actor_user_id,\n            user_notifications.notification_type,\n            user_notifications.post_id,\n            user_notifications.comment_id,\n            user_notifications.report_id,\n            user_notifications.title,\n            user_notifications.message,\n            user_notifications.comment_text,\n            user_notifications.report_reason,\n            user_notifications.created_at,\n            actor.id AS user_id,\n            actor.login,\n            actor.avatar,\n            moderation_reports.target_user_id AS reported_user_id,\n            reported_user.login AS reported_login\n        FROM user_notifications\n        LEFT JOIN users AS actor ON actor.id = user_notifications.actor_user_id\n        LEFT JOIN moderation_reports ON moderation_reports.id = user_notifications.report_id\n        LEFT JOIN users AS reported_user ON reported_user.id = moderation_reports.target_user_id\n        WHERE user_notifications.user_id = :user_id\n        ORDER BY user_notifications.created_at DESC, user_notifications.id DESC\n        LIMIT 120\n    ");
+    $notificationStmt->execute(['user_id' => $userId]);
 
-    $commentsStmt = $pdo->prepare("\n        SELECT comments.id, comments.comment_text, comments.created_at, users.id AS user_id, users.login, users.avatar\n        FROM comments\n        INNER JOIN posts ON posts.id = comments.post_id\n        INNER JOIN users ON users.id = comments.user_id\n        WHERE posts.user_id = :user_id\n          AND posts.is_deleted = 0\n          AND comments.is_deleted = 0\n          AND comments.user_id <> :user_id\n        ORDER BY comments.created_at DESC\n        LIMIT 30\n    ");
-    $commentsStmt->execute(['user_id' => $userId]);
-    $empty['comments'] = $commentsStmt->fetchAll();
+    $typeMap = [
+        'post_like' => 'likes',
+        'post_comment' => 'comments',
+        'comment_deleted' => 'comments',
+        'comment_deleted_under_post' => 'comments',
+        'post_repost' => 'reposts',
+        'post_saved' => 'saved',
+        'post_forward' => 'reposts',
+        'report_post' => 'complaints',
+        'report_comment' => 'complaints',
+        'report_user' => 'complaints',
+    ];
 
-    $repostsStmt = $pdo->prepare("\n        SELECT reposts.id, reposts.created_at, users.id AS user_id, users.login, users.avatar\n        FROM reposts\n        INNER JOIN posts ON posts.id = reposts.post_id\n        INNER JOIN users ON users.id = reposts.user_id\n        WHERE posts.user_id = :user_id\n          AND posts.is_deleted = 0\n          AND reposts.user_id <> :user_id\n        ORDER BY reposts.created_at DESC\n        LIMIT 30\n    ");
-    $repostsStmt->execute(['user_id' => $userId]);
-    $empty['reposts'] = $repostsStmt->fetchAll();
-
-    $savedStmt = $pdo->prepare("\n        SELECT saved_posts.id, saved_posts.created_at, users.id AS user_id, users.login, users.avatar\n        FROM saved_posts\n        INNER JOIN posts ON posts.id = saved_posts.post_id\n        INNER JOIN users ON users.id = saved_posts.user_id\n        WHERE posts.user_id = :user_id\n          AND posts.is_deleted = 0\n          AND saved_posts.user_id <> :user_id\n        ORDER BY saved_posts.created_at DESC\n        LIMIT 30\n    ");
-    $savedStmt->execute(['user_id' => $userId]);
-    $empty['saved'] = $savedStmt->fetchAll();
-
-    $complaintsStmt = $pdo->prepare("
-        SELECT user_notifications.id, user_notifications.title, user_notifications.message, user_notifications.created_at
-        FROM user_notifications
-        WHERE user_notifications.user_id = :user_id
-        ORDER BY user_notifications.created_at DESC
-        LIMIT 30
-    ");
-    $complaintsStmt->execute(['user_id' => $userId]);
-    $empty['complaints'] = $complaintsStmt->fetchAll();
+    foreach ($notificationStmt->fetchAll() as $notification) {
+        $type = (string) ($notification['notification_type'] ?? '');
+        $section = $typeMap[$type] ?? 'complaints';
+        if (isset($empty[$section])) {
+            $empty[$section][] = $notification;
+        }
+    }
 
     return $empty;
 }
@@ -100,6 +98,64 @@ function snapix_side_render_avatar(array $item, int $viewerId): void
     <a href="<?php echo htmlspecialchars(snapix_side_profile_url((int) $item['user_id'], $viewerId), ENT_QUOTES); ?>" class="notifications-drawer-avatar" aria-label="Открыть профиль <?php echo htmlspecialchars($login, ENT_QUOTES); ?>"<?php if ($avatar !== ''): ?> style="background-image: url('<?php echo htmlspecialchars($avatar, ENT_QUOTES); ?>');"<?php endif; ?>>
         <?php if ($avatar === ''): ?><?php echo htmlspecialchars(mb_substr($login, 0, 1)); ?><?php endif; ?>
     </a>
+    <?php
+}
+
+
+function snapix_side_notification_date(?string $value): string
+{
+    if (!$value) {
+        return '';
+    }
+
+    $timestamp = strtotime($value);
+    return $timestamp ? date('d.m.Y H:i', $timestamp) : $value;
+}
+
+function snapix_side_render_notification_card(array $item, int $viewerId): void
+{
+    $actorId = (int) ($item['user_id'] ?? 0);
+    $login = (string) ($item['login'] ?? 'Snapix');
+    $avatar = (string) ($item['avatar'] ?? '');
+    $postId = (int) ($item['post_id'] ?? 0);
+    $message = (string) ($item['message'] ?? 'Уведомление');
+    $commentText = trim((string) ($item['comment_text'] ?? ''));
+    $reportReason = trim((string) ($item['report_reason'] ?? ''));
+    $reportedUserId = (int) ($item['reported_user_id'] ?? 0);
+    $reportedLogin = (string) ($item['reported_login'] ?? '');
+    ?>
+    <article class="notifications-drawer-item">
+        <?php if ($actorId > 0): ?>
+            <a href="<?php echo htmlspecialchars(snapix_side_profile_url($actorId, $viewerId), ENT_QUOTES); ?>" class="notifications-drawer-avatar" aria-label="Открыть профиль <?php echo htmlspecialchars($login, ENT_QUOTES); ?>"<?php if ($avatar !== ''): ?> style="background-image: url('<?php echo htmlspecialchars($avatar, ENT_QUOTES); ?>');"<?php endif; ?>>
+                <?php if ($avatar === ''): ?><?php echo htmlspecialchars(mb_substr($login, 0, 1)); ?><?php endif; ?>
+            </a>
+        <?php else: ?>
+            <span class="notifications-drawer-avatar notifications-drawer-avatar-system">S</span>
+        <?php endif; ?>
+        <div class="notifications-drawer-copy">
+            <?php if ($actorId > 0): ?>
+                <a href="<?php echo htmlspecialchars(snapix_side_profile_url($actorId, $viewerId), ENT_QUOTES); ?>" class="notifications-drawer-login">@<?php echo htmlspecialchars($login); ?></a>
+            <?php else: ?>
+                <p class="notifications-drawer-title"><?php echo htmlspecialchars((string) ($item['title'] ?? 'Уведомление')); ?></p>
+            <?php endif; ?>
+            <p><?php echo nl2br(htmlspecialchars($message)); ?></p>
+            <?php if ($commentText !== ''): ?>
+                <p class="notifications-drawer-context">Комментарий: “<?php echo htmlspecialchars(mb_substr($commentText, 0, 140)); ?><?php echo mb_strlen($commentText) > 140 ? '…' : ''; ?>”</p>
+            <?php endif; ?>
+            <?php if ($reportReason !== ''): ?>
+                <p class="notifications-drawer-context">Причина: <?php echo htmlspecialchars($reportReason); ?></p>
+            <?php endif; ?>
+            <?php if ($reportedUserId > 0): ?>
+                <a class="notifications-drawer-link" href="<?php echo htmlspecialchars(snapix_side_profile_url($reportedUserId, $viewerId), ENT_QUOTES); ?>">Открыть профиль<?php echo $reportedLogin !== '' ? ' @' . htmlspecialchars($reportedLogin) : ''; ?></a>
+            <?php endif; ?>
+            <?php if ($postId > 0): ?>
+                <a class="notifications-drawer-link" href="post.php?id=<?php echo $postId; ?>">Открыть публикацию</a>
+            <?php endif; ?>
+            <?php if (!empty($item['created_at'])): ?>
+                <time class="notifications-drawer-date" datetime="<?php echo htmlspecialchars((string) $item['created_at'], ENT_QUOTES); ?>"><?php echo htmlspecialchars(snapix_side_notification_date((string) $item['created_at'])); ?></time>
+            <?php endif; ?>
+        </div>
+    </article>
     <?php
 }
 
@@ -169,68 +225,19 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
                     <?php endif; ?>
                 </div>
 
-                <?php
-                $simpleSections = [
-                    'likes' => 'поставил(а) лайк вашей публикации',
-                    'reposts' => 'сделал(а) репост вашей публикации',
-                    'saved' => 'добавил(а) вашу публикацию в избранное',
-                ];
-                foreach ($simpleSections as $section => $text):
-                ?>
+                <?php foreach (['likes', 'reposts', 'saved', 'complaints', 'comments'] as $section): ?>
                     <div class="notifications-drawer-panel" data-notification-panel="<?php echo htmlspecialchars($section, ENT_QUOTES); ?>">
                         <?php if ($notifications[$section]): ?>
                             <div class="notifications-drawer-list">
                                 <?php foreach ($notifications[$section] as $item): ?>
-                                    <article class="notifications-drawer-item">
-                                        <?php snapix_side_render_avatar($item, $viewerId); ?>
-                                        <div class="notifications-drawer-copy">
-                                            <a href="<?php echo htmlspecialchars(snapix_side_profile_url((int) $item['user_id'], $viewerId)); ?>" class="notifications-drawer-login"><?php echo htmlspecialchars($item['login']); ?></a>
-                                            <p><?php echo htmlspecialchars($text); ?>.</p>
-                                        </div>
-                                    </article>
+                                    <?php snapix_side_render_notification_card($item, $viewerId); ?>
                                 <?php endforeach; ?>
                             </div>
                         <?php else: ?>
-                            <p class="notifications-drawer-empty">Здесь пока нет уведомлений.</p>
+                            <p class="notifications-drawer-empty"><?php echo $section === 'complaints' ? 'Жалоб пока нет.' : 'Здесь пока нет уведомлений.'; ?></p>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
-
-
-                <div class="notifications-drawer-panel" data-notification-panel="complaints">
-                    <?php if ($notifications['complaints']): ?>
-                        <div class="notifications-drawer-list">
-                            <?php foreach ($notifications['complaints'] as $complaint): ?>
-                                <article class="notifications-drawer-item notifications-drawer-item-complaint">
-                                    <div class="notifications-drawer-copy">
-                                        <p class="notifications-drawer-title"><?php echo htmlspecialchars((string) ($complaint['title'] ?? 'Жалоба')); ?></p>
-                                        <p><?php echo nl2br(htmlspecialchars((string) ($complaint['message'] ?? ''))); ?></p>
-                                    </div>
-                                </article>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <p class="notifications-drawer-empty">Жалоб пока нет.</p>
-                    <?php endif; ?>
-                </div>
-
-                <div class="notifications-drawer-panel" data-notification-panel="comments">
-                    <?php if ($notifications['comments']): ?>
-                        <div class="notifications-drawer-list">
-                            <?php foreach ($notifications['comments'] as $comment): ?>
-                                <article class="notifications-drawer-item">
-                                    <?php snapix_side_render_avatar($comment, $viewerId); ?>
-                                    <div class="notifications-drawer-copy">
-                                        <a href="<?php echo htmlspecialchars(snapix_side_profile_url((int) $comment['user_id'], $viewerId)); ?>" class="notifications-drawer-login"><?php echo htmlspecialchars($comment['login']); ?></a>
-                                        <p><?php echo htmlspecialchars(mb_substr((string) $comment['comment_text'], 0, 120)); ?></p>
-                                    </div>
-                                </article>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <p class="notifications-drawer-empty">Новых комментариев пока нет.</p>
-                    <?php endif; ?>
-                </div>
             <?php endif; ?>
         </div>
     </section>

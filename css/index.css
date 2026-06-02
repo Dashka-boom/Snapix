@@ -3706,6 +3706,36 @@ body.has-side-menu {
     text-align: center;
 }
 
+.notifications-drawer-avatar-system {
+    background: rgba(104, 197, 219, 0.16);
+}
+
+.notifications-drawer-context {
+    padding: 8px 10px;
+    border-left: 2px solid rgba(104, 197, 219, 0.55);
+    border-radius: 10px;
+    background: rgba(104, 197, 219, 0.06);
+}
+
+.notifications-drawer-link {
+    width: max-content;
+    max-width: 100%;
+    color: #68C5DB !important;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.notifications-drawer-link:hover,
+.notifications-drawer-link:focus-visible {
+    text-decoration: underline;
+}
+
+.notifications-drawer-date {
+    color: #77868b;
+    font-size: 12px;
+}
+
 .notifications-drawer-actions {
     display: flex;
     align-items: center;

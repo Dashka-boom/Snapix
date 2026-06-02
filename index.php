@@ -3,6 +3,7 @@ session_start();
 require './config/config.php';
 require './includes/icons.php';
 require './includes/post-actions.php';
+require './includes/notifications.php';
 require_once './includes/side-menu.php';
 
 function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
@@ -60,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
         $reasonId = (int) ($_POST['reason_id'] ?? 0);
         $customReason = trim($_POST['custom_reason'] ?? '');
 
-        $commentStmt = $pdo->prepare('SELECT id, user_id FROM comments WHERE id = :id AND is_deleted = 0 LIMIT 1');
+        $commentStmt = $pdo->prepare('SELECT id, post_id, user_id, comment_text FROM comments WHERE id = :id AND is_deleted = 0 LIMIT 1');
         $commentStmt->execute(['id' => $commentId]);
         $comment = $commentStmt->fetch();
 
@@ -69,13 +70,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 INSERT INTO moderation_reports (reporter_user_id, target_user_id, target_comment_id, reason_id, reason_text)
                 VALUES (:reporter_user_id, :target_user_id, :target_comment_id, :reason_id, :reason_text)
             ');
+            $reportReasonText = mb_substr($customReason !== '' ? $customReason : 'Нарушение правил сообщества', 0, 1000);
             $insertReportStmt->execute([
                 'reporter_user_id' => $user['id'],
                 'target_user_id' => (int) $comment['user_id'],
                 'target_comment_id' => $commentId,
                 'reason_id' => $reasonId > 0 ? $reasonId : null,
-                'reason_text' => mb_substr($customReason !== '' ? $customReason : 'Нарушение правил сообщества', 0, 1000),
+                'reason_text' => $reportReasonText,
             ]);
+            $reportId = (int) $pdo->lastInsertId();
+            snapix_notify_admins($pdo, [
+                'actor_user_id' => (int) $user['id'],
+                'notification_type' => 'report_comment',
+                'post_id' => (int) $comment['post_id'],
+                'comment_id' => $commentId,
+                'report_id' => $reportId,
+                'title' => 'Жалоба на комментарий',
+                'message' => 'Поступила жалоба на комментарий под публикацией',
+                'comment_text' => (string) ($comment['comment_text'] ?? ''),
+                'report_reason' => $reportReasonText,
+                'dedupe_minutes' => 10,
+            ], (int) $user['id']);
         }
 
         header('Location: index.php');
@@ -87,9 +102,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     $postExists = false;
 
     if ($postId > 0) {
-        $postExistsStmt = $pdo->prepare('SELECT id FROM posts WHERE id = :id AND is_deleted = 0');
+        $postExistsStmt = $pdo->prepare('SELECT id, user_id FROM posts WHERE id = :id AND is_deleted = 0');
         $postExistsStmt->execute(['id' => $postId]);
-        $postExists = (bool) $postExistsStmt->fetchColumn();
+        $postRow = $postExistsStmt->fetch();
+        $postExists = (bool) $postRow;
+        $postOwnerId = $postExists ? (int) $postRow['user_id'] : 0;
+        if ($ownerId <= 0) {
+            $ownerId = $postOwnerId;
+        }
 
         if ($postExists && $action === 'toggle_like') {
             $likeExistsStmt = $pdo->prepare('SELECT id FROM likes WHERE user_id = :user_id AND post_id = :post_id');
@@ -110,6 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                     'post_id' => $postId,
                 ]);
                 $ajaxExtra['liked'] = true;
+                snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_like');
             }
         }
 
@@ -132,6 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                     'post_id' => $postId,
                 ]);
                 $ajaxExtra['saved'] = true;
+                snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_saved');
             }
         }
 
@@ -140,16 +162,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
 
             if ($commentText !== '') {
                 $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text) VALUES (:post_id, :user_id, :comment_text)');
+                $commentValue = mb_substr($commentText, 0, 1000);
                 $insertCommentStmt->execute([
                     'post_id' => $postId,
                     'user_id' => $user['id'],
-                    'comment_text' => mb_substr($commentText, 0, 1000),
+                    'comment_text' => $commentValue,
                 ]);
+                $commentId = (int) $pdo->lastInsertId();
+                snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_comment', $commentValue, $commentId);
                 $commentsPostId = $postId;
                 $ajaxExtra['comment'] = [
                     'login' => (string) $user['login'],
                     'profile_url' => buildProfileUrl((int) $user['id'], (int) $user['id']),
-                    'text' => mb_substr($commentText, 0, 1000),
+                    'text' => $commentValue,
                 ];
             } elseif ($isAjaxPostAction) {
                 snapix_send_post_action_error('empty_comment');
@@ -171,6 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                     'post_id' => $postId,
                 ]);
                 $isRepostedNow = true;
+                snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_repost');
             } else {
                 $deleteRepostStmt = $pdo->prepare('DELETE FROM reposts WHERE id = :id AND user_id = :user_id');
                 $deleteRepostStmt->execute([
@@ -221,11 +247,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 VALUES (:reporter_user_id, :target_user_id, :reason_text)
             ');
             $reportReason = trim((string) ($_POST['report_reason'] ?? ''));
+            $reportReasonText = mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000);
             $reportPostStmt->execute([
                 'reporter_user_id' => $user['id'],
                 'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                'reason_text' => mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000),
+                'reason_text' => $reportReasonText,
             ]);
+            $reportId = (int) $pdo->lastInsertId();
+            snapix_notify_admins($pdo, [
+                'actor_user_id' => (int) $user['id'],
+                'notification_type' => 'report_post',
+                'post_id' => $postId,
+                'report_id' => $reportId,
+                'title' => 'Жалоба на публикацию',
+                'message' => 'Поступила жалоба на публикацию',
+                'report_reason' => $reportReasonText,
+                'dedupe_minutes' => 10,
+            ], (int) $user['id']);
         }
 
         if ($postExists && $action === 'report_post_user' && $ownerId !== (int) $user['id']) {
@@ -233,11 +271,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text)
                 VALUES (:reporter_user_id, :target_user_id, :reason_text)
             ');
+            $reportReasonText = 'Жалоба на пользователя через пост #' . $postId;
             $reportUserStmt->execute([
                 'reporter_user_id' => $user['id'],
                 'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                'reason_text' => 'Жалоба на пользователя через пост #' . $postId,
+                'reason_text' => $reportReasonText,
             ]);
+            $reportId = (int) $pdo->lastInsertId();
+            snapix_notify_admins($pdo, [
+                'actor_user_id' => (int) $user['id'],
+                'notification_type' => 'report_user',
+                'post_id' => $postId,
+                'report_id' => $reportId,
+                'title' => 'Жалоба на пользователя',
+                'message' => 'Поступила жалоба на пользователя',
+                'report_reason' => $reportReasonText,
+                'dedupe_minutes' => 10,
+            ], (int) $user['id']);
         }
 
         if ($postExists && $action === 'block_user' && $ownerId > 0 && $ownerId !== (int) $user['id']) {

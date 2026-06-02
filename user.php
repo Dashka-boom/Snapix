@@ -4,6 +4,7 @@ require './config/config.php';
 require_once './includes/side-menu.php';
 require './includes/icons.php';
 require './includes/post-actions.php';
+require './includes/notifications.php';
 
 function profileDestination(int $targetUserId, ?int $currentUserId): string
 {
@@ -119,9 +120,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
     $targetUser = $targetUserStmt->fetch();
 
     if ($postId > 0) {
-        $postExistsStmt = $pdo->prepare('SELECT id FROM posts WHERE id = :id AND is_deleted = 0');
+        $postExistsStmt = $pdo->prepare('SELECT id, user_id FROM posts WHERE id = :id AND is_deleted = 0');
         $postExistsStmt->execute(['id' => $postId]);
-        $postExists = (bool) $postExistsStmt->fetchColumn();
+        $postRow = $postExistsStmt->fetch();
+        $postExists = (bool) $postRow;
+        $postOwnerId = $postExists ? (int) $postRow['user_id'] : 0;
+        if ($ownerId <= 0) {
+            $ownerId = $postOwnerId;
+        }
 
         if ($postExists && $action === 'toggle_like') {
             $likeExistsStmt = $pdo->prepare('SELECT id FROM likes WHERE user_id = :user_id AND post_id = :post_id');
@@ -139,6 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                     'post_id' => $postId,
                 ]);
                 $ajaxExtra['liked'] = true;
+                snapix_notify_post_action($pdo, $postId, (int) $currentUser['id'], 'post_like');
             }
         }
 
@@ -158,22 +165,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                     'post_id' => $postId,
                 ]);
                 $ajaxExtra['saved'] = true;
+                snapix_notify_post_action($pdo, $postId, (int) $currentUser['id'], 'post_saved');
             }
         }
 
         if ($postExists && $action === 'add_comment') {
             $commentText = trim($_POST['comment_text'] ?? '');
             if ($commentText !== '') {
+                $commentValue = mb_substr($commentText, 0, 1000);
                 $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text) VALUES (:post_id, :user_id, :comment_text)')->execute([
                     'post_id' => $postId,
                     'user_id' => $currentUser['id'],
-                    'comment_text' => mb_substr($commentText, 0, 1000),
+                    'comment_text' => $commentValue,
                 ]);
+                $commentId = (int) $pdo->lastInsertId();
+                snapix_notify_post_action($pdo, $postId, (int) $currentUser['id'], 'post_comment', $commentValue, $commentId);
                 $commentsPostId = $postId;
                 $ajaxExtra['comment'] = [
                     'login' => (string) $currentUser['login'],
                     'profile_url' => profileDestination((int) $currentUser['id'], (int) $currentUser['id']),
-                    'text' => mb_substr($commentText, 0, 1000),
+                    'text' => $commentValue,
                 ];
             } elseif ($isAjaxPostAction) {
                 snapix_send_post_action_error('empty_comment');
@@ -193,6 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                     'post_id' => $postId,
                 ]);
                 $isRepostedNow = true;
+                snapix_notify_post_action($pdo, $postId, (int) $currentUser['id'], 'post_repost');
             } else {
                 $pdo->prepare('DELETE FROM reposts WHERE id = :id AND user_id = :user_id')->execute([
                     'id' => (int) $repostId,
@@ -211,21 +223,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
 
         if ($postExists && $action === 'report_post' && $ownerId !== (int) $currentUser['id']) {
             $reportReason = trim((string) ($_POST['report_reason'] ?? ''));
+            $reportReasonText = mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000);
             $pdo->prepare('INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text) VALUES (:reporter_user_id, :target_user_id, :reason_text)')
                 ->execute([
                     'reporter_user_id' => $currentUser['id'],
                     'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                    'reason_text' => mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000),
+                    'reason_text' => $reportReasonText,
                 ]);
+            $reportId = (int) $pdo->lastInsertId();
+            snapix_notify_admins($pdo, [
+                'actor_user_id' => (int) $currentUser['id'],
+                'notification_type' => 'report_post',
+                'post_id' => $postId,
+                'report_id' => $reportId,
+                'title' => 'Жалоба на публикацию',
+                'message' => 'Поступила жалоба на публикацию',
+                'report_reason' => $reportReasonText,
+                'dedupe_minutes' => 10,
+            ], (int) $currentUser['id']);
         }
 
         if ($postExists && $action === 'report_post_user' && $ownerId !== (int) $currentUser['id']) {
+            $reportReasonText = 'Жалоба на пользователя через пост #' . $postId;
             $pdo->prepare('INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text) VALUES (:reporter_user_id, :target_user_id, :reason_text)')
                 ->execute([
                     'reporter_user_id' => $currentUser['id'],
                     'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                    'reason_text' => 'Жалоба на пользователя через пост #' . $postId,
+                    'reason_text' => $reportReasonText,
                 ]);
+            $reportId = (int) $pdo->lastInsertId();
+            snapix_notify_admins($pdo, [
+                'actor_user_id' => (int) $currentUser['id'],
+                'notification_type' => 'report_user',
+                'post_id' => $postId,
+                'report_id' => $reportId,
+                'title' => 'Жалоба на пользователя',
+                'message' => 'Поступила жалоба на пользователя',
+                'report_reason' => $reportReasonText,
+                'dedupe_minutes' => 10,
+            ], (int) $currentUser['id']);
         }
 
         if ($isAjaxPostAction) {
@@ -255,12 +291,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                     INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_id, reason_text)
                     VALUES (:reporter_user_id, :target_user_id, :reason_id, :reason_text)
                 ');
+                $reportReasonText = mb_substr($customReason !== '' ? $customReason : 'Нарушение правил сообщества', 0, 1000);
                 $insertReportStmt->execute([
                     'reporter_user_id' => $currentUser['id'],
                     'target_user_id' => $targetUserId,
                     'reason_id' => $reasonId > 0 ? $reasonId : null,
-                    'reason_text' => mb_substr($customReason !== '' ? $customReason : 'Нарушение правил сообщества', 0, 1000),
+                    'reason_text' => $reportReasonText,
                 ]);
+                $reportId = (int) $pdo->lastInsertId();
+                snapix_notify_admins($pdo, [
+                    'actor_user_id' => (int) $currentUser['id'],
+                    'notification_type' => 'report_user',
+                    'report_id' => $reportId,
+                    'title' => 'Жалоба на пользователя',
+                    'message' => 'Поступила жалоба на пользователя',
+                    'report_reason' => $reportReasonText,
+                    'dedupe_minutes' => 10,
+                ], (int) $currentUser['id']);
             }
         }
 
