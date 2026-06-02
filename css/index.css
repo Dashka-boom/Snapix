@@ -6540,3 +6540,124 @@ body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn.is-
     color: #fff !important;
     transform: none !important;
 }
+
+/* Home hover icon source/shape fix: render real icons, never colored button squares */
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:hover,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:focus,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:focus-visible,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn.is-active,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn.is-reposted,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn.is-saved {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    outline: none !important;
+    border-radius: 0 !important;
+    background: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+    transform: none !important;
+    overflow: visible !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn::before,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn::after {
+    content: none !important;
+    display: none !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn img {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 34px !important;
+    height: 34px !important;
+    max-width: 34px !important;
+    max-height: 34px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    object-fit: contain !important;
+    pointer-events: none !important;
+    filter: brightness(0) invert(1) !important;
+}
+
+body[data-page="home"] .feed-card-media .post-type-badge,
+body[data-page="home"] .feed-card:hover .post-type-badge,
+body[data-page="home"] .feed-card:focus-within .post-type-badge {
+    opacity: 1 !important;
+    visibility: visible !important;
+    border-radius: 50% !important;
+    background: rgba(4, 6, 7, 0.72) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+html.theme-light body[data-page="home"] .home-hover-like-icon,
+html[data-theme="light"] body[data-page="home"] .home-hover-like-icon,
+body.theme-light[data-page="home"] .home-hover-like-icon,
+body[data-theme="light"][data-page="home"] .home-hover-like-icon {
+    content: url("../icon/light theme/like.png");
+}
+
+html.theme-light body[data-page="home"] .home-hover-repost-icon,
+html[data-theme="light"] body[data-page="home"] .home-hover-repost-icon,
+body.theme-light[data-page="home"] .home-hover-repost-icon,
+body[data-theme="light"][data-page="home"] .home-hover-repost-icon {
+    content: url("../icon/light theme/repost.png");
+}
+
+html.theme-light body[data-page="home"] .home-hover-save-icon,
+html[data-theme="light"] body[data-page="home"] .home-hover-save-icon,
+body.theme-light[data-page="home"] .home-hover-save-icon,
+body[data-theme="light"][data-page="home"] .home-hover-save-icon {
+    content: url("../icon/light theme/favourites.png");
+}
+
+html.theme-light body[data-page="home"] .home-post-type-image-icon,
+html[data-theme="light"] body[data-page="home"] .home-post-type-image-icon,
+body.theme-light[data-page="home"] .home-post-type-image-icon,
+body[data-theme="light"][data-page="home"] .home-post-type-image-icon {
+    content: url("../icon/light theme/images.png");
+}
+
+html.theme-light body[data-page="home"] .home-post-type-video-icon,
+html[data-theme="light"] body[data-page="home"] .home-post-type-video-icon,
+body.theme-light[data-page="home"] .home-post-type-video-icon,
+body[data-theme="light"][data-page="home"] .home-post-type-video-icon {
+    content: url("../icon/light theme/video.png");
+}
+
+@media (max-width: 520px) {
+    body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn,
+    body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:hover,
+    body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:focus-visible {
+        width: 46px !important;
+        height: 46px !important;
+        min-width: 46px !important;
+        min-height: 46px !important;
+    }
+
+    body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn img {
+        width: 30px !important;
+        height: 30px !important;
+        max-width: 30px !important;
+        max-height: 30px !important;
+    }
+}

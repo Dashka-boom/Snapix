@@ -577,7 +577,7 @@ if ($feedPosts) {
 
                             <div class="feed-card-media">
                                 <span class="post-type-badge" aria-hidden="true">
-                                    <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
+                                    <img class="home-post-type-icon <?php echo (($post['media_type'] ?? '') === 'video') ? 'home-post-type-video-icon' : 'home-post-type-image-icon'; ?>" src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
                                 </span>
                                 <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                     <video controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
@@ -594,7 +594,7 @@ if ($feedPosts) {
                                                 <input type="hidden" name="action" value="toggle_like">
                                                 <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
                                                 <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-like-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк">
-                                                    <img src="icon/dark theme/like.png" alt="Лайк">
+                                                    <img class="home-hover-like-icon" src="icon/dark theme/like.png" alt="Лайк">
                                                 </button>
                                             </form>
                                             <span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span>
@@ -604,7 +604,7 @@ if ($feedPosts) {
                                                 <input type="hidden" name="action" value="add_repost">
                                                 <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
                                                 <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-repost-btn<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост">
-                                                    <img src="icon/dark theme/repost.png" alt="Репост">
+                                                    <img class="home-hover-repost-icon" src="icon/dark theme/repost.png" alt="Репост">
                                                 </button>
                                             </form>
                                             <span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span>
@@ -614,15 +614,15 @@ if ($feedPosts) {
                                                 <input type="hidden" name="action" value="toggle_save">
                                                 <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
                                                 <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-save-btn<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное">
-                                                    <img src="icon/dark theme/favourites.png" alt="Избранное">
+                                                    <img class="home-hover-save-icon" src="icon/dark theme/favourites.png" alt="Избранное">
                                                 </button>
                                             </form>
                                             <span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span>
                                         </div>
                                     <?php else: ?>
-                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для лайка"><img src="icon/dark theme/like.png" alt="Лайк"></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для репоста"><img src="icon/dark theme/repost.png" alt="Репост"></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt="Избранное"></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для лайка"><img class="home-hover-like-icon" src="icon/dark theme/like.png" alt="Лайк"></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для репоста"><img class="home-hover-repost-icon" src="icon/dark theme/repost.png" alt="Репост"></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для избранного"><img class="home-hover-save-icon" src="icon/dark theme/favourites.png" alt="Избранное"></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
                                     <?php endif; ?>
                                 </div>
                             </div>
