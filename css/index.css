@@ -6158,8 +6158,8 @@ body[data-page="home"] .feed-card-media {
     overflow: hidden;
 }
 
-body[data-page="home"] .feed-card-media img,
-body[data-page="home"] .feed-card-media video {
+body[data-page="home"] .feed-card-media > img,
+body[data-page="home"] .feed-card-media > video {
     width: 100%;
     height: 100%;
     max-height: none;
@@ -6348,5 +6348,131 @@ html[data-theme="light"] .home-sidebar-copyright {
     body[data-page="home"] .feed-posts-grid .feed-card,
     body[data-page="home"] .feed-card-media {
         max-width: 100%;
+    }
+}
+
+/* Home feed cards: profile-style media hover actions */
+body[data-page="home"] .feed-posts-grid .feed-card {
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+}
+
+body[data-page="home"] .feed-card-media {
+    position: relative;
+    background: #0b1118;
+}
+
+body[data-page="home"] .feed-card-media > img,
+body[data-page="home"] .feed-card-media > video {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: cover;
+    display: block;
+    border-radius: inherit;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 22px !important;
+    padding: 18px !important;
+    background: rgba(0, 0, 0, 0.48) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: none !important;
+    transition: opacity 0.2s ease !important;
+    z-index: 7 !important;
+}
+
+body[data-page="home"] .feed-card:hover .post-hover-overlay,
+body[data-page="home"] .feed-card:focus-within .post-hover-overlay {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body[data-page="home"] .profile-hover-action-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+}
+
+body[data-page="home"] .profile-hover-action-form {
+    margin: 0 !important;
+    pointer-events: auto !important;
+}
+
+body[data-page="home"] .profile-hover-action-btn {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body[data-page="home"] .profile-hover-action-btn img,
+body[data-page="home"] .post-hover-overlay img {
+    width: 28px !important;
+    height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+    object-fit: contain !important;
+    border-radius: 0 !important;
+    filter: brightness(0) invert(1) !important;
+}
+
+body[data-page="home"] .profile-hover-action-item .feed-action-count {
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+body[data-page="home"] .profile-hover-like-btn.is-active img {
+    filter: brightness(0) saturate(100%) invert(36%) sepia(96%) saturate(1913%) hue-rotate(336deg) brightness(99%) contrast(98%) !important;
+}
+
+body[data-page="home"] .profile-hover-save-btn.is-saved img {
+    filter: brightness(0) saturate(100%) invert(86%) sepia(35%) saturate(1847%) hue-rotate(334deg) brightness(104%) contrast(98%) !important;
+}
+
+body[data-page="home"] .profile-hover-repost-btn.is-reposted img {
+    filter: brightness(0) saturate(100%) invert(62%) sepia(90%) saturate(430%) hue-rotate(83deg) brightness(90%) contrast(92%) !important;
+}
+
+@media (max-width: 520px) {
+    body[data-page="home"] .feed-card-media .post-hover-overlay {
+        gap: 14px !important;
+        padding: 14px !important;
+    }
+
+    body[data-page="home"] .profile-hover-action-btn {
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        min-height: 42px !important;
+    }
+
+    body[data-page="home"] .profile-hover-action-btn img,
+    body[data-page="home"] .post-hover-overlay img {
+        width: 24px !important;
+        height: 24px !important;
+        max-width: 24px !important;
+        max-height: 24px !important;
     }
 }

@@ -365,6 +365,11 @@ $feedStmt = $pdo->query('
         ) AS reposts_count,
         (
             SELECT COUNT(*)
+            FROM messages
+            WHERE messages.post_id = posts.id
+        ) AS shares_count,
+        (
+            SELECT COUNT(*)
             FROM reposts
             WHERE reposts.post_id = posts.id
               AND reposts.user_id = ' . (int) ($user['id'] ?? 0) . '
@@ -492,7 +497,7 @@ if ($feedPosts) {
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                         <?php $authorProfileUrl = $user ? buildProfileUrl((int) $post['user_id'], (int) $user['id']) : 'login.php'; ?>
                         <?php $feedScope = (int) $post['is_following_author'] > 0 ? 'following' : 'for-you'; ?>
-                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
+                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
                             <header class="feed-card-header">
                                 <div class="feed-header-main">
                                     <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-avatar-link" aria-label="Открыть профиль <?php echo htmlspecialchars($post['login']); ?>">
@@ -578,6 +583,52 @@ if ($feedPosts) {
                                 <?php else: ?>
                                     <div class="feed-card-media-placeholder">Медиа не доступно</div>
                                 <?php endif; ?>
+
+                                <div class="post-hover-overlay">
+                                    <?php if ($user): ?>
+                                        <div class="profile-hover-action-item">
+                                            <form method="post" class="inline-action-form profile-hover-action-form">
+                                                <input type="hidden" name="action" value="toggle_like">
+                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-like-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк">
+                                                    <img src="icon/dark theme/like.png" alt="Лайк">
+                                                </button>
+                                            </form>
+                                            <span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span>
+                                        </div>
+                                        <div class="profile-hover-action-item">
+                                            <form method="post" class="inline-action-form profile-hover-action-form">
+                                                <input type="hidden" name="action" value="add_repost">
+                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-repost-btn<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост">
+                                                    <img src="icon/dark theme/repost.png" alt="Репост">
+                                                </button>
+                                            </form>
+                                            <span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span>
+                                        </div>
+                                        <div class="profile-hover-action-item">
+                                            <button type="button" class="feed-action-btn profile-hover-action-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения">
+                                                <img src="icon/dark theme/share.png" alt="Отправить">
+                                            </button>
+                                            <span class="feed-action-count" data-post-id="<?php echo (int) $post['id']; ?>" data-post-count="shares"><?php echo (int) ($post['shares_count'] ?? 0); ?></span>
+                                        </div>
+                                        <div class="profile-hover-action-item">
+                                            <form method="post" class="inline-action-form profile-hover-action-form">
+                                                <input type="hidden" name="action" value="toggle_save">
+                                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                                <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-save-btn<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное">
+                                                    <img src="icon/dark theme/favourites.png" alt="Избранное">
+                                                </button>
+                                            </form>
+                                            <span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для лайка"><img src="icon/dark theme/like.png" alt="Лайк"></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
+                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для репоста"><img src="icon/dark theme/repost.png" alt="Репост"></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
+                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для отправки в сообщения"><img src="icon/dark theme/share.png" alt="Отправить"></a><span class="feed-action-count" data-post-id="<?php echo (int) $post['id']; ?>" data-post-count="shares"><?php echo (int) ($post['shares_count'] ?? 0); ?></span></div>
+                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt="Избранное"></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
 
                             <div class="feed-card-body">
@@ -622,6 +673,7 @@ if ($feedPosts) {
 
                                                 <div class="feed-action-item">
                                                     <button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><img src="icon/dark theme/share.png" alt=""></button>
+                                                    <span class="feed-action-count" data-post-id="<?php echo (int) $post['id']; ?>" data-post-count="shares"><?php echo (int) ($post['shares_count'] ?? 0); ?></span>
                                                 </div>
                                             </div>
                                         </div>
@@ -634,7 +686,7 @@ if ($feedPosts) {
                                             </div>
                                             <div class="feed-card-buttons-group feed-card-buttons-right">
                                                 <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
-                                                <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для отправки в сообщения"><img src="icon/dark theme/share.png" alt=""></a></div>
+                                                <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для отправки в сообщения"><img src="icon/dark theme/share.png" alt=""></a><span class="feed-action-count" data-post-id="<?php echo (int) $post['id']; ?>" data-post-count="shares"><?php echo (int) ($post['shares_count'] ?? 0); ?></span></div>
                                             </div>
                                         </div>
                                     <?php endif; ?>
@@ -1092,6 +1144,16 @@ document.querySelectorAll('.js-post-menu-feedback').forEach(function (button) {
             .then(function (data) {
                 if (!data.ok) {
                     return;
+                }
+                if (typeof data.shares_count !== 'undefined') {
+                    document.querySelectorAll('[data-post-id="' + activePostId + '"][data-post-count="shares"]').forEach(function (countNode) {
+                        countNode.textContent = String(Number(data.shares_count || 0));
+                    });
+                    document.querySelectorAll('[data-post-id="' + activePostId + '"]').forEach(function (node) {
+                        if (node.dataset) {
+                            node.dataset.postSharesCount = String(Number(data.shares_count || 0));
+                        }
+                    });
                 }
                 button.textContent = 'Отправлено';
                 button.disabled = true;
