@@ -44,9 +44,9 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
         'post_comment' => 'comments',
         'comment' => 'comments',
         'comments' => 'comments',
-        'comment_deleted' => 'comments',
-        'comment_deleted_under_post' => 'comments',
-        'deleted_comment' => 'comments',
+        'comment_deleted' => 'complaints',
+        'comment_deleted_under_post' => 'complaints',
+        'deleted_comment' => 'complaints',
         'post_repost' => 'reposts',
         'repost' => 'reposts',
         'reposts' => 'reposts',
@@ -70,7 +70,9 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
         if ($section === '') {
             $legacyTitle = mb_strtolower((string) ($notification['title'] ?? ''));
             $legacyMessage = mb_strtolower((string) ($notification['message'] ?? ''));
-            if (str_contains($legacyTitle . ' ' . $legacyMessage, 'коммент')) {
+            if (str_contains($legacyTitle . ' ' . $legacyMessage, 'коммент') && str_contains($legacyTitle . ' ' . $legacyMessage, 'удал')) {
+                $section = 'complaints';
+            } elseif (str_contains($legacyTitle . ' ' . $legacyMessage, 'коммент')) {
                 $section = 'comments';
             } elseif (str_contains($legacyTitle . ' ' . $legacyMessage, 'лайк')) {
                 $section = 'likes';
@@ -363,6 +365,9 @@ function snapix_side_render_notification_card(array $item, int $viewerId): void
             <?php endif; ?>
             <?php if ($reportReason !== ''): ?>
                 <p class="notifications-drawer-context">Причина: <?php echo htmlspecialchars($reportReason); ?></p>
+            <?php endif; ?>
+            <?php if ($postId > 0): ?>
+                <p class="notifications-drawer-context">Публикация: #<?php echo $postId; ?></p>
             <?php endif; ?>
             <?php if ($reportedUserId > 0): ?>
                 <a class="notifications-drawer-link" href="<?php echo htmlspecialchars(snapix_side_profile_url($reportedUserId, $viewerId), ENT_QUOTES); ?>">Открыть профиль<?php echo $reportedLogin !== '' ? ' @' . htmlspecialchars($reportedLogin) : ''; ?></a>

@@ -431,9 +431,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ((int) $comment['user_id'] !== (int) $user['id']) {
-            $message = 'Ваш комментарий был удалён';
+            $message = 'Ваш комментарий под публикацией #' . (int) $comment['post_id'] . ' был удалён';
             if ($deletedCommentText !== '') {
-                $message = 'Ваш комментарий "' . snapix_notification_excerpt($deletedCommentText, 120) . '" был удалён.';
+                $message = 'Ваш комментарий "' . snapix_notification_excerpt($deletedCommentText, 120) . '" под публикацией #' . (int) $comment['post_id'] . ' был удалён.';
             }
 
             snapix_create_notification($pdo, [
@@ -456,7 +456,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'post_id' => (int) $comment['post_id'],
                 'comment_id' => $commentId,
                 'title' => 'Комментарий удалён',
-                'message' => 'Комментарий под вашей публикацией был удалён',
+                'message' => 'Комментарий под вашей публикацией #' . (int) $comment['post_id'] . ' был удалён',
                 'comment_text' => $deletedCommentText,
             ]);
         }

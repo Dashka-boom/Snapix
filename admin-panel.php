@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($commentText !== '') {
                         $notificationText .= ' "' . snapix_notification_excerpt($commentText, 120) . '"';
                     }
-                    $notificationText .= ' был удалён. Причина: ' . $reasonText . ".\n"
+                    $notificationText .= ' под публикацией #' . (int) ($comment['post_id'] ?? 0) . ' был удалён. Причина: ' . $reasonText . ".\n"
                         . 'Предупреждение: при следующем нарушении аккаунт будет удалён.';
 
                     snapix_create_notification($pdo, [
