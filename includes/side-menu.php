@@ -366,9 +366,6 @@ function snapix_side_render_notification_card(array $item, int $viewerId): void
             <?php if ($reportReason !== ''): ?>
                 <p class="notifications-drawer-context">Причина: <?php echo htmlspecialchars($reportReason); ?></p>
             <?php endif; ?>
-            <?php if ($postId > 0): ?>
-                <p class="notifications-drawer-context">Публикация: #<?php echo $postId; ?></p>
-            <?php endif; ?>
             <?php if ($reportedUserId > 0): ?>
                 <a class="notifications-drawer-link" href="<?php echo htmlspecialchars(snapix_side_profile_url($reportedUserId, $viewerId), ENT_QUOTES); ?>">Открыть профиль<?php echo $reportedLogin !== '' ? ' @' . htmlspecialchars($reportedLogin) : ''; ?></a>
             <?php endif; ?>
