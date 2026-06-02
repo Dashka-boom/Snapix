@@ -93,6 +93,7 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
     }
 
     snapix_side_append_legacy_activity_notifications($pdo, $empty, $userId, $seenContext);
+    snapix_side_append_legacy_report_notifications($pdo, $empty, $userId);
 
     return $empty;
 }
@@ -201,6 +202,82 @@ function snapix_side_append_legacy_activity_notifications(PDO $pdo, array &$noti
 
             $notifications[$section][] = $legacyItem;
         }
+    }
+}
+
+
+function snapix_side_append_legacy_report_notifications(PDO $pdo, array &$notifications, int $userId): void
+{
+    $roleStmt = $pdo->prepare("SELECT role FROM users WHERE id = :id LIMIT 1");
+    $roleStmt->execute(['id' => $userId]);
+    $viewerRole = (string) ($roleStmt->fetchColumn() ?: 'user');
+    if (!in_array($viewerRole, ['admin', 'moderator'], true)) {
+        return;
+    }
+
+    $seenReportIds = [];
+    foreach ($notifications['complaints'] as $complaint) {
+        $reportId = (int) ($complaint['report_id'] ?? 0);
+        if ($reportId > 0) {
+            $seenReportIds[$reportId] = true;
+        }
+    }
+
+    $reportsStmt = $pdo->prepare("
+        SELECT
+            moderation_reports.id AS report_id,
+            moderation_reports.target_comment_id AS comment_id,
+            moderation_reports.reason_text AS report_reason,
+            moderation_reports.created_at,
+            comments.comment_text,
+            comments.post_id,
+            reporter.id AS user_id,
+            reporter.id AS actor_user_id,
+            reporter.login,
+            reporter.avatar,
+            target.id AS reported_user_id,
+            target.login AS reported_login
+        FROM moderation_reports
+        LEFT JOIN users AS reporter ON reporter.id = moderation_reports.reporter_user_id
+        LEFT JOIN users AS target ON target.id = moderation_reports.target_user_id
+        LEFT JOIN comments ON comments.id = moderation_reports.target_comment_id
+        ORDER BY moderation_reports.created_at DESC, moderation_reports.id DESC
+        LIMIT 60
+    ");
+    $reportsStmt->execute();
+
+    foreach ($reportsStmt->fetchAll() as $report) {
+        $reportId = (int) ($report['report_id'] ?? 0);
+        if ($reportId > 0 && isset($seenReportIds[$reportId])) {
+            continue;
+        }
+
+        $reason = (string) ($report['report_reason'] ?? '');
+        $commentId = (int) ($report['comment_id'] ?? 0);
+        $postId = (int) ($report['post_id'] ?? 0);
+        if ($postId <= 0 && preg_match('/(?:пост|публикац[^#]*)\s*#\s*(\d+)/iu', $reason, $matches)) {
+            $postId = (int) $matches[1];
+        }
+
+        $isUserReport = preg_match('/пользовател/u', mb_strtolower($reason)) === 1 && $commentId <= 0;
+        if ($commentId > 0) {
+            $report['notification_type'] = 'report_comment';
+            $report['message'] = 'Поступила жалоба на комментарий под публикацией';
+            $report['title'] = 'Жалоба на комментарий';
+        } elseif ($isUserReport) {
+            $report['notification_type'] = 'report_user';
+            $report['message'] = 'Поступила жалоба на пользователя';
+            $report['title'] = 'Жалоба на пользователя';
+        } else {
+            $report['notification_type'] = 'report_post';
+            $report['message'] = 'Поступила жалоба на публикацию';
+            $report['title'] = 'Жалоба на публикацию';
+        }
+
+        $report['id'] = 'legacy-report-' . $reportId;
+        $report['post_id'] = $postId > 0 ? $postId : null;
+        $report['report_reason'] = $reason;
+        $notifications['complaints'][] = $report;
     }
 }
 
