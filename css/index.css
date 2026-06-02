@@ -3551,8 +3551,13 @@ body.has-side-menu {
     align-items: flex-end;
     gap: 18px;
     overflow-x: auto;
+    overflow-y: visible;
     scrollbar-width: none;
     position: relative;
+    flex: 0 0 auto;
+    min-height: 47px;
+    z-index: 2;
+    background: #040607;
 }
 
 .notifications-drawer-tabs::-webkit-scrollbar {
@@ -3569,11 +3574,17 @@ body.has-side-menu {
     box-shadow: none !important;
     cursor: pointer;
     flex: 0 0 auto;
+    display: inline-flex !important;
+    align-items: flex-end;
     font: inherit;
     font-size: 15px;
     font-weight: 800;
     line-height: 1;
+    opacity: 1 !important;
+    visibility: visible !important;
     transform: none !important;
+    position: relative;
+    z-index: 1;
     transition: color 0.2s ease;
 }
 
@@ -3594,6 +3605,8 @@ body.has-side-menu {
     position: absolute;
     left: 4px;
     bottom: -1px;
+    opacity: 1;
+    pointer-events: none;
     transform: translateX(0);
     transition: transform 0.24s ease, width 0.24s ease;
 }

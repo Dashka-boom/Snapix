@@ -21,7 +21,7 @@
             backdrop.classList.add('is-open');
         }
         setTriggerState(true);
-        window.setTimeout(updateIndicator, 40);
+        window.setTimeout(scheduleIndicatorUpdate, 40);
     }
 
     function closeDrawer() {
@@ -92,6 +92,13 @@
         var tabRect = activeTab.getBoundingClientRect();
         indicator.style.width = tabRect.width + 'px';
         indicator.style.transform = 'translateX(' + (tabRect.left - wrapRect.left + tabsWrap.scrollLeft) + 'px)';
+        indicator.style.opacity = '1';
+    }
+
+    function scheduleIndicatorUpdate() {
+        window.requestAnimationFrame(function () {
+            updateIndicator();
+        });
     }
 
     function activateTab(tab) {
@@ -110,7 +117,7 @@
             panel.classList.toggle('is-active', panel.getAttribute('data-notification-panel') === tabName);
         });
 
-        updateIndicator();
+        scheduleIndicatorUpdate();
     }
 
     tabs.forEach(function (tab) {
@@ -119,8 +126,11 @@
         });
     });
 
-    window.addEventListener('resize', updateIndicator);
-    updateIndicator();
+    window.addEventListener('resize', scheduleIndicatorUpdate);
+    if (tabsWrap) {
+        tabsWrap.addEventListener('scroll', scheduleIndicatorUpdate);
+    }
+    scheduleIndicatorUpdate();
 
     drawer.querySelectorAll('[data-notification-request-form]').forEach(function (form) {
         form.addEventListener('submit', function (event) {
