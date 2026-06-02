@@ -576,6 +576,9 @@ if ($feedPosts) {
                             </header>
 
                             <div class="feed-card-media">
+                                <span class="post-type-badge" aria-hidden="true">
+                                    <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
+                                </span>
                                 <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                     <video controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                                 <?php elseif (!empty($post['media_url'])): ?>
@@ -607,12 +610,6 @@ if ($feedPosts) {
                                             <span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span>
                                         </div>
                                         <div class="profile-hover-action-item">
-                                            <button type="button" class="feed-action-btn profile-hover-action-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения">
-                                                <img src="icon/dark theme/share.png" alt="Отправить">
-                                            </button>
-                                            <span class="feed-action-count" data-post-id="<?php echo (int) $post['id']; ?>" data-post-count="shares"><?php echo (int) ($post['shares_count'] ?? 0); ?></span>
-                                        </div>
-                                        <div class="profile-hover-action-item">
                                             <form method="post" class="inline-action-form profile-hover-action-form">
                                                 <input type="hidden" name="action" value="toggle_save">
                                                 <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
@@ -625,7 +622,6 @@ if ($feedPosts) {
                                     <?php else: ?>
                                         <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для лайка"><img src="icon/dark theme/like.png" alt="Лайк"></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
                                         <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для репоста"><img src="icon/dark theme/repost.png" alt="Репост"></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                        <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для отправки в сообщения"><img src="icon/dark theme/share.png" alt="Отправить"></a><span class="feed-action-count" data-post-id="<?php echo (int) $post['id']; ?>" data-post-count="shares"><?php echo (int) ($post['shares_count'] ?? 0); ?></span></div>
                                         <div class="profile-hover-action-item"><a href="login.php" class="feed-action-btn profile-hover-action-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt="Избранное"></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
                                     <?php endif; ?>
                                 </div>

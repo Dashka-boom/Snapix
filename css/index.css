@@ -6476,3 +6476,67 @@ body[data-page="home"] .profile-hover-repost-btn.is-reposted img {
         max-height: 24px !important;
     }
 }
+
+/* Home feed cleanup: make cards clean by default, like profile thumbnails */
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-header {
+    display: none !important;
+}
+
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-body {
+    padding: 0 !important;
+    gap: 0 !important;
+}
+
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-body > .feed-card-actions,
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-body > .feed-card-caption,
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-body > .feed-reposts-note,
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-body > .feed-card-stats {
+    display: none !important;
+}
+
+body[data-page="home"] .feed-card-media .post-type-badge {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    z-index: 8 !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 50% !important;
+    background: rgba(4, 6, 7, 0.72) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    pointer-events: none !important;
+}
+
+body[data-page="home"] .feed-card-media .post-type-badge img {
+    width: 26px !important;
+    height: 26px !important;
+    max-width: 26px !important;
+    max-height: 26px !important;
+    object-fit: contain !important;
+    filter: brightness(0) invert(1) !important;
+}
+
+body[data-page="home"] .feed-card:hover .post-type-badge,
+body[data-page="home"] .feed-card:focus-within .post-type-badge {
+    opacity: 0 !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-item {
+    flex: 0 0 auto !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn,
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn:hover,
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn:focus-visible,
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn.is-active,
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn.is-saved,
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn.is-reposted {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #fff !important;
+    transform: none !important;
+}
