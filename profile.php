@@ -483,7 +483,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             snapix_send_post_action_error('invalid_report_reason', 422);
         }
 
-        $commentStmt = $pdo->prepare("SELECT comments.id, comments.user_id, comments.post_id FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id AND comments.is_deleted = 0 AND comments.status = 'published' LIMIT 1");
+        $commentStmt = $pdo->prepare("SELECT comments.id, comments.user_id, comments.post_id FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id AND comments.is_deleted = 0 AND (comments.status = 'published' OR comments.status IS NULL) LIMIT 1");
         $commentStmt->execute(['id' => $commentId]);
         $comment = $commentStmt->fetch();
         if (!$comment) {
@@ -546,7 +546,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             snapix_send_post_action_error('empty_comment', 422);
         }
 
-        $commentStmt = $pdo->prepare("SELECT id, post_id, user_id FROM comments WHERE id = :id AND is_deleted = 0 AND status = 'published' LIMIT 1");
+        $commentStmt = $pdo->prepare("SELECT id, post_id, user_id FROM comments WHERE id = :id AND is_deleted = 0 AND (status = 'published' OR status IS NULL) LIMIT 1");
         $commentStmt->execute(['id' => $commentId]);
         $comment = $commentStmt->fetch();
         if (!$comment) {
@@ -581,7 +581,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             snapix_send_post_action_error('invalid_comment', 422);
         }
 
-        $commentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND is_deleted = 0 AND status = 'published' LIMIT 1");
+        $commentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND is_deleted = 0 AND (status = 'published' OR status IS NULL) LIMIT 1");
         $commentStmt->execute(['id' => $commentId]);
         if (!$commentStmt->fetchColumn()) {
             snapix_send_post_action_error('comment_not_found', 404);
@@ -733,7 +733,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $attachment = uploadCommentAttachment($_FILES['attachment'] ?? ['error' => UPLOAD_ERR_NO_FILE]);
 
             if ($parentCommentId > 0) {
-                $parentCommentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND post_id = :post_id AND is_deleted = 0 AND status = 'published' LIMIT 1");
+                $parentCommentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND post_id = :post_id AND is_deleted = 0 AND (status = 'published' OR status IS NULL) LIMIT 1");
                 $parentCommentStmt->execute([
                     'id' => $parentCommentId,
                     'post_id' => $postId,
@@ -981,7 +981,7 @@ $repostsCount = (int) $stmt->fetchColumn();
 
 $postStatsSql = "
     (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
-    (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0 AND comments.status = 'published') AS comments_count,
+    (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0 AND (comments.status = 'published' OR comments.status IS NULL)) AS comments_count,
     (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
     (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id) AS saves_count,
     (SELECT COUNT(*) FROM messages WHERE messages.post_id = posts.id) AS shares_count,
@@ -1099,7 +1099,7 @@ if ($allProfilePosts) {
         INNER JOIN users ON users.id = comments.user_id
         INNER JOIN posts comment_posts ON comment_posts.id = comments.post_id
         WHERE comments.is_deleted = 0
-          AND comments.status = 'published'
+          AND (comments.status = 'published' OR comments.status IS NULL)
           AND comments.post_id IN ($placeholders)
         ORDER BY comments.post_id ASC, comments.created_at DESC, comments.id DESC
     ");

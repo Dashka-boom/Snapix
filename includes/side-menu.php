@@ -39,28 +39,170 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
 
     $typeMap = [
         'post_like' => 'likes',
+        'like' => 'likes',
+        'likes' => 'likes',
         'post_comment' => 'comments',
+        'comment' => 'comments',
+        'comments' => 'comments',
         'comment_deleted' => 'comments',
         'comment_deleted_under_post' => 'comments',
+        'deleted_comment' => 'comments',
         'post_repost' => 'reposts',
+        'repost' => 'reposts',
+        'reposts' => 'reposts',
         'post_saved' => 'saved',
+        'saved' => 'saved',
+        'favorite' => 'saved',
+        'favourite' => 'saved',
         'post_forward' => 'reposts',
+        'forward' => 'reposts',
         'report_post' => 'complaints',
         'report_comment' => 'complaints',
         'report_user' => 'complaints',
+        'report' => 'complaints',
+        'complaint' => 'complaints',
     ];
+    $seenContext = [];
 
     foreach ($notificationStmt->fetchAll() as $notification) {
         $type = (string) ($notification['notification_type'] ?? '');
-        $section = $typeMap[$type] ?? 'complaints';
+        $section = $typeMap[$type] ?? '';
+        if ($section === '') {
+            $legacyTitle = mb_strtolower((string) ($notification['title'] ?? ''));
+            $legacyMessage = mb_strtolower((string) ($notification['message'] ?? ''));
+            if (str_contains($legacyTitle . ' ' . $legacyMessage, 'коммент')) {
+                $section = 'comments';
+            } elseif (str_contains($legacyTitle . ' ' . $legacyMessage, 'лайк')) {
+                $section = 'likes';
+            } elseif (str_contains($legacyTitle . ' ' . $legacyMessage, 'репост')) {
+                $section = 'reposts';
+            } elseif (str_contains($legacyTitle . ' ' . $legacyMessage, 'избран')) {
+                $section = 'saved';
+            } else {
+                $section = 'complaints';
+            }
+        }
         if (isset($empty[$section])) {
             $empty[$section][] = $notification;
         }
+
+        $contextKey = snapix_side_notification_context_key($type, $notification);
+        if ($contextKey !== '') {
+            $seenContext[$contextKey] = true;
+        }
     }
+
+    snapix_side_append_legacy_activity_notifications($pdo, $empty, $userId, $seenContext);
 
     return $empty;
 }
 
+
+
+function snapix_side_notification_context_key(string $type, array $item): string
+{
+    $actorId = (int) ($item['actor_user_id'] ?? $item['user_id'] ?? 0);
+    $postId = (int) ($item['post_id'] ?? 0);
+    $commentId = (int) ($item['comment_id'] ?? 0);
+
+    if ($actorId <= 0 || $postId <= 0 || $type === '') {
+        return '';
+    }
+
+    if ($type === 'post_comment' || $type === 'comment') {
+        return $type . ':' . $actorId . ':' . $postId . ':' . $commentId;
+    }
+
+    return $type . ':' . $actorId . ':' . $postId;
+}
+
+function snapix_side_append_legacy_activity_notifications(PDO $pdo, array &$notifications, int $userId, array $seenContext): void
+{
+    $legacyQueries = [
+        'likes' => [
+            'type' => 'post_like',
+            'message' => 'поставил(а) лайк вашей публикации',
+            'sql' => "
+                SELECT likes.id, likes.post_id, likes.user_id AS actor_user_id, likes.created_at, users.id AS user_id, users.login, users.avatar
+                FROM likes
+                LEFT JOIN posts ON posts.id = likes.post_id
+                LEFT JOIN users ON users.id = likes.user_id
+                WHERE posts.user_id = :user_id
+                  AND posts.is_deleted = 0
+                  AND likes.user_id <> :user_id
+                ORDER BY likes.created_at DESC
+                LIMIT 30
+            ",
+        ],
+        'comments' => [
+            'type' => 'post_comment',
+            'message' => 'прокомментировал(а) вашу публикацию',
+            'sql' => "
+                SELECT comments.id, comments.post_id, comments.id AS comment_id, comments.comment_text, comments.user_id AS actor_user_id, comments.created_at, users.id AS user_id, users.login, users.avatar
+                FROM comments
+                LEFT JOIN posts ON posts.id = comments.post_id
+                LEFT JOIN users ON users.id = comments.user_id
+                WHERE posts.user_id = :user_id
+                  AND posts.is_deleted = 0
+                  AND comments.is_deleted = 0
+                  AND (comments.status = 'published' OR comments.status IS NULL)
+                  AND comments.user_id <> :user_id
+                ORDER BY comments.created_at DESC
+                LIMIT 30
+            ",
+        ],
+        'reposts' => [
+            'type' => 'post_repost',
+            'message' => 'сделал(а) репост вашей публикации',
+            'sql' => "
+                SELECT reposts.id, reposts.post_id, reposts.user_id AS actor_user_id, reposts.created_at, users.id AS user_id, users.login, users.avatar
+                FROM reposts
+                LEFT JOIN posts ON posts.id = reposts.post_id
+                LEFT JOIN users ON users.id = reposts.user_id
+                WHERE posts.user_id = :user_id
+                  AND posts.is_deleted = 0
+                  AND reposts.user_id <> :user_id
+                ORDER BY reposts.created_at DESC
+                LIMIT 30
+            ",
+        ],
+        'saved' => [
+            'type' => 'post_saved',
+            'message' => 'добавил(а) вашу публикацию в избранное',
+            'sql' => "
+                SELECT saved_posts.id, saved_posts.post_id, saved_posts.user_id AS actor_user_id, saved_posts.created_at, users.id AS user_id, users.login, users.avatar
+                FROM saved_posts
+                LEFT JOIN posts ON posts.id = saved_posts.post_id
+                LEFT JOIN users ON users.id = saved_posts.user_id
+                WHERE posts.user_id = :user_id
+                  AND posts.is_deleted = 0
+                  AND saved_posts.user_id <> :user_id
+                ORDER BY saved_posts.created_at DESC
+                LIMIT 30
+            ",
+        ],
+    ];
+
+    foreach ($legacyQueries as $section => $legacyQuery) {
+        $stmt = $pdo->prepare($legacyQuery['sql']);
+        $stmt->execute(['user_id' => $userId]);
+
+        foreach ($stmt->fetchAll() as $legacyItem) {
+            $legacyItem['notification_type'] = $legacyQuery['type'];
+            $legacyItem['message'] = '@' . (string) ($legacyItem['login'] ?? 'user') . ' ' . $legacyQuery['message'];
+            if ($section === 'comments' && (string) ($legacyItem['comment_text'] ?? '') !== '') {
+                $legacyItem['message'] .= ': "' . mb_substr((string) $legacyItem['comment_text'], 0, 120) . '"';
+            }
+            $legacyItem['title'] = 'Уведомление';
+            $contextKey = snapix_side_notification_context_key($legacyQuery['type'], $legacyItem);
+            if ($contextKey !== '' && isset($seenContext[$contextKey])) {
+                continue;
+            }
+
+            $notifications[$section][] = $legacyItem;
+        }
+    }
+}
 
 function snapix_side_fetch_unread_moderation_notification(?array $sideMenuUser): ?array
 {
