@@ -643,9 +643,16 @@ INSERT INTO `users` (`id`, `login`, `email`, `birth_date`, `gender`, `city`, `is
 CREATE TABLE `user_notifications` (
   `id` bigint UNSIGNED NOT NULL,
   `user_id` bigint UNSIGNED NOT NULL,
+  `actor_user_id` bigint UNSIGNED DEFAULT NULL,
+  `target_user_id` bigint UNSIGNED DEFAULT NULL,
+  `notification_type` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `post_id` bigint UNSIGNED DEFAULT NULL,
+  `comment_id` bigint UNSIGNED DEFAULT NULL,
   `report_id` bigint UNSIGNED DEFAULT NULL,
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `comment_text` text COLLATE utf8mb4_general_ci,
+  `report_reason` varchar(1000) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -840,7 +847,12 @@ ALTER TABLE `users`
 ALTER TABLE `user_notifications`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_notifications_user_read` (`user_id`,`is_read`,`created_at`),
-  ADD KEY `idx_notifications_report` (`report_id`);
+  ADD KEY `idx_notifications_report` (`report_id`),
+  ADD KEY `idx_notifications_type_post` (`notification_type`,`post_id`,`created_at`),
+  ADD KEY `idx_notifications_actor` (`actor_user_id`),
+  ADD KEY `idx_notifications_target` (`target_user_id`),
+  ADD KEY `idx_notifications_post` (`post_id`),
+  ADD KEY `idx_notifications_comment` (`comment_id`);
 
 --
 -- AUTO_INCREMENT для сохранённых таблиц

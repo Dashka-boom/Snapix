@@ -196,6 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/index.css">
+    <link rel="icon" href="icon/light theme/logo.png" type="image/png">
     <title>Snapix</title>
 </head>
 <body data-page="edit-post" class="has-side-menu">
