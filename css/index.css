@@ -3617,6 +3617,17 @@ body.has-side-menu {
     overflow-y: auto;
 }
 
+.notifications-drawer.is-comments-tab-active .notifications-drawer-body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.notifications-drawer.is-comments-tab-active .notifications-drawer-body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
 .notifications-drawer-panel {
     display: none;
 }

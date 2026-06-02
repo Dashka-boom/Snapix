@@ -101,11 +101,16 @@
         });
     }
 
+    function setCommentsTabState(tabName) {
+        drawer.classList.toggle('is-comments-tab-active', tabName === 'comments');
+    }
+
     function activateTab(tab) {
         var tabName = tab.getAttribute('data-notification-tab');
         if (!tabName) {
             return;
         }
+        setCommentsTabState(tabName);
 
         tabs.forEach(function (item) {
             var isActive = item === tab;
@@ -129,6 +134,10 @@
     window.addEventListener('resize', scheduleIndicatorUpdate);
     if (tabsWrap) {
         tabsWrap.addEventListener('scroll', scheduleIndicatorUpdate);
+    }
+    var initiallyActiveTab = drawer.querySelector('[data-notification-tab].is-active');
+    if (initiallyActiveTab) {
+        setCommentsTabState(initiallyActiveTab.getAttribute('data-notification-tab'));
     }
     scheduleIndicatorUpdate();
 
