@@ -6661,3 +6661,23 @@ body[data-theme="light"][data-page="home"] .home-post-type-video-icon {
         max-height: 30px !important;
     }
 }
+
+/* Home hover active states: color the icon itself and animate only on click */
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn.is-activating img {
+    animation: feed-action-pop 0.24s ease-out !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-like-btn.is-active img,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-like-btn.is-active .home-hover-like-icon {
+    filter: brightness(0) saturate(100%) invert(36%) sepia(96%) saturate(1913%) hue-rotate(336deg) brightness(99%) contrast(98%) !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-repost-btn.is-reposted img,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-repost-btn.is-reposted .home-hover-repost-icon {
+    filter: brightness(0) saturate(100%) invert(62%) sepia(90%) saturate(430%) hue-rotate(83deg) brightness(90%) contrast(92%) !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-save-btn.is-saved img,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-save-btn.is-saved .home-hover-save-icon {
+    filter: brightness(0) saturate(100%) invert(86%) sepia(35%) saturate(1847%) hue-rotate(334deg) brightness(104%) contrast(98%) !important;
+}
