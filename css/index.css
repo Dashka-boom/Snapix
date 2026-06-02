@@ -6507,15 +6507,17 @@ body[data-page="home"] .feed-card-media .post-type-badge {
     align-items: center !important;
     justify-content: center !important;
     pointer-events: none !important;
+    overflow: hidden !important;
 }
 
 body[data-page="home"] .feed-card-media .post-type-badge img {
     width: 26px !important;
     height: 26px !important;
-    max-width: 26px !important;
-    max-height: 26px !important;
     object-fit: contain !important;
-    filter: brightness(0) invert(1) !important;
+    filter: none !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
 }
 
 body[data-page="home"] .feed-card:hover .post-type-badge,
