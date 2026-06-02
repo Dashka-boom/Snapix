@@ -482,10 +482,11 @@ if ($feedPosts) {
     </div>
 
     <main data-feed-content="for-you">
-        <section class="feed-wrap">
+        <div class="main-feed-layout">
+            <section class="feed-wrap" aria-label="Лента публикаций">
 
-            <?php if ($feedPosts): ?>
-                <div class="feed-list">
+                <?php if ($feedPosts): ?>
+                    <div class="feed-list feed-posts-grid">
                     <?php foreach ($feedPosts as $post): ?>
                         <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
@@ -677,13 +678,49 @@ if ($feedPosts) {
                             </div>
                         </article>
                     <?php endforeach; ?>
-                </div>
-                <p class="empty-state feed-tab-empty is-hidden" data-feed-empty="for-you">В разделе «Для вас» пока нет новых публикаций.</p>
-                <p class="empty-state feed-tab-empty is-hidden" data-feed-empty="following">В подписках пока нет публикаций.</p>
-            <?php else: ?>
-                <p class="empty-state">Лента публикаций пустая. Добавьте первую публикацию.</p>
-            <?php endif; ?>
-        </section>
+                    </div>
+                    <p class="empty-state feed-tab-empty is-hidden" data-feed-empty="for-you">В разделе «Для вас» пока нет новых публикаций.</p>
+                    <p class="empty-state feed-tab-empty is-hidden" data-feed-empty="following">В подписках пока нет публикаций.</p>
+                <?php else: ?>
+                    <p class="empty-state">Лента публикаций пустая. Добавьте первую публикацию.</p>
+                <?php endif; ?>
+            </section>
+
+            <aside class="home-right-sidebar" aria-label="Правая колонка главной страницы">
+                <?php if ($user): ?>
+                    <section class="home-sidebar-card home-sidebar-user">
+                        <a href="profile.php" class="home-sidebar-user-link">
+                            <span class="home-sidebar-avatar"<?php if (!empty($user['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($user['avatar']); ?>');"<?php endif; ?>>
+                                <?php if (empty($user['avatar'])): ?><?php echo htmlspecialchars(mb_substr($user['login'], 0, 1)); ?><?php endif; ?>
+                            </span>
+                            <span class="home-sidebar-user-meta">
+                                <strong><?php echo htmlspecialchars($user['login']); ?></strong>
+                                <small>Текущий пользователь</small>
+                            </span>
+                        </a>
+                    </section>
+                <?php endif; ?>
+
+                <section class="home-sidebar-card home-sidebar-topics">
+                    <h2>Популярные темы</h2>
+                    <div class="home-sidebar-hashtags" aria-label="Популярные хештеги">
+                        <a href="search.php?q=%23snapix">#snapix</a>
+                        <a href="search.php?q=%23photo">#photo</a>
+                        <a href="search.php?q=%23travel">#travel</a>
+                        <a href="search.php?q=%23style">#style</a>
+                        <a href="search.php?q=%23art">#art</a>
+                    </div>
+                </section>
+
+                <nav class="home-sidebar-card home-sidebar-links" aria-label="Юридические ссылки">
+                    <a href="user-agreement.php">Пользовательское соглашение</a>
+                    <a href="privacy-policy.php">Политика конфиденциальности</a>
+                    <a href="terms.php">Условия использования</a>
+                </nav>
+
+                <p class="home-sidebar-copyright">© <?php echo date('Y'); ?> Snapix</p>
+            </aside>
+        </div>
     </main>
 <?php if ($user): ?>
 <div class="share-modal" id="share-post-modal">
