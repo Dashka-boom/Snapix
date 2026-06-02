@@ -21,7 +21,7 @@
             backdrop.classList.add('is-open');
         }
         setTriggerState(true);
-        window.setTimeout(updateIndicator, 40);
+        window.setTimeout(scheduleIndicatorUpdate, 40);
     }
 
     function closeDrawer() {
@@ -92,6 +92,17 @@
         var tabRect = activeTab.getBoundingClientRect();
         indicator.style.width = tabRect.width + 'px';
         indicator.style.transform = 'translateX(' + (tabRect.left - wrapRect.left + tabsWrap.scrollLeft) + 'px)';
+        indicator.style.opacity = '1';
+    }
+
+    function scheduleIndicatorUpdate() {
+        window.requestAnimationFrame(function () {
+            updateIndicator();
+        });
+    }
+
+    function setCommentsTabState(tabName) {
+        drawer.classList.toggle('is-comments-tab-active', tabName === 'comments');
     }
 
     function activateTab(tab) {
@@ -99,6 +110,7 @@
         if (!tabName) {
             return;
         }
+        setCommentsTabState(tabName);
 
         tabs.forEach(function (item) {
             var isActive = item === tab;
@@ -110,7 +122,7 @@
             panel.classList.toggle('is-active', panel.getAttribute('data-notification-panel') === tabName);
         });
 
-        updateIndicator();
+        scheduleIndicatorUpdate();
     }
 
     tabs.forEach(function (tab) {
@@ -119,8 +131,15 @@
         });
     });
 
-    window.addEventListener('resize', updateIndicator);
-    updateIndicator();
+    window.addEventListener('resize', scheduleIndicatorUpdate);
+    if (tabsWrap) {
+        tabsWrap.addEventListener('scroll', scheduleIndicatorUpdate);
+    }
+    var initiallyActiveTab = drawer.querySelector('[data-notification-tab].is-active');
+    if (initiallyActiveTab) {
+        setCommentsTabState(initiallyActiveTab.getAttribute('data-notification-tab'));
+    }
+    scheduleIndicatorUpdate();
 
     drawer.querySelectorAll('[data-notification-request-form]').forEach(function (form) {
         form.addEventListener('submit', function (event) {

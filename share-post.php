@@ -1,6 +1,7 @@
 <?php
 session_start();
 require './config/config.php';
+require './includes/notifications.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -83,6 +84,8 @@ try {
 }
 
 $pdo->prepare('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = :chat_id')->execute(['chat_id' => $chatId]);
+
+snapix_notify_post_action($pdo, (int) $post['id'], $currentUserId, 'post_forward');
 
 $sharesCountStmt = $pdo->prepare('SELECT COUNT(*) FROM messages WHERE post_id = :post_id');
 $sharesCountStmt->execute(['post_id' => (int) $post['id']]);

@@ -3551,8 +3551,13 @@ body.has-side-menu {
     align-items: flex-end;
     gap: 18px;
     overflow-x: auto;
+    overflow-y: visible;
     scrollbar-width: none;
     position: relative;
+    flex: 0 0 auto;
+    min-height: 47px;
+    z-index: 2;
+    background: #040607;
 }
 
 .notifications-drawer-tabs::-webkit-scrollbar {
@@ -3569,11 +3574,17 @@ body.has-side-menu {
     box-shadow: none !important;
     cursor: pointer;
     flex: 0 0 auto;
+    display: inline-flex !important;
+    align-items: flex-end;
     font: inherit;
     font-size: 15px;
     font-weight: 800;
     line-height: 1;
+    opacity: 1 !important;
+    visibility: visible !important;
     transform: none !important;
+    position: relative;
+    z-index: 1;
     transition: color 0.2s ease;
 }
 
@@ -3594,6 +3605,8 @@ body.has-side-menu {
     position: absolute;
     left: 4px;
     bottom: -1px;
+    opacity: 1;
+    pointer-events: none;
     transform: translateX(0);
     transition: transform 0.24s ease, width 0.24s ease;
 }
@@ -3602,6 +3615,17 @@ body.has-side-menu {
     min-height: 0;
     padding-top: 18px;
     overflow-y: auto;
+}
+
+.notifications-drawer.is-comments-tab-active .notifications-drawer-body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.notifications-drawer.is-comments-tab-active .notifications-drawer-body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
 }
 
 .notifications-drawer-panel {
@@ -3704,6 +3728,36 @@ body.has-side-menu {
     border-radius: 20px;
     background: rgba(104, 197, 219, 0.04);
     text-align: center;
+}
+
+.notifications-drawer-avatar-system {
+    background: rgba(104, 197, 219, 0.16);
+}
+
+.notifications-drawer-context {
+    padding: 8px 10px;
+    border-left: 2px solid rgba(104, 197, 219, 0.55);
+    border-radius: 10px;
+    background: rgba(104, 197, 219, 0.06);
+}
+
+.notifications-drawer-link {
+    width: max-content;
+    max-width: 100%;
+    color: #68C5DB !important;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.notifications-drawer-link:hover,
+.notifications-drawer-link:focus-visible {
+    text-decoration: underline;
+}
+
+.notifications-drawer-date {
+    color: #77868b;
+    font-size: 12px;
 }
 
 .notifications-drawer-actions {

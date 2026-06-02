@@ -2,6 +2,7 @@
 session_start();
 require './config/config.php';
 require './includes/admin-auth.php';
+require './includes/notifications.php';
 
 $admin = requireAdmin($pdo);
 $message = '';
@@ -20,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $pdo->beginTransaction();
             try {
-                $commentOwnerStmt = $pdo->prepare('SELECT id, user_id FROM comments WHERE id = :id AND is_deleted = 0 LIMIT 1');
+                $commentOwnerStmt = $pdo->prepare('SELECT id, post_id, user_id, comment_text FROM comments WHERE id = :id AND is_deleted = 0 LIMIT 1');
                 $commentOwnerStmt->execute(['id' => $commentId]);
                 $comment = $commentOwnerStmt->fetch();
 
@@ -36,19 +37,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $markReportStmt->execute(['id' => $reportId]);
                     }
 
-                    $notificationText = "Комментарий удалён администратором за нарушение правил.\n"
-                        . 'Причина: ' . mb_substr($moderationReason, 0, 900) . ".\n"
+                    $reasonText = mb_substr($moderationReason, 0, 900);
+                    $commentText = (string) ($comment['comment_text'] ?? '');
+                    $notificationText = 'Ваш комментарий';
+                    if ($commentText !== '') {
+                        $notificationText .= ' "' . snapix_notification_excerpt($commentText, 120) . '"';
+                    }
+                    $notificationText .= ' под публикацией #' . (int) ($comment['post_id'] ?? 0) . ' был удалён. Причина: ' . $reasonText . ".\n"
                         . 'Предупреждение: при следующем нарушении аккаунт будет удалён.';
 
-                    $insertNotificationStmt = $pdo->prepare(' 
-                        INSERT INTO user_notifications (user_id, report_id, title, message)
-                        VALUES (:user_id, :report_id, :title, :message)
-                    ');
-                    $insertNotificationStmt->execute([
-                        'user_id' => (int) $comment['user_id'],
+                    snapix_create_notification($pdo, [
+                        'target_user_id' => (int) $comment['user_id'],
+                        'actor_user_id' => (int) $admin['id'],
+                        'notification_type' => 'comment_deleted',
+                        'post_id' => (int) ($comment['post_id'] ?? 0),
+                        'comment_id' => (int) $comment['id'],
                         'report_id' => $reportId > 0 ? $reportId : null,
                         'title' => 'Комментарий удалён',
                         'message' => $notificationText,
+                        'comment_text' => $commentText,
+                        'report_reason' => $reasonText,
                     ]);
 
                     $pdo->commit();
@@ -227,6 +235,7 @@ $reports = $reportsStmt->fetchAll();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/admin.css">
+    <link rel="icon" href="icon/light theme/logo.png" type="image/png">
     <title>Snapix</title>
 </head>
 <body>

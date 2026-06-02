@@ -4,6 +4,7 @@ require './config/config.php';
 require_once './includes/side-menu.php';
 require './includes/icons.php';
 require './includes/post-actions.php';
+require './includes/notifications.php';
 
 function buildProfileUrl(int $profileUserId, int $currentUserId): string
 {
@@ -404,7 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             snapix_send_post_action_error('invalid_comment', 422);
         }
 
-        $commentStmt = $pdo->prepare('SELECT comments.id, comments.post_id, comments.user_id, comments.attachment_url, posts.user_id AS post_owner_id FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id LIMIT 1');
+        $commentStmt = $pdo->prepare('SELECT comments.id, comments.post_id, comments.user_id, comments.comment_text, comments.attachment_url, posts.user_id AS post_owner_id FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id LIMIT 1');
         $commentStmt->execute(['id' => $commentId]);
         $comment = $commentStmt->fetch();
         if (!$comment) {
@@ -417,6 +418,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             snapix_send_post_action_error('comment_delete_forbidden', 403);
         }
 
+        $deletedCommentText = (string) ($comment['comment_text'] ?? '');
         $deleteCommentStmt = $pdo->prepare('DELETE FROM comments WHERE id = :id LIMIT 1');
         $deleteCommentStmt->execute(['id' => $commentId]);
 
@@ -426,6 +428,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (is_file($attachmentPath)) {
                 unlink($attachmentPath);
             }
+        }
+
+        if ((int) $comment['user_id'] !== (int) $user['id']) {
+            $message = 'Ваш комментарий под публикацией #' . (int) $comment['post_id'] . ' был удалён';
+            if ($deletedCommentText !== '') {
+                $message = 'Ваш комментарий "' . snapix_notification_excerpt($deletedCommentText, 120) . '" под публикацией #' . (int) $comment['post_id'] . ' был удалён.';
+            }
+
+            snapix_create_notification($pdo, [
+                'target_user_id' => (int) $comment['user_id'],
+                'actor_user_id' => (int) $user['id'],
+                'notification_type' => 'comment_deleted',
+                'post_id' => (int) $comment['post_id'],
+                'comment_id' => $commentId,
+                'title' => 'Комментарий удалён',
+                'message' => $message,
+                'comment_text' => $deletedCommentText,
+            ]);
+        }
+
+        if ($isPostOwner && (int) $comment['user_id'] !== (int) $comment['post_owner_id']) {
+            snapix_create_notification($pdo, [
+                'target_user_id' => (int) $comment['post_owner_id'],
+                'actor_user_id' => (int) $user['id'],
+                'notification_type' => 'comment_deleted_under_post',
+                'post_id' => (int) $comment['post_id'],
+                'comment_id' => $commentId,
+                'title' => 'Комментарий удалён',
+                'message' => 'Комментарий под вашей публикацией #' . (int) $comment['post_id'] . ' был удалён',
+                'comment_text' => $deletedCommentText,
+            ]);
         }
 
         if ($isAjaxPostAction) {
@@ -450,7 +483,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             snapix_send_post_action_error('invalid_report_reason', 422);
         }
 
-        $commentStmt = $pdo->prepare("SELECT comments.id, comments.user_id, comments.post_id FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id AND comments.is_deleted = 0 AND comments.status = 'published' LIMIT 1");
+        $commentStmt = $pdo->prepare("SELECT comments.id, comments.user_id, comments.post_id FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id AND comments.is_deleted = 0 AND (comments.status = 'published' OR comments.status IS NULL) LIMIT 1");
         $commentStmt->execute(['id' => $commentId]);
         $comment = $commentStmt->fetch();
         if (!$comment) {
@@ -470,12 +503,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $insertReportStmt = $pdo->prepare('INSERT INTO moderation_reports (reporter_user_id, target_user_id, target_comment_id, reason_text) VALUES (:reporter_user_id, :target_user_id, :target_comment_id, :reason_text)');
+        $reportReasonText = mb_substr($reportReason, 0, 1000);
         $insertReportStmt->execute([
             'reporter_user_id' => $user['id'],
             'target_user_id' => (int) $comment['user_id'],
             'target_comment_id' => $commentId,
-            'reason_text' => mb_substr($reportReason, 0, 1000),
+            'reason_text' => $reportReasonText,
         ]);
+        $reportId = (int) $pdo->lastInsertId();
+        $commentTextStmt = $pdo->prepare('SELECT comment_text FROM comments WHERE id = :id LIMIT 1');
+        $commentTextStmt->execute(['id' => $commentId]);
+        $reportedCommentText = (string) ($commentTextStmt->fetchColumn() ?: '');
+        snapix_notify_admins($pdo, [
+            'actor_user_id' => (int) $user['id'],
+            'notification_type' => 'report_comment',
+            'post_id' => (int) $comment['post_id'],
+            'comment_id' => $commentId,
+            'report_id' => $reportId,
+            'title' => 'Жалоба на комментарий',
+            'message' => 'Поступила жалоба на комментарий под публикацией',
+            'comment_text' => $reportedCommentText,
+            'report_reason' => $reportReasonText,
+            'dedupe_minutes' => 10,
+        ], (int) $user['id']);
 
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
@@ -496,7 +546,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             snapix_send_post_action_error('empty_comment', 422);
         }
 
-        $commentStmt = $pdo->prepare("SELECT id, post_id, user_id FROM comments WHERE id = :id AND is_deleted = 0 AND status = 'published' LIMIT 1");
+        $commentStmt = $pdo->prepare("SELECT id, post_id, user_id FROM comments WHERE id = :id AND is_deleted = 0 AND (status = 'published' OR status IS NULL) LIMIT 1");
         $commentStmt->execute(['id' => $commentId]);
         $comment = $commentStmt->fetch();
         if (!$comment) {
@@ -531,7 +581,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             snapix_send_post_action_error('invalid_comment', 422);
         }
 
-        $commentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND is_deleted = 0 AND status = 'published' LIMIT 1");
+        $commentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND is_deleted = 0 AND (status = 'published' OR status IS NULL) LIMIT 1");
         $commentStmt->execute(['id' => $commentId]);
         if (!$commentStmt->fetchColumn()) {
             snapix_send_post_action_error('comment_not_found', 404);
@@ -627,6 +677,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $postRow = $postExistsStmt->fetch();
         $postExists = (bool) $postRow;
         $postOwnerId = $postExists ? (int) $postRow['user_id'] : 0;
+        if ($ownerId <= 0) {
+            $ownerId = $postOwnerId;
+        }
 
         if ($postExists && $action === 'toggle_like') {
             $likeExistsStmt = $pdo->prepare('SELECT id FROM likes WHERE user_id = :user_id AND post_id = :post_id');
@@ -647,6 +700,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'post_id' => $postId,
                 ]);
                 $ajaxExtra['liked'] = true;
+                snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_like');
             }
         }
 
@@ -669,6 +723,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'post_id' => $postId,
                 ]);
                 $ajaxExtra['saved'] = true;
+                snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_saved');
             }
         }
 
@@ -678,7 +733,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $attachment = uploadCommentAttachment($_FILES['attachment'] ?? ['error' => UPLOAD_ERR_NO_FILE]);
 
             if ($parentCommentId > 0) {
-                $parentCommentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND post_id = :post_id AND is_deleted = 0 AND status = 'published' LIMIT 1");
+                $parentCommentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND post_id = :post_id AND is_deleted = 0 AND (status = 'published' OR status IS NULL) LIMIT 1");
                 $parentCommentStmt->execute([
                     'id' => $parentCommentId,
                     'post_id' => $postId,
@@ -733,6 +788,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 $commentId = (int) $pdo->lastInsertId();
+                if ($commentStatus === 'published') {
+                    snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_comment', $commentValue, $commentId);
+                }
                 if ($commentStatus === 'pending_review') {
                     $queueStmt = $pdo->prepare('INSERT INTO moderation_queue (comment_id, reason) VALUES (:comment_id, :reason)');
                     $queueStmt->execute([
@@ -781,6 +839,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'post_id' => $postId,
                 ]);
                 $isRepostedNow = true;
+                snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_repost');
             } else {
                 $deleteRepostStmt = $pdo->prepare('DELETE FROM reposts WHERE id = :id AND user_id = :user_id');
                 $deleteRepostStmt->execute([
@@ -805,21 +864,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($postExists && $action === 'report_post' && $ownerId !== (int) $user['id']) {
             $reportReason = trim((string) ($_POST['report_reason'] ?? ''));
+            $reportReasonText = mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000);
             $pdo->prepare('INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text) VALUES (:reporter_user_id, :target_user_id, :reason_text)')
                 ->execute([
                     'reporter_user_id' => $user['id'],
                     'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                    'reason_text' => mb_substr($reportReason !== '' ? $reportReason : ('Жалоба на пост #' . $postId), 0, 1000),
+                    'reason_text' => $reportReasonText,
                 ]);
+            $reportId = (int) $pdo->lastInsertId();
+            snapix_notify_admins($pdo, [
+                'actor_user_id' => (int) $user['id'],
+                'notification_type' => 'report_post',
+                'post_id' => $postId,
+                'report_id' => $reportId,
+                'title' => 'Жалоба на публикацию',
+                'message' => 'Поступила жалоба на публикацию',
+                'report_reason' => $reportReasonText,
+                'dedupe_minutes' => 10,
+            ], (int) $user['id']);
         }
 
         if ($postExists && $action === 'report_post_user' && $ownerId !== (int) $user['id']) {
+            $reportReasonText = 'Жалоба на пользователя через пост #' . $postId;
             $pdo->prepare('INSERT INTO moderation_reports (reporter_user_id, target_user_id, reason_text) VALUES (:reporter_user_id, :target_user_id, :reason_text)')
                 ->execute([
                     'reporter_user_id' => $user['id'],
                     'target_user_id' => $ownerId > 0 ? $ownerId : null,
-                    'reason_text' => 'Жалоба на пользователя через пост #' . $postId,
+                    'reason_text' => $reportReasonText,
                 ]);
+            $reportId = (int) $pdo->lastInsertId();
+            snapix_notify_admins($pdo, [
+                'actor_user_id' => (int) $user['id'],
+                'notification_type' => 'report_user',
+                'post_id' => $postId,
+                'report_id' => $reportId,
+                'title' => 'Жалоба на пользователя',
+                'message' => 'Поступила жалоба на пользователя',
+                'report_reason' => $reportReasonText,
+                'dedupe_minutes' => 10,
+            ], (int) $user['id']);
         }
 
         if ($isAjaxPostAction) {
@@ -898,7 +981,7 @@ $repostsCount = (int) $stmt->fetchColumn();
 
 $postStatsSql = "
     (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
-    (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0 AND comments.status = 'published') AS comments_count,
+    (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0 AND (comments.status = 'published' OR comments.status IS NULL)) AS comments_count,
     (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
     (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id) AS saves_count,
     (SELECT COUNT(*) FROM messages WHERE messages.post_id = posts.id) AS shares_count,
@@ -1016,7 +1099,7 @@ if ($allProfilePosts) {
         INNER JOIN users ON users.id = comments.user_id
         INNER JOIN posts comment_posts ON comment_posts.id = comments.post_id
         WHERE comments.is_deleted = 0
-          AND comments.status = 'published'
+          AND (comments.status = 'published' OR comments.status IS NULL)
           AND comments.post_id IN ($placeholders)
         ORDER BY comments.post_id ASC, comments.created_at DESC, comments.id DESC
     ");
@@ -1085,6 +1168,7 @@ $showFollowingPanel = $panel === 'following';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/index.css">
+    <link rel="icon" href="icon/light theme/logo.png" type="image/png">
     <title>Snapix</title>
 </head>
 <body data-page="profile" class="has-side-menu">
