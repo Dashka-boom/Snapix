@@ -6734,3 +6734,40 @@ body[data-page="home"] .profile-viewer-comment-more {
     font: inherit;
     padding: 0;
 }
+
+/* Home viewer comment controls should match the muted date color, without turquoise button fills. */
+body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like),
+body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):hover,
+body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):focus-visible,
+body[data-page="home"] .profile-viewer-comment-more,
+body[data-page="home"] .profile-viewer-comment-more:hover,
+body[data-page="home"] .profile-viewer-comment-more:focus-visible {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+    outline: none;
+    transform: none !important;
+}
+
+body.light-theme[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like),
+body.light-theme[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):hover,
+body.light-theme[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):focus-visible,
+body.light-theme[data-page="home"] .profile-viewer-comment-more,
+body.light-theme[data-page="home"] .profile-viewer-comment-more:hover,
+body.light-theme[data-page="home"] .profile-viewer-comment-more:focus-visible,
+html.theme-light body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like),
+html.theme-light body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):hover,
+html.theme-light body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):focus-visible,
+html.theme-light body[data-page="home"] .profile-viewer-comment-more,
+html.theme-light body[data-page="home"] .profile-viewer-comment-more:hover,
+html.theme-light body[data-page="home"] .profile-viewer-comment-more:focus-visible,
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like),
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):hover,
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):focus-visible,
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-more,
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-more:hover,
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-more:focus-visible {
+    color: rgba(4, 6, 7, 0.45) !important;
+}
