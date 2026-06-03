@@ -1108,7 +1108,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
 
     window.snapixRenderViewerComments = renderComments;
     window.snapixAppendViewerComment = function (comment) {
-        var postId = viewer.dataset.postId || (comment ? comment.post_id : '');
+        var postId = comment && comment.post_id ? String(comment.post_id) : (viewer.dataset.postId || '');
         if (!postId || !comment) return;
         if (!window.snapixProfileComments[String(postId)]) {
             window.snapixProfileComments[String(postId)] = [];
@@ -1303,14 +1303,26 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     });
 
     if (commentForm) {
-        commentForm.addEventListener('submit', function (event) {
-            event.preventDefault();
-            var input = commentForm.querySelector('[name="comment_text"]');
+        var commentInput = commentForm.querySelector('[name="comment_text"]');
+        var commentSendButton = commentForm.querySelector('.profile-post-viewer-send-btn');
+
+        function setCommentSubmitting(isSubmitting) {
+            commentForm.dataset.snapixSubmitting = isSubmitting ? '1' : '0';
+            if (commentSendButton) {
+                commentSendButton.disabled = isSubmitting;
+            }
+        }
+
+        function submitViewerComment() {
+            if (commentForm.dataset.snapixSubmitting === '1') return;
+
+            var input = commentInput || commentForm.querySelector('[name="comment_text"]');
             var postIdInput = commentForm.querySelector('input[name="post_id"]');
             var text = input ? input.value.trim() : '';
             var postId = postIdInput ? postIdInput.value : '';
             var pendingAttachment = window.snapixGetViewerAttachment ? window.snapixGetViewerAttachment() : null;
             if (!postId || (!text && !pendingAttachment)) return;
+
             var formData = new FormData();
             formData.set('action', 'add_comment');
             formData.set('post_id', postId);
@@ -1318,6 +1330,8 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
             if (pendingAttachment && pendingAttachment.file) {
                 formData.set('attachment', pendingAttachment.file, pendingAttachment.file.name);
             }
+
+            setCommentSubmitting(true);
             fetch(window.location.href, {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -1338,8 +1352,30 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
                 if (window.SnapixPostSync && window.SnapixPostSync.syncPostState) {
                     window.SnapixPostSync.syncPostState(postId, data, 'add_comment', true);
                 }
-            }).catch(function () {});
+            }).catch(function () {}).finally(function () {
+                setCommentSubmitting(false);
+            });
+        }
+
+        commentForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            submitViewerComment();
         });
+
+        if (commentSendButton) {
+            commentSendButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                submitViewerComment();
+            });
+        }
+
+        if (commentInput) {
+            commentInput.addEventListener('keydown', function (event) {
+                if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+                event.preventDefault();
+                submitViewerComment();
+            });
+        }
     }
 
     if (follow) {
