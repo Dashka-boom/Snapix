@@ -15,6 +15,73 @@ function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
     return 'user.php?id=' . $profileUserId;
 }
 
+function uploadCommentAttachment(array $file): ?array
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        snapix_send_post_action_error('attachment_upload_failed', 422);
+    }
+
+    $tmpPath = (string) ($file['tmp_name'] ?? '');
+    $size = (int) ($file['size'] ?? 0);
+    $originalName = (string) ($file['name'] ?? '');
+    $maxSize = 8 * 1024 * 1024;
+
+    if ($tmpPath === '' || !is_uploaded_file($tmpPath) || $size <= 0 || $size > $maxSize) {
+        snapix_send_post_action_error('invalid_attachment', 422);
+    }
+
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+    if (!in_array($extension, $allowedExtensions, true)) {
+        snapix_send_post_action_error('invalid_attachment_type', 422);
+    }
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = $finfo ? (string) finfo_file($finfo, $tmpPath) : '';
+    if ($finfo) {
+        finfo_close($finfo);
+    }
+
+    $allowedMimeTypes = [
+        'image/jpeg' => ['ext' => 'jpg', 'type' => 'image'],
+        'image/png' => ['ext' => 'png', 'type' => 'image'],
+        'image/webp' => ['ext' => 'webp', 'type' => 'image'],
+        'image/gif' => ['ext' => 'gif', 'type' => 'gif'],
+    ];
+
+    if (!isset($allowedMimeTypes[$mimeType]) || !@getimagesize($tmpPath)) {
+        snapix_send_post_action_error('invalid_attachment_type', 422);
+    }
+
+    if (($extension === 'gif' && $mimeType !== 'image/gif') || ($extension !== 'gif' && $mimeType === 'image/gif')) {
+        snapix_send_post_action_error('invalid_attachment_type', 422);
+    }
+
+    $uploadDirectory = __DIR__ . '/uploads/comment_attachments';
+    if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0775, true)) {
+        snapix_send_post_action_error('attachment_directory_failed', 500);
+    }
+
+    $extension = $allowedMimeTypes[$mimeType]['ext'];
+    $filename = 'comment_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+    $targetPath = $uploadDirectory . '/' . $filename;
+    $publicPath = 'uploads/comment_attachments/' . $filename;
+
+    if (!move_uploaded_file($tmpPath, $targetPath)) {
+        snapix_send_post_action_error('attachment_save_failed', 500);
+    }
+
+    return [
+        'path' => $publicPath,
+        'type' => $allowedMimeTypes[$mimeType]['type'],
+    ];
+}
+
 $user = null;
 $shareRecipients = [];
 
@@ -212,22 +279,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
 
         if ($postExists && $action === 'add_comment') {
             $commentText = trim($_POST['comment_text'] ?? '');
+            $attachment = isset($_FILES['attachment']) ? uploadCommentAttachment($_FILES['attachment']) : null;
 
-            if ($commentText !== '') {
-                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text) VALUES (:post_id, :user_id, :comment_text)');
+            if ($commentText !== '' || $attachment) {
+                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text, attachment_url, attachment_type) VALUES (:post_id, :user_id, :comment_text, :attachment_url, :attachment_type)');
                 $commentValue = mb_substr($commentText, 0, 1000);
                 $insertCommentStmt->execute([
                     'post_id' => $postId,
                     'user_id' => $user['id'],
                     'comment_text' => $commentValue,
+                    'attachment_url' => $attachment['path'] ?? null,
+                    'attachment_type' => $attachment['type'] ?? null,
                 ]);
                 $commentId = (int) $pdo->lastInsertId();
                 snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_comment', $commentValue, $commentId);
                 $commentsPostId = $postId;
                 $ajaxExtra['comment'] = [
+                    'comment_id' => $commentId,
+                    'id' => $commentId,
+                    'post_id' => $postId,
+                    'user_id' => (int) $user['id'],
                     'login' => (string) $user['login'],
+                    'avatar_url' => (string) ($user['avatar'] ?? ''),
+                    'avatar' => (string) ($user['avatar'] ?? ''),
                     'profile_url' => buildProfileUrl((int) $user['id'], (int) $user['id']),
+                    'comment_text' => $commentValue,
                     'text' => $commentValue,
+                    'attachment_url' => $attachment['path'] ?? '',
+                    'attachment_type' => $attachment['type'] ?? '',
+                    'created_at' => 'только что',
                 ];
             } elseif ($isAjaxPostAction) {
                 snapix_send_post_action_error('empty_comment');
@@ -479,6 +559,8 @@ if ($feedPosts) {
             comments.id,
             comments.post_id,
             comments.comment_text,
+            comments.attachment_url,
+            comments.attachment_type,
             comments.created_at,
             users.id AS user_id,
             users.login,
@@ -498,6 +580,13 @@ if ($feedPosts) {
             $commentMap[$currentPostId] = [];
         }
 
+        $comment['comment_id'] = (int) $comment['id'];
+        $comment['avatar_url'] = (string) ($comment['avatar'] ?? '');
+        $comment['profile_url'] = buildProfileUrl((int) $comment['user_id'], $user ? (int) $user['id'] : null);
+        $comment['text'] = (string) ($comment['comment_text'] ?? '');
+        $comment['attachment_url'] = (string) ($comment['attachment_url'] ?? '');
+        $comment['attachment_type'] = (string) ($comment['attachment_type'] ?? '');
+        $comment['created_at'] = !empty($comment['created_at']) ? date('d.m.Y H:i', strtotime((string) $comment['created_at'])) : '';
         $commentMap[$currentPostId][] = $comment;
     }
 
@@ -944,23 +1033,73 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         comments.slice().reverse().forEach(function (comment) {
             var row = document.createElement('article');
             row.className = 'profile-viewer-comment';
-            row.setAttribute('data-comment-id', String(comment.id || ''));
+            row.setAttribute('data-comment-id', String(comment.comment_id || comment.id || ''));
             row.setAttribute('data-post-id', String(comment.post_id || postId));
 
-            var avatarNode = document.createElement('span');
+            var profileUrl = comment.profile_url || (comment.user_id ? 'user.php?id=' + encodeURIComponent(String(comment.user_id)) : 'profile.php');
+            var avatarNode = document.createElement('a');
             avatarNode.className = 'profile-viewer-comment-avatar';
-            if (comment.avatar) {
-                avatarNode.style.backgroundImage = "url('" + String(comment.avatar).replace(/'/g, "\\'") + "')";
+            avatarNode.href = profileUrl;
+            var avatarUrl = comment.avatar_url || comment.avatar || '';
+            if (avatarUrl) {
+                avatarNode.style.backgroundImage = "url('" + String(avatarUrl).replace(/'/g, "\'") + "')";
+                avatarNode.textContent = '';
             } else {
                 avatarNode.textContent = String(comment.login || '?').slice(0, 1).toUpperCase();
             }
 
             var body = document.createElement('div');
             body.className = 'profile-viewer-comment-body';
-            body.innerHTML = '<div class="profile-viewer-comment-top"><strong>' + escapeText(comment.login || '') + '</strong><button type="button" class="profile-viewer-comment-more" aria-label="Ещё">•••</button></div>' +
-                '<p>' + escapeText(comment.comment_text || comment.text || '') + '</p>' +
-                '<div class="profile-viewer-comment-actions"><span>' + escapeText(comment.created_at || '') + '</span><button type="button">Ответить</button><button type="button" class="profile-viewer-comment-like" aria-label="Лайк комментария">♡</button></div>';
 
+            var loginLink = document.createElement('a');
+            loginLink.className = 'profile-viewer-comment-login';
+            loginLink.href = profileUrl;
+            loginLink.textContent = comment.login || '';
+            body.appendChild(loginLink);
+
+            var commentText = typeof comment.comment_text !== 'undefined' ? comment.comment_text : (comment.text || '');
+            if (commentText) {
+                var text = document.createElement('div');
+                text.className = 'profile-viewer-comment-text';
+                text.textContent = commentText;
+                body.appendChild(text);
+            }
+
+            if (comment.attachment_url) {
+                var attachment = document.createElement('div');
+                attachment.className = 'profile-viewer-comment-attachment';
+                if (comment.attachment_type) {
+                    attachment.setAttribute('data-attachment-type', comment.attachment_type);
+                }
+                var image = document.createElement('img');
+                image.src = comment.attachment_url;
+                image.alt = '';
+                attachment.appendChild(image);
+                body.appendChild(attachment);
+            }
+
+            var meta = document.createElement('div');
+            meta.className = 'profile-viewer-comment-meta';
+
+            var date = document.createElement('span');
+            date.className = 'profile-viewer-comment-date';
+            date.textContent = comment.created_at || 'только что';
+            meta.appendChild(date);
+
+            var replyButton = document.createElement('button');
+            replyButton.type = 'button';
+            replyButton.className = 'profile-viewer-comment-reply';
+            replyButton.textContent = 'Ответить';
+            meta.appendChild(replyButton);
+
+            var moreButton = document.createElement('button');
+            moreButton.type = 'button';
+            moreButton.className = 'profile-viewer-comment-more';
+            moreButton.setAttribute('aria-label', 'Ещё');
+            moreButton.textContent = '•••';
+            meta.appendChild(moreButton);
+
+            body.appendChild(meta);
             row.appendChild(avatarNode);
             row.appendChild(body);
             commentsHost.appendChild(row);
@@ -1170,30 +1309,29 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
             var postIdInput = commentForm.querySelector('input[name="post_id"]');
             var text = input ? input.value.trim() : '';
             var postId = postIdInput ? postIdInput.value : '';
-            if (!postId || !text) return;
+            var pendingAttachment = window.snapixGetViewerAttachment ? window.snapixGetViewerAttachment() : null;
+            if (!postId || (!text && !pendingAttachment)) return;
+            var formData = new FormData();
+            formData.set('action', 'add_comment');
+            formData.set('post_id', postId);
+            formData.set('comment_text', text);
+            if (pendingAttachment && pendingAttachment.file) {
+                formData.set('attachment', pendingAttachment.file, pendingAttachment.file.name);
+            }
             fetch(window.location.href, {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                     'Accept': 'application/json'
                 },
-                body: new URLSearchParams({ action: 'add_comment', post_id: postId, comment_text: text }).toString()
+                body: formData
             }).then(function (response) { return response.json(); }).then(function (data) {
                 if (!data || !data.ok) return;
                 if (input) input.value = '';
                 if (window.snapixClearViewerAttachment) window.snapixClearViewerAttachment();
                 if (data.comment) {
-                    var comment = {
-                        id: Date.now(),
-                        post_id: postId,
-                        login: data.comment.login || '',
-                        avatar: '',
-                        comment_text: data.comment.text || '',
-                        created_at: 'только что'
-                    };
-                    window.snapixAppendViewerComment(comment);
+                    window.snapixAppendViewerComment(data.comment);
                 }
                 syncCardDataset(postId, data);
                 applyViewerState(data);
@@ -1252,6 +1390,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         var allowedTypes = ['image/gif', 'image/jpeg', 'image/png', 'image/webp'];
         var allowedExtensions = ['gif', 'jpg', 'jpeg', 'png', 'webp'];
         var previewUrl = '';
+        var selectedAttachmentFile = null;
 
         if (!attachmentButton || !attachmentInput || !preview || !previewImage || !removeButton || !inputShell) {
             return;
@@ -1262,6 +1401,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
                 URL.revokeObjectURL(previewUrl);
                 previewUrl = '';
             }
+            selectedAttachmentFile = null;
             attachmentInput.value = '';
             previewImage.removeAttribute('src');
             preview.hidden = true;
@@ -1269,6 +1409,9 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         }
 
         window.snapixClearViewerAttachment = clearAttachment;
+        window.snapixGetViewerAttachment = function () {
+            return selectedAttachmentFile ? {file: selectedAttachmentFile} : null;
+        };
 
         attachmentButton.addEventListener('click', function () {
             attachmentInput.click();
@@ -1287,6 +1430,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
                 return;
             }
 
+            selectedAttachmentFile = file;
             if (previewUrl) {
                 URL.revokeObjectURL(previewUrl);
             }
