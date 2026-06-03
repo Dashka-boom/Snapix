@@ -497,7 +497,7 @@ if ($feedPosts) {
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                         <?php $authorProfileUrl = $user ? buildProfileUrl((int) $post['user_id'], (int) $user['id']) : 'login.php'; ?>
                         <?php $feedScope = (int) $post['is_following_author'] > 0 ? 'following' : 'for-you'; ?>
-                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
+                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['login'] ?? '')); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>" data-post-is-following-author="<?php echo (int) $post['is_following_author'] > 0 ? '1' : '0'; ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
                             <header class="feed-card-header">
                                 <div class="feed-header-main">
                                     <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-avatar-link" aria-label="Открыть профиль <?php echo htmlspecialchars($post['login']); ?>">
@@ -770,6 +770,51 @@ if ($feedPosts) {
             </aside>
         </div>
     </main>
+<div class="profile-post-viewer" id="profilePostViewer" aria-hidden="true">
+    <div class="profile-post-viewer-overlay" data-post-viewer-close></div>
+    <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Просмотр публикации">
+        <button type="button" class="profile-post-viewer-close" data-post-viewer-close aria-label="Закрыть">×</button>
+        <div class="profile-post-viewer-media" id="profilePostViewerMedia"></div>
+        <aside class="profile-post-viewer-side">
+            <header class="profile-post-viewer-head">
+                <div class="profile-post-viewer-author">
+                    <span class="profile-post-viewer-avatar" id="profilePostViewerAvatar"></span>
+                    <strong id="profilePostViewerLogin"></strong>
+                    <span class="profile-post-viewer-follow" id="profilePostViewerFollow">Подписаться</span>
+                </div>
+                <button type="button" class="profile-post-viewer-more" aria-label="Ещё">•••</button>
+            </header>
+            <div class="profile-post-viewer-comments" id="profilePostViewerComments">
+                <p class="profile-post-viewer-empty">Комментариев нет</p>
+            </div>
+            <div class="profile-post-viewer-metrics" data-post-id="">
+                <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-id="" data-post-action="like" aria-label="Лайк"><img class="icon-dark" src="icon/dark theme/like.png" alt=""><img class="icon-light" src="icon/light theme/like.png" alt=""></button><span id="viewerLikesCount" data-post-id="" data-post-count="likes">0</span></div>
+                <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-id="" data-post-action="comment" aria-label="Комментарии"><img class="icon-dark" src="icon/dark theme/comment.png" alt=""><img class="icon-light" src="icon/light theme/comment.png" alt=""></button><span id="viewerCommentsCount" data-post-id="" data-post-count="comments">0</span></div>
+                <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-id="" data-post-action="repost" aria-label="Репост"><img class="icon-dark" src="icon/dark theme/repost.png" alt=""><img class="icon-light" src="icon/light theme/repost.png" alt=""></button><span id="viewerRepostsCount" data-post-id="" data-post-count="reposts">0</span></div>
+                <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-id="" data-post-action="share" aria-label="Отправить в сообщения"><img class="icon-dark" src="icon/dark theme/share.png" alt=""><img class="icon-light" src="icon/light theme/share.png" alt=""></button><span id="viewerSharesCount" data-post-id="" data-post-count="shares">0</span></div>
+                <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-id="" data-post-action="save" aria-label="Избранное"><img class="icon-dark" src="icon/dark theme/favourites.png" alt=""><img class="icon-light" src="icon/light theme/favourites.png" alt=""></button><span id="viewerSavesCount" data-post-id="" data-post-count="saves">0</span></div>
+            </div>
+            <?php if ($user): ?>
+                <form method="post" class="profile-post-viewer-input-row" id="profilePostViewerCommentForm">
+                    <input type="hidden" name="action" value="add_comment">
+                    <input type="hidden" name="post_id" value="">
+                    <input type="hidden" name="parent_comment_id" value="">
+                    <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerAttachmentButton" aria-label="Прикрепить фото"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
+                    <div class="profile-post-viewer-emoji-wrap">
+                        <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerEmojiButton" aria-label="Выбрать эмодзи" aria-expanded="false" aria-controls="profilePostViewerEmojiPicker"><img class="icon-dark" src="icon/dark theme/add stickers.png" alt=""><img class="icon-light" src="icon/light theme/add stickers.png" alt=""></button>
+                        <div class="profile-post-viewer-emoji-picker" id="profilePostViewerEmojiPicker" hidden>
+                            <button type="button" data-emoji="😀">😀</button><button type="button" data-emoji="😂">😂</button><button type="button" data-emoji="😍">😍</button><button type="button" data-emoji="🥰">🥰</button><button type="button" data-emoji="😎">😎</button><button type="button" data-emoji="👍">👍</button><button type="button" data-emoji="🔥">🔥</button><button type="button" data-emoji="❤️">❤️</button>
+                        </div>
+                    </div>
+                    <div class="profile-post-viewer-input-shell" id="profilePostViewerInputShell"><textarea class="profile-post-viewer-input" name="comment_text" rows="1" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"></textarea><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
+                </form>
+            <?php else: ?>
+                <div class="profile-post-viewer-input-row"><a class="profile-post-viewer-login-link" href="login.php">Войдите, чтобы комментировать</a></div>
+            <?php endif; ?>
+        </aside>
+    </div>
+</div>
+
 <?php if ($user): ?>
 <div class="share-modal" id="share-post-modal">
     <div class="share-modal-overlay js-close-share-modal"></div>
@@ -803,6 +848,318 @@ if ($feedPosts) {
 <?php endif; ?>
 <script src="js/post-sync.js"></script>
 <script>
+window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+(function () {
+    var viewer = document.getElementById('profilePostViewer');
+    var mediaHost = document.getElementById('profilePostViewerMedia');
+    var avatar = document.getElementById('profilePostViewerAvatar');
+    var login = document.getElementById('profilePostViewerLogin');
+    var follow = document.getElementById('profilePostViewerFollow');
+    var commentsHost = document.getElementById('profilePostViewerComments');
+    var commentForm = document.getElementById('profilePostViewerCommentForm');
+    var currentUserId = <?php echo (int) ($user['id'] ?? 0); ?>;
+    var actionToEndpoint = { like: 'toggle_like', repost: 'add_repost', save: 'toggle_save' };
+
+    if (!viewer || !mediaHost) {
+        return;
+    }
+
+    function postComments(postId) {
+        return (window.snapixProfileComments || {})[String(postId)] || [];
+    }
+
+    function escapeText(value) {
+        return String(value || '').replace(/[&<>"']/g, function (char) {
+            return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[char];
+        });
+    }
+
+    function renderComments(postId) {
+        if (!commentsHost) {
+            return;
+        }
+        var comments = postComments(postId);
+        commentsHost.innerHTML = '';
+        commentsHost.classList.toggle('has-comments', comments.length > 0);
+
+        if (!comments.length) {
+            commentsHost.innerHTML = '<p class="profile-post-viewer-empty">Комментариев нет</p>';
+            return;
+        }
+
+        comments.slice().reverse().forEach(function (comment) {
+            var row = document.createElement('article');
+            row.className = 'profile-viewer-comment';
+            row.setAttribute('data-comment-id', String(comment.id || ''));
+            row.setAttribute('data-post-id', String(comment.post_id || postId));
+
+            var avatarNode = document.createElement('span');
+            avatarNode.className = 'profile-viewer-comment-avatar';
+            if (comment.avatar) {
+                avatarNode.style.backgroundImage = "url('" + String(comment.avatar).replace(/'/g, "\\'") + "')";
+            } else {
+                avatarNode.textContent = String(comment.login || '?').slice(0, 1).toUpperCase();
+            }
+
+            var body = document.createElement('div');
+            body.className = 'profile-viewer-comment-body';
+            body.innerHTML = '<div class="profile-viewer-comment-top"><strong>' + escapeText(comment.login || '') + '</strong><button type="button" class="profile-viewer-comment-more" aria-label="Ещё">•••</button></div>' +
+                '<p>' + escapeText(comment.comment_text || comment.text || '') + '</p>' +
+                '<div class="profile-viewer-comment-actions"><span>' + escapeText(comment.created_at || '') + '</span><button type="button">Ответить</button><button type="button" class="profile-viewer-comment-like" aria-label="Лайк комментария">♡</button></div>';
+
+            row.appendChild(avatarNode);
+            row.appendChild(body);
+            commentsHost.appendChild(row);
+        });
+    }
+
+    window.snapixRenderViewerComments = renderComments;
+    window.snapixAppendViewerComment = function (comment) {
+        var postId = viewer.dataset.postId || (comment ? comment.post_id : '');
+        if (!postId || !comment) return;
+        if (!window.snapixProfileComments[String(postId)]) {
+            window.snapixProfileComments[String(postId)] = [];
+        }
+        window.snapixProfileComments[String(postId)].push(comment);
+        renderComments(postId);
+        if (commentsHost) commentsHost.scrollTop = commentsHost.scrollHeight;
+    };
+
+    function setViewerCounts(card) {
+        var map = {
+            viewerLikesCount: card.dataset.postLikesCount || '0',
+            viewerCommentsCount: card.dataset.postCommentsCount || '0',
+            viewerRepostsCount: card.dataset.postRepostsCount || '0',
+            viewerSharesCount: card.dataset.postSharesCount || '0',
+            viewerSavesCount: card.dataset.postSavesCount || '0'
+        };
+        Object.keys(map).forEach(function (id) {
+            var node = document.getElementById(id);
+            if (node) node.textContent = map[id];
+        });
+    }
+
+    function actionStateFromCard(card, action) {
+        var selector = action === 'like' ? '.profile-hover-like-btn' : (action === 'repost' ? '.profile-hover-repost-btn' : '.profile-hover-save-btn');
+        var button = card.querySelector(selector);
+        if (action === 'like') return card.dataset.postLiked === '1' || !!(button && button.classList.contains('is-active'));
+        if (action === 'repost') return card.dataset.postReposted === '1' || !!(button && button.classList.contains('is-reposted'));
+        if (action === 'save') return card.dataset.postSaved === '1' || !!(button && button.classList.contains('is-saved'));
+        return false;
+    }
+
+    function applyViewerState(data, animateAction) {
+        if (!data) return;
+        var likeButton = viewer.querySelector('[data-post-action="like"]');
+        var repostButton = viewer.querySelector('[data-post-action="repost"]');
+        var saveButton = viewer.querySelector('[data-post-action="save"]');
+        if (likeButton && typeof data.liked !== 'undefined') likeButton.classList.toggle('is-active', !!data.liked);
+        if (repostButton && typeof data.reposted !== 'undefined') repostButton.classList.toggle('is-reposted', !!data.reposted);
+        if (saveButton && typeof data.saved !== 'undefined') saveButton.classList.toggle('is-saved', !!data.saved);
+        ['likes', 'comments', 'reposts', 'shares', 'saves'].forEach(function (key) {
+            var node = document.querySelector('#profilePostViewer [data-post-count="' + key + '"]');
+            var value = data[key + '_count'];
+            if (node && typeof value !== 'undefined') node.textContent = String(Number(value || 0));
+        });
+        if (animateAction) {
+            var animated = viewer.querySelector('[data-post-action="' + animateAction + '"]');
+            if (animated) {
+                animated.classList.remove('is-activating');
+                void animated.offsetWidth;
+                animated.classList.add('is-activating');
+                window.setTimeout(function () { animated.classList.remove('is-activating'); }, 260);
+            }
+        }
+    }
+
+    function syncCardDataset(postId, data) {
+        document.querySelectorAll('[data-post-id="' + postId + '"]').forEach(function (node) {
+            if (!node.dataset) return;
+            if (typeof data.likes_count !== 'undefined') node.dataset.postLikesCount = String(data.likes_count);
+            if (typeof data.comments_count !== 'undefined') node.dataset.postCommentsCount = String(data.comments_count);
+            if (typeof data.reposts_count !== 'undefined') node.dataset.postRepostsCount = String(data.reposts_count);
+            if (typeof data.shares_count !== 'undefined') node.dataset.postSharesCount = String(data.shares_count);
+            if (typeof data.saves_count !== 'undefined') node.dataset.postSavesCount = String(data.saves_count);
+            if (typeof data.liked !== 'undefined') node.dataset.postLiked = data.liked ? '1' : '0';
+            if (typeof data.saved !== 'undefined') node.dataset.postSaved = data.saved ? '1' : '0';
+            if (typeof data.reposted !== 'undefined') node.dataset.postReposted = data.reposted ? '1' : '0';
+        });
+    }
+
+    function openViewer(card) {
+        var postId = card.dataset.postId || '';
+        var mediaUrl = card.dataset.postMediaUrl || '';
+        var mediaType = card.dataset.postMediaType || 'image';
+        mediaHost.innerHTML = '';
+        if (mediaType === 'video') {
+            var video = document.createElement('video');
+            video.src = mediaUrl;
+            video.controls = true;
+            video.playsInline = true;
+            mediaHost.appendChild(video);
+        } else {
+            var img = document.createElement('img');
+            img.src = mediaUrl;
+            img.alt = 'Публикация';
+            mediaHost.appendChild(img);
+        }
+
+        login.textContent = card.dataset.postAuthorLogin || '';
+        var avatarUrl = card.dataset.postAuthorAvatar || '';
+        avatar.style.backgroundImage = avatarUrl ? "url('" + avatarUrl.replace(/'/g, "\\'") + "')" : '';
+        avatar.textContent = avatarUrl ? '' : (login.textContent || '?').slice(0, 1).toUpperCase();
+        if (follow) {
+            var authorId = Number(card.dataset.postAuthorId || 0);
+            follow.hidden = !currentUserId || currentUserId === authorId || card.dataset.postIsFollowingAuthor === '1';
+        }
+
+        viewer.dataset.postId = postId;
+        viewer.dataset.postAuthorId = card.dataset.postAuthorId || '';
+        viewer.querySelectorAll('[data-post-action], [data-post-count], .profile-post-viewer-metrics').forEach(function (node) {
+            node.setAttribute('data-post-id', postId);
+        });
+        if (commentForm) {
+            var postIdInput = commentForm.querySelector('input[name="post_id"]');
+            var parentInput = commentForm.querySelector('input[name="parent_comment_id"]');
+            var textInput = commentForm.querySelector('[name="comment_text"]');
+            if (postIdInput) postIdInput.value = postId;
+            if (parentInput) parentInput.value = '';
+            if (textInput) textInput.value = '';
+        }
+        setViewerCounts(card);
+        viewer.querySelector('[data-post-action="like"]')?.classList.toggle('is-active', actionStateFromCard(card, 'like'));
+        viewer.querySelector('[data-post-action="repost"]')?.classList.toggle('is-reposted', actionStateFromCard(card, 'repost'));
+        viewer.querySelector('[data-post-action="save"]')?.classList.toggle('is-saved', actionStateFromCard(card, 'save'));
+        renderComments(postId);
+        viewer.classList.add('is-open');
+        viewer.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('is-modal-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeViewer() {
+        viewer.classList.remove('is-open');
+        viewer.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('is-modal-open');
+        document.body.style.overflow = '';
+        mediaHost.innerHTML = '';
+    }
+
+    document.querySelectorAll('body[data-page="home"] .feed-posts-grid .feed-card').forEach(function (card) {
+        card.addEventListener('click', function (event) {
+            if (event.target.closest('button, form, a, input, textarea, select, label, .profile-hover-action-item, .post-menu-wrap')) {
+                return;
+            }
+            openViewer(card);
+        });
+    });
+
+    viewer.querySelectorAll('[data-post-viewer-close]').forEach(function (node) {
+        node.addEventListener('click', closeViewer);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && viewer.classList.contains('is-open')) closeViewer();
+    });
+
+    function sendPostAction(postId, action) {
+        return fetch(window.location.href, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Accept': 'application/json'
+            },
+            body: new URLSearchParams({ post_id: postId, action: action }).toString()
+        }).then(function (response) { return response.json(); });
+    }
+
+    viewer.querySelectorAll('[data-post-action]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var postId = button.getAttribute('data-post-id') || viewer.dataset.postId || '';
+            var action = button.getAttribute('data-post-action') || '';
+            if (!postId) return;
+            if (action === 'comment') {
+                var input = commentForm ? commentForm.querySelector('[name="comment_text"]') : null;
+                if (input) input.focus();
+                return;
+            }
+            if (action === 'share') {
+                if (window.snapixOpenShareModal) window.snapixOpenShareModal(postId);
+                return;
+            }
+            if (!actionToEndpoint[action]) return;
+            sendPostAction(postId, actionToEndpoint[action]).then(function (data) {
+                if (!data || !data.ok) return;
+                syncCardDataset(postId, data);
+                applyViewerState(data, action);
+                if (window.SnapixPostSync && window.SnapixPostSync.syncPostState) {
+                    window.SnapixPostSync.syncPostState(postId, data, actionToEndpoint[action], true);
+                }
+            }).catch(function () {});
+        });
+    });
+
+    if (commentForm) {
+        commentForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            var input = commentForm.querySelector('[name="comment_text"]');
+            var postIdInput = commentForm.querySelector('input[name="post_id"]');
+            var text = input ? input.value.trim() : '';
+            var postId = postIdInput ? postIdInput.value : '';
+            if (!postId || !text) return;
+            fetch(window.location.href, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'Accept': 'application/json'
+                },
+                body: new URLSearchParams({ action: 'add_comment', post_id: postId, comment_text: text }).toString()
+            }).then(function (response) { return response.json(); }).then(function (data) {
+                if (!data || !data.ok) return;
+                if (input) input.value = '';
+                if (data.comment) {
+                    var comment = {
+                        id: Date.now(),
+                        post_id: postId,
+                        login: data.comment.login || '',
+                        avatar: '',
+                        comment_text: data.comment.text || '',
+                        created_at: 'только что'
+                    };
+                    window.snapixAppendViewerComment(comment);
+                }
+                syncCardDataset(postId, data);
+                applyViewerState(data);
+                if (window.SnapixPostSync && window.SnapixPostSync.syncPostState) {
+                    window.SnapixPostSync.syncPostState(postId, data, 'add_comment', true);
+                }
+            }).catch(function () {});
+        });
+    }
+
+    var emojiButton = document.getElementById('profilePostViewerEmojiButton');
+    var emojiPicker = document.getElementById('profilePostViewerEmojiPicker');
+    if (emojiButton && emojiPicker && commentForm) {
+        emojiButton.addEventListener('click', function (event) {
+            event.stopPropagation();
+            emojiPicker.hidden = !emojiPicker.hidden;
+            emojiButton.setAttribute('aria-expanded', emojiPicker.hidden ? 'false' : 'true');
+        });
+        emojiPicker.querySelectorAll('[data-emoji]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var input = commentForm.querySelector('[name="comment_text"]');
+                if (input) {
+                    input.value += button.getAttribute('data-emoji') || '';
+                    input.focus();
+                }
+                emojiPicker.hidden = true;
+            });
+        });
+    }
+})();
 (function () {
     var tabs = document.querySelectorAll('.home-feed-tab');
     var feedContent = document.querySelector('[data-feed-content]');
@@ -1108,10 +1465,18 @@ document.querySelectorAll('.js-post-menu-feedback').forEach(function (button) {
 
     var activePostId = 0;
 
+    function openShareModal(postId) {
+        activePostId = Number(postId || 0);
+        if (activePostId) {
+            modal.classList.add('is-open');
+        }
+    }
+
+    window.snapixOpenShareModal = openShareModal;
+
     document.querySelectorAll('.js-open-share-modal').forEach(function (button) {
         button.addEventListener('click', function () {
-            activePostId = Number(button.getAttribute('data-post-id') || 0);
-            modal.classList.add('is-open');
+            openShareModal(button.getAttribute('data-post-id') || 0);
         });
     });
 

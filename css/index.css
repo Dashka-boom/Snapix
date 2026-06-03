@@ -6683,3 +6683,54 @@ body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-save-
 body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-save-btn.is-saved .home-hover-save-icon {
     filter: brightness(0) saturate(100%) invert(86%) sepia(35%) saturate(1847%) hue-rotate(334deg) brightness(104%) contrast(98%) !important;
 }
+
+/* Home uses the shared profile viewer; keep the close button as the requested turquoise circle. */
+body[data-page="home"] .profile-post-viewer-close {
+    background: #68C5DB !important;
+    color: #040607 !important;
+}
+
+body[data-page="home"] .profile-post-viewer-login-link {
+    color: #68C5DB;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+body[data-page="home"] .profile-viewer-comment-top,
+body[data-page="home"] .profile-viewer-comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body[data-page="home"] .profile-viewer-comment-top {
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+body[data-page="home"] .profile-viewer-comment-top strong {
+    font-size: 14px;
+}
+
+body[data-page="home"] .profile-viewer-comment-body p {
+    margin: 0 0 8px;
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+body[data-page="home"] .profile-viewer-comment-actions {
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 12px;
+}
+
+body[data-page="home"] .profile-viewer-comment-actions button,
+body[data-page="home"] .profile-viewer-comment-more {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+}
