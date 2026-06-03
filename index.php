@@ -1308,9 +1308,8 @@ if ($feedPosts) {
                 </section>
 
                 <nav class="home-sidebar-card home-sidebar-links" aria-label="Юридические ссылки">
-                    <a href="user-agreement.php">Пользовательское соглашение</a>
-                    <a href="privacy-policy.php">Политика конфиденциальности</a>
-                    <a href="terms.php">Условия использования</a>
+                    <a href="privacy.html">Политика конфиденциальности</a>
+                    <a href="terms.html">Условия использования</a>
                 </nav>
 
                 <p class="home-sidebar-copyright">© <?php echo date('Y'); ?> Snapix</p>
