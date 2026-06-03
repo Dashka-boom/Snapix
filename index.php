@@ -853,7 +853,7 @@ if ($feedPosts) {
                     <input type="hidden" name="post_id" value="">
                     <input type="hidden" name="parent_comment_id" value="">
                     <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerAttachmentButton" aria-label="Прикрепить фото"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
-                    <input class="profile-post-viewer-file-input" id="profilePostViewerAttachmentInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+                    <input class="profile-post-viewer-file-input" id="profilePostViewerAttachmentInput" type="file" accept="image/gif,image/jpeg,image/png,image/webp" hidden>
                     <div class="profile-post-viewer-emoji-wrap">
                         <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerEmojiButton" aria-label="Выбрать эмодзи" aria-expanded="false" aria-controls="profilePostViewerEmojiPicker"><img class="icon-dark" src="icon/dark theme/add stickers.png" alt=""><img class="icon-light" src="icon/light theme/add stickers.png" alt=""></button>
                         <div class="profile-post-viewer-emoji-picker" id="profilePostViewerEmojiPicker" hidden>
@@ -1249,8 +1249,8 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         var previewImage = preview ? preview.querySelector('img') : null;
         var removeButton = document.getElementById('profilePostViewerAttachmentRemove');
         var inputShell = document.getElementById('profilePostViewerInputShell');
-        var allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        var allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+        var allowedTypes = ['image/gif', 'image/jpeg', 'image/png', 'image/webp'];
+        var allowedExtensions = ['gif', 'jpg', 'jpeg', 'png', 'webp'];
         var previewUrl = '';
 
         if (!attachmentButton || !attachmentInput || !preview || !previewImage || !removeButton || !inputShell) {
