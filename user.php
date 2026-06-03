@@ -29,6 +29,90 @@ function formatBlockedUntil(?string $value): string
     return date('d.m.Y H:i', $timestamp);
 }
 
+
+function userHasPublicFavourites(array $profileUser): bool
+{
+    foreach (['is_favourites_public', 'favourites_public', 'is_favorites_public', 'favorites_public', 'saved_posts_public', 'is_saved_posts_public'] as $column) {
+        if (array_key_exists($column, $profileUser)) {
+            return (int) $profileUser[$column] === 1;
+        }
+    }
+
+    return false;
+}
+
+function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $currentUser, array $commentMap, string $modalPrefix): void
+{
+    ?>
+    <div class="posts-grid profile-media-grid">
+        <?php foreach ($posts as $post): ?>
+            <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
+            <?php $authorLogin = (string) ($post['author_login'] ?? $profileUser['login']); ?>
+            <?php $authorAvatar = (string) ($post['author_avatar'] ?? $profileUser['avatar'] ?? ''); ?>
+            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars($authorLogin); ?>" data-post-author-avatar="<?php echo htmlspecialchars($authorAvatar); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-viewer-follow-status="<?php echo htmlspecialchars((string) ($post['viewer_follow_status'] ?? '')); ?>">
+                <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
+                    <video class="post-card-media" preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
+                <?php elseif (!empty($post['media_url'])): ?>
+                    <div class="post-card-media" style="background-image: url('<?php echo htmlspecialchars($post['media_url']); ?>');"></div>
+                <?php else: ?>
+                    <div class="post-card-media"></div>
+                <?php endif; ?>
+
+                <span class="post-type-badge" aria-label="<?php echo (($post['media_type'] ?? '') === 'video') ? 'Видео' : 'Фото'; ?>">
+                    <img src="icon/dark theme/<?php echo (($post['media_type'] ?? '') === 'video') ? 'video' : 'images'; ?>.png" alt="">
+                </span>
+
+                <div class="post-hover-overlay" aria-hidden="true">
+                    <div class="profile-hover-action-item">
+                        <?php if ($currentUser): ?>
+                            <form method="post" class="inline-action-form profile-hover-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-like-btn<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? ' is-active' : ''; ?>" data-hover-like-post-id="<?php echo (int) $post['id']; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt="Лайк"></button></form>
+                        <?php else: ?>
+                            <a href="login.php" class="feed-action-btn profile-hover-action-btn profile-hover-like-btn" aria-label="Войти для лайка"><img src="icon/dark theme/like.png" alt="Лайк"></a>
+                        <?php endif; ?>
+                        <span class="feed-action-count"><?php echo (int) ($post['likes_count'] ?? 0); ?></span>
+                    </div>
+                    <div class="profile-hover-action-item">
+                        <?php if ($currentUser): ?>
+                            <form method="post" class="inline-action-form profile-hover-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-repost-btn<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? ' is-reposted' : ''; ?>" data-hover-repost-post-id="<?php echo (int) $post['id']; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt="Репост"></button></form>
+                        <?php else: ?>
+                            <a href="login.php" class="feed-action-btn profile-hover-action-btn profile-hover-repost-btn" aria-label="Войти для репоста"><img src="icon/dark theme/repost.png" alt="Репост"></a>
+                        <?php endif; ?>
+                        <span class="feed-action-count"><?php echo (int) ($post['reposts_count'] ?? 0); ?></span>
+                    </div>
+                    <div class="profile-hover-action-item">
+                        <?php if ($currentUser): ?>
+                            <form method="post" class="inline-action-form profile-hover-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-save-btn<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? ' is-saved' : ''; ?>" data-hover-save-post-id="<?php echo (int) $post['id']; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt="Избранное"></button></form>
+                        <?php else: ?>
+                            <a href="login.php" class="feed-action-btn profile-hover-action-btn profile-hover-save-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt="Избранное"></a>
+                        <?php endif; ?>
+                        <span class="feed-action-count"><?php echo (int) ($post['saves_count'] ?? 0); ?></span>
+                    </div>
+                </div>
+
+                <div class="post-card-copy">
+                    <div class="feed-card-header"><div class="feed-header-main"><strong><?php echo htmlspecialchars($authorLogin); ?></strong></div></div>
+                    <div class="feed-card-buttons" style="margin-top: 10px;">
+                        <?php if ($currentUser): ?>
+                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['likes_count'] ?? 0); ?></span></div>
+                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button><span class="feed-action-count"><?php echo (int) ($post['comments_count'] ?? 0); ?></span></div>
+                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['saves_count'] ?? 0); ?></span></div>
+                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['reposts_count'] ?? 0); ?></span></div>
+                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" data-post-action="share" aria-label="Отправить в сообщения"><img src="icon/dark theme/share.png" alt=""></button><span class="feed-action-count" data-post-id="<?php echo (int) $post['id']; ?>" data-post-count="shares"><?php echo (int) ($post['shares_count'] ?? 0); ?></span></div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>">
+                        <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>"></div>
+                        <div class="comments-modal-dialog"><div class="comments-modal-header"><h3>Комментарии</h3><button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button></div><div class="comments-modal-body">
+                            <?php if ($postComments): ?><?php foreach ($postComments as $comment): ?><div class="comment-item"><strong><?php echo htmlspecialchars($comment['login']); ?></strong><p><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p></div><?php endforeach; ?><?php else: ?><p class="comments-empty">Пока нет комментариев.</p><?php endif; ?>
+                        </div><?php if ($currentUser): ?><form method="post" class="comment-form comments-modal-form"><input type="hidden" name="action" value="add_comment"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea><button type="submit" class="primary-link">Отправить</button></form><?php endif; ?></div>
+                    </div>
+                </div>
+            </article>
+        <?php endforeach; ?>
+    </div>
+    <?php
+}
+
 $currentUser = null;
 $pendingRequestsCount = 0;
 $pendingRequestsPreview = [];
@@ -386,6 +470,9 @@ $followingCount = 0;
 $followersCount = 0;
 $postsCount = 0;
 $posts = [];
+$repostedPosts = [];
+$savedPosts = [];
+$isFavouritesPublic = false;
 $isPrivateProfile = false;
 $followStatus = null;
 $followDeclinedUntil = null;
@@ -429,6 +516,7 @@ if ($profileUser) {
     }
 
     $canViewPrivateProfile = !$isPrivateProfile || $followStatus === 'accepted';
+    $isFavouritesPublic = userHasPublicFavourites($profileUser);
 
     if ($canViewPrivateProfile) {
         $stmt = $pdo->prepare('
@@ -439,8 +527,10 @@ if ($profileUser) {
                    (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
                    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
                    (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id) AS saves_count,
+                   (SELECT COUNT(*) FROM messages WHERE messages.post_id = posts.id) AS shares_count,
                    (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
-                   (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted
+                   (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted,
+                   (SELECT status FROM followers WHERE follower_id = :viewer_id AND following_id = users.id LIMIT 1) AS viewer_follow_status
             FROM posts
             INNER JOIN users ON users.id = posts.user_id
             LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
@@ -452,13 +542,65 @@ if ($profileUser) {
             'viewer_id' => (int) ($currentUser['id'] ?? 0),
         ]);
         $posts = $stmt->fetchAll();
+        $postStatsSql = "
+            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
+            (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0) AS comments_count,
+            (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
+            (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id) AS saves_count,
+            (SELECT COUNT(*) FROM messages WHERE messages.post_id = posts.id) AS shares_count,
+            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
+            (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id AND saved_posts.user_id = :viewer_id) AS is_saved,
+            (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = :viewer_id) AS is_reposted,
+            (SELECT status FROM followers WHERE follower_id = :viewer_id AND following_id = users.id LIMIT 1) AS viewer_follow_status
+        ";
+
+        $stmt = $pdo->prepare("
+            SELECT posts.*, post_media.media_url, post_media.media_type,
+                   users.id AS author_user_id, users.login AS author_login, users.avatar AS author_avatar,
+                   $postStatsSql
+            FROM (
+                SELECT post_id, MAX(created_at) AS last_repost_at
+                FROM reposts
+                WHERE user_id = :id
+                GROUP BY post_id
+            ) user_reposts
+            INNER JOIN posts ON posts.id = user_reposts.post_id AND posts.is_deleted = 0
+            INNER JOIN users ON users.id = posts.user_id
+            LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
+            ORDER BY user_reposts.last_repost_at DESC
+        ");
+        $stmt->execute([
+            'id' => $profileUser['id'],
+            'viewer_id' => (int) ($currentUser['id'] ?? 0),
+        ]);
+        $repostedPosts = $stmt->fetchAll();
+
+        if ($isFavouritesPublic) {
+            $stmt = $pdo->prepare("
+                SELECT posts.*, post_media.media_url, post_media.media_type,
+                       users.id AS author_user_id, users.login AS author_login, users.avatar AS author_avatar,
+                       $postStatsSql
+                FROM saved_posts
+                INNER JOIN posts ON posts.id = saved_posts.post_id AND posts.is_deleted = 0
+                INNER JOIN users ON users.id = posts.user_id
+                LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
+                WHERE saved_posts.user_id = :id
+                ORDER BY saved_posts.created_at DESC
+            ");
+            $stmt->execute([
+                'id' => $profileUser['id'],
+                'viewer_id' => (int) ($currentUser['id'] ?? 0),
+            ]);
+            $savedPosts = $stmt->fetchAll();
+        }
     }
 }
 
 $commentMap = [];
 $repostMap = [];
-if ($posts) {
-    $postIds = array_values(array_unique(array_map(static fn($post): int => (int) $post['id'], $posts)));
+if ($posts || $repostedPosts || $savedPosts) {
+    $allVisiblePosts = array_merge($posts, $repostedPosts, $savedPosts);
+    $postIds = array_values(array_unique(array_map(static fn($post): int => (int) $post['id'], $allVisiblePosts)));
     $placeholders = implode(',', array_fill(0, count($postIds), '?'));
 
     $commentsStmt = $pdo->prepare("
@@ -508,12 +650,12 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
     <link rel="icon" href="icon/light theme/logo.png" type="image/png">
     <title>Snapix</title>
 </head>
-<body data-page="user-profile" class="has-side-menu">
+<body data-page="profile" data-profile-owner="other" class="has-side-menu">
     <?php render_side_menu($currentUser); ?>
 
     <div class="page-glass-nav" aria-hidden="true"></div>
 
-    <main class="profile-page">
+    <main class="profile-page profile-page--other">
         <div class="notification-popover" id="notificationPopover">
             <div class="notification-popover-header">
                 <strong>Заявки</strong>
@@ -526,18 +668,11 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                         <article class="notification-popover-item">
                             <a href="<?php echo htmlspecialchars(profileDestination((int) $request['user_id'], $currentUser ? (int) $currentUser['id'] : null)); ?>" class="request-user">
                                 <span class="request-avatar"<?php if (!empty($request['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($request['avatar']); ?>');"<?php endif; ?>>
-                                    <?php if (empty($request['avatar'])): ?>
-                                        <?php echo htmlspecialchars(mb_substr($request['login'], 0, 1)); ?>
-                                    <?php endif; ?>
+                                    <?php if (empty($request['avatar'])): ?><?php echo htmlspecialchars(mb_substr($request['login'], 0, 1)); ?><?php endif; ?>
                                 </span>
-                                <span class="request-copy">
-                                    <strong><?php echo htmlspecialchars($request['login']); ?></strong>
-                                    <span>Хочет подружиться с вами</span>
-                                </span>
+                                <span class="request-copy"><strong><?php echo htmlspecialchars($request['login']); ?></strong><span>Хочет подружиться с вами</span></span>
                             </a>
-                            <div class="notification-popover-actions">
-                                <a href="connections.php?view=requests" class="secondary-link">Открыть</a>
-                            </div>
+                            <div class="notification-popover-actions"><a href="connections.php?view=requests" class="secondary-link">Открыть</a></div>
                         </article>
                     <?php endforeach; ?>
                 </div>
@@ -547,17 +682,12 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
         </div>
 
         <?php if (!$profileUser): ?>
-            <section class="profile-posts card-surface">
-                <div class="section-heading">
-                    <h1>Профиль не найден</h1>
-                </div>
-                <p class="empty-state">Похоже, этого пользователя не существует или ссылка устарела.</p>
-            </section>
+            <section class="profile-posts card-surface"><div class="section-heading"><h1>Профиль не найден</h1></div><p class="empty-state">Похоже, этого пользователя не существует или ссылка устарела.</p></section>
         <?php else: ?>
-            <section class="profile-cover card-surface<?php echo !empty($profileUser['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($profileUser['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($profileUser['background_image']); ?>');"<?php endif; ?>></section>
+            <section class="profile-hero">
+                <section class="profile-cover card-surface<?php echo !empty($profileUser['background_image']) ? ' has-image' : ''; ?>"<?php if (!empty($profileUser['background_image'])): ?> style="background-image: url('<?php echo htmlspecialchars($profileUser['background_image']); ?>');"<?php endif; ?>></section>
 
-            <section class="profile-summary card-surface">
-                <div class="profile-header">
+                <section class="profile-summary">
                     <div class="profile-avatar-shell">
                         <?php if (!empty($profileUser['avatar'])): ?>
                             <div class="profile-avatar" style="background-image: url('<?php echo htmlspecialchars($profileUser['avatar']); ?>');"></div>
@@ -565,185 +695,99 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                             <div class="profile-avatar"><?php echo htmlspecialchars(mb_substr($profileUser['login'], 0, 1)); ?></div>
                         <?php endif; ?>
                     </div>
-
-                    <div class="profile-main">
-                        <div class="profile-name-row">
-                            <h1 class="profile-username"><?php echo htmlspecialchars($profileUser['login']); ?></h1>
-                        </div>
-
-                        <?php if (!empty($profileUser['bio'])): ?>
-                            <p class="profile-bio"><?php echo nl2br(htmlspecialchars($profileUser['bio'])); ?></p>
-                        <?php endif; ?>
-
-                        <div class="profile-metrics">
-                            <a href="connections.php?view=following&user_id=<?php echo (int) $profileUser['id']; ?>" class="profile-metric profile-metric-link">
-                                <strong><?php echo $followingCount; ?></strong>
-                                <span>Подписки</span>
-                            </a>
-                            <a href="connections.php?view=followers&user_id=<?php echo (int) $profileUser['id']; ?>" class="profile-metric profile-metric-link">
-                                <strong><?php echo $followersCount; ?></strong>
-                                <span>Подписчики</span>
-                            </a>
-                            <div class="profile-metric">
-                                <strong><?php echo $postsCount; ?></strong>
-                                <span>Публикации</span>
+                    <div class="profile-header">
+                        <div class="profile-main">
+                            <div class="profile-name-row">
+                                <h1 class="profile-username"><?php echo htmlspecialchars($profileUser['login']); ?></h1>
+                                <?php if ($isPrivateProfile): ?><img src="icon/light theme/closed account.png" alt="Закрытый профиль" class="profile-private-icon"><?php endif; ?>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="profile-actions">
-                        <?php if ($followBlockedMessage || $isFollowBlocked): ?>
-                            <div class="follow-state-card">
-                                <strong>Заявка временно недоступна</strong>
-                                <p>Повторную заявку можно будет отправить после <?php echo htmlspecialchars(formatBlockedUntil($followDeclinedUntil)); ?>.</p>
+                            <?php if (!empty($profileUser['bio'])): ?><p class="profile-bio"><?php echo nl2br(htmlspecialchars($profileUser['bio'])); ?></p><?php endif; ?>
+                            <div class="profile-metrics">
+                                <span><strong><?php echo $postsCount; ?></strong> публикаций</span>
+                                <a href="connections.php?view=followers&user_id=<?php echo (int) $profileUser['id']; ?>" class="profile-metric-inline-link"><strong><?php echo $followersCount; ?></strong> смотрители</a>
+                                <a href="connections.php?view=following&user_id=<?php echo (int) $profileUser['id']; ?>" class="profile-metric-inline-link"><strong><?php echo $followingCount; ?></strong> смотримые</a>
                             </div>
-                        <?php elseif ($currentUser): ?>
-                            <?php if ($followStatus === 'accepted'): ?>
-                                <form method="post" class="follow-action-form">
-                                    <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
-                                    <input type="hidden" name="action" value="toggle_follow">
-                                    <button type="submit" class="secondary-link">Отписаться</button>
-                                </form>
-                            <?php elseif ($followStatus === 'pending'): ?>
-                                <div class="follow-state-card">
-                                    <strong>Заявка отправлена</strong>
-                                    <p>Этот пользователь получит сообщение, что вы хотите подружиться с ним.</p>
-                                    <form method="post" class="follow-action-form">
-                                        <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
-                                        <input type="hidden" name="action" value="cancel_follow_request">
-                                        <button type="submit" class="secondary-link">Отменить заявку</button>
-                                    </form>
-                                </div>
-                            <?php else: ?>
-                                <form method="post" class="follow-action-form">
-                                    <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
-                                    <input type="hidden" name="action" value="toggle_follow">
-                                    <button type="submit" class="primary-link">
-                                        <?php echo $isPrivateProfile ? 'Хочу подружиться' : 'Подписаться'; ?>
-                                    </button>
-                                </form>
+                            <?php if ($currentUser): ?>
+                                <a href="chat.php?user_id=<?php echo (int) $profileUser['id']; ?>" class="profile-create-btn" aria-label="Написать сообщение">+</a>
                             <?php endif; ?>
-                        <?php else: ?>
-                            <a href="login.php" class="secondary-link profile-edit-btn">Войти</a>
-                        <?php endif; ?>
+                        </div>
 
-                        <?php if ($currentUser && (int) $currentUser['id'] !== (int) $profileUser['id']): ?>
-                            <a href="chat.php?user_id=<?php echo (int) $profileUser['id']; ?>" class="primary-link profile-edit-btn" style="margin-top: 10px;">Написать сообщение</a>
-                            <form method="post" class="follow-action-form" style="display:grid; gap:8px; margin-top: 10px;">
-                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
-                                <input type="hidden" name="action" value="report_user">
-                                <select name="reason_id">
-                                    <option value="">Причина жалобы</option>
-                                    <?php foreach ($reportReasons as $reason): ?>
-                                        <option value="<?php echo (int) $reason['id']; ?>"><?php echo htmlspecialchars($reason['label']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <input type="text" name="custom_reason" maxlength="1000" placeholder="Или своя причина">
-                                <button type="submit" class="secondary-link">Пожаловаться на пользователя</button>
-                            </form>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </section>
-
-            <section class="profile-posts card-surface">
-                <div class="section-heading">
-                    <h2>Публикации</h2>
-                </div>
-
-                <?php if ($isPrivateProfile && !$canViewPrivateProfile): ?>
-                    <div class="private-profile-notice">
-                        <h3>Этот пользователь считает это слишком личным</h3>
-                        <p>Профиль закрыт. Отправьте заявку в подписчики, и после принятия сможете смотреть публикации.</p>
-                    </div>
-                <?php elseif ($posts): ?>
-                    <div class="posts-grid">
-                        <?php foreach ($posts as $post): ?>
-                            <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
-                            <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
-                            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>">
-                                <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
-                                    <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
-                                <?php elseif (!empty($post['media_url'])): ?>
-                                    <div class="post-card-media" style="background-image: url('<?php echo htmlspecialchars($post['media_url']); ?>');"></div>
+                        <div class="profile-actions">
+                            <?php if ($followBlockedMessage || $isFollowBlocked): ?>
+                                <div class="follow-state-card"><strong>Заявка временно недоступна</strong><p>Повторную заявку можно будет отправить после <?php echo htmlspecialchars(formatBlockedUntil($followDeclinedUntil)); ?>.</p></div>
+                            <?php elseif ($currentUser): ?>
+                                <?php if ($followStatus === 'accepted'): ?>
+                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="toggle_follow"><button type="submit" class="secondary-link profile-edit-btn">Отписаться</button></form>
+                                <?php elseif ($followStatus === 'pending'): ?>
+                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="cancel_follow_request"><button type="submit" class="secondary-link profile-edit-btn">Заявка отправлена</button></form>
                                 <?php else: ?>
-                                    <div class="post-card-media"></div>
+                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="toggle_follow"><button type="submit" class="primary-link profile-edit-btn"><?php echo $isPrivateProfile ? 'Подписаться' : 'Подписаться'; ?></button></form>
                                 <?php endif; ?>
-                                <div class="post-card-copy">
-                                    <div class="feed-card-header">
-                                        <div class="feed-header-main"><strong><?php echo htmlspecialchars($profileUser['login']); ?></strong></div>
-                                        <div class="post-menu-wrap">
-                                            <button type="button" class="post-menu-toggle" data-post-menu="user-post-menu-<?php echo (int) $post['id']; ?>" aria-label="Действия с публикацией"><?php echo snapix_icon('more-horizontal'); ?></button>
-                                            <div class="post-menu" id="user-post-menu-<?php echo (int) $post['id']; ?>">
-                                                <?php if ($currentUser): ?>
-                                                    <form method="post"><input type="hidden" name="action" value="report_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" data-report-trigger data-report-login="<?php echo htmlspecialchars((string) ($profileUser['login'] ?? 'user')); ?>" data-report-user-id="<?php echo (int) $profileUser['id']; ?>">Жалоба на пост</button></form>
-                                                    <form method="post"><input type="hidden" name="action" value="report_post_user"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit">Жалоба на пользователя</button></form>
-                                                    <form method="post"><input type="hidden" name="action" value="hide_post"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="owner_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit">Мне не интересна эта публикация</button></form>
-                                                <?php else: ?>
-                                                    <a href="login.php">Войти, чтобы отправить жалобу</a>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <?php if ($currentUser): ?>
-                                        <div class="feed-card-buttons" style="margin-top: 10px;">
-                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) $post['is_liked'] > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
-                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) $post['is_saved'] > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
-                                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) $post['is_reposted'] > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" aria-label="Отправить в сообщения"><img src="icon/dark theme/share.png" alt=""></button></div>
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="feed-card-buttons" style="margin-top: 10px;">
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для лайка"><img src="icon/dark theme/like.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['likes_count']; ?></span></div>
-                                            <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button><span class="feed-action-count"><?php echo (int) $post['comments_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['saves_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для репоста"><img src="icon/dark theme/repost.png" alt=""></a><span class="feed-action-count"><?php echo (int) $post['reposts_count']; ?></span></div>
-                                            <div class="feed-action-item"><a href="login.php" class="feed-action-btn feed-icon-btn" aria-label="Войти для отправки в сообщения"><img src="icon/dark theme/share.png" alt=""></a></div>
-                                        </div>
-                                    <?php endif; ?>
-
-                                    <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-user-<?php echo (int) $post['id']; ?>">
-                                        <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>"></div>
-                                        <div class="comments-modal-dialog">
-                                            <div class="comments-modal-header">
-                                                <h3>Комментарии</h3>
-                                                <button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-user-<?php echo (int) $post['id']; ?>" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button>
-                                            </div>
-                                            <div class="comments-modal-body">
-                                        <?php if ($postComments): ?>
-                                            <?php foreach ($postComments as $comment): ?>
-                                                <div class="comment-item">
-                                                    <strong><?php echo htmlspecialchars($comment['login']); ?></strong>
-                                                    <p><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <p class="comments-empty">Пока нет комментариев.</p>
-                                        <?php endif; ?>
-                                            </div>
-                                            <?php if ($currentUser): ?>
-                                                <form method="post" class="comment-form comments-modal-form">
-                                                    <input type="hidden" name="action" value="add_comment">
-                                                    <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
-                                                    <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
-                                                    <textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea>
-                                                    <button type="submit" class="primary-link">Отправить</button>
-                                                </form>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                </div>
-                            </article>
-                        <?php endforeach; ?>
+                            <?php else: ?>
+                                <a href="login.php" class="secondary-link profile-edit-btn">Войти</a>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                <?php else: ?>
-                    <p class="empty-state">У этого пользователя пока нет публикаций.</p>
+                </section>
+
+                <?php if (!($isPrivateProfile && !$canViewPrivateProfile)): ?>
+                    <section class="profile-tabs-line">
+                        <div class="profile-post-tabs home-feed-tabs" role="tablist" aria-label="Разделы профиля">
+                            <button type="button" class="profile-post-tab home-feed-tab is-active" data-profile-tab-button="publications">Посты</button>
+                            <button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="reposts">Репосты</button>
+                            <?php if ($isFavouritesPublic): ?><button type="button" class="profile-post-tab home-feed-tab" data-profile-tab-button="favourites">Избранное</button><?php endif; ?>
+                        </div>
+                    </section>
                 <?php endif; ?>
             </section>
+
+            <?php if ($isPrivateProfile && !$canViewPrivateProfile): ?>
+                <section class="profile-posts card-surface"><div class="private-profile-notice"><h3>Профиль закрыт</h3><p>Отправьте заявку в подписчики, и после принятия сможете смотреть публикации.</p></div></section>
+            <?php else: ?>
+                <section class="profile-posts card-surface" data-profile-tab-panel="publications">
+                    <?php if ($posts): ?><?php renderOtherProfilePostGrid($posts, $profileUser, $currentUser, $commentMap, 'user-posts'); ?><?php else: ?><p class="empty-state">У этого пользователя пока нет публикаций.</p><?php endif; ?>
+                </section>
+                <section class="profile-posts card-surface" data-profile-tab-panel="reposts" hidden>
+                    <?php if ($repostedPosts): ?><?php renderOtherProfilePostGrid($repostedPosts, $profileUser, $currentUser, $commentMap, 'user-reposts'); ?><?php else: ?><p class="empty-state">У этого пользователя пока нет репостов.</p><?php endif; ?>
+                </section>
+                <?php if ($isFavouritesPublic): ?>
+                    <section class="profile-posts card-surface" data-profile-tab-panel="favourites" hidden>
+                        <?php if ($savedPosts): ?><?php renderOtherProfilePostGrid($savedPosts, $profileUser, $currentUser, $commentMap, 'user-favourites'); ?><?php else: ?><p class="empty-state">В открытом избранном пока нет публикаций.</p><?php endif; ?>
+                    </section>
+                <?php endif; ?>
+            <?php endif; ?>
         <?php endif; ?>
     </main>
+    <?php if ($profileUser && !($isPrivateProfile && !$canViewPrivateProfile)): ?>
+        <div class="profile-post-viewer" id="profilePostViewer" aria-hidden="true">
+            <div class="profile-post-viewer-backdrop" id="profilePostViewerBackdrop"></div>
+            <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Публикация">
+                <button type="button" class="profile-post-viewer-close" id="profilePostViewerClose" aria-label="Закрыть">×</button>
+                <div class="profile-post-viewer-media" id="profilePostViewerMedia"></div>
+                <aside class="profile-post-viewer-side">
+                    <div class="profile-post-viewer-author">
+                        <span class="profile-post-viewer-avatar" id="profilePostViewerAvatar"></span>
+                        <a href="#" class="profile-post-viewer-login-link-name" id="profilePostViewerLoginLink"><strong id="profilePostViewerLogin"></strong></a>
+                        <button type="button" class="profile-post-viewer-follow" id="profilePostViewerFollow"><?php echo $followStatus === 'accepted' ? 'Вы подписаны' : 'Подписаться'; ?></button>
+                    </div>
+                    <div class="profile-post-viewer-comments" id="profilePostViewerComments"><p class="profile-post-viewer-empty">Комментариев нет</p></div>
+                    <div class="profile-post-viewer-metrics" data-post-id="">
+                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-action="like" aria-label="Лайк"><img class="icon-dark" src="icon/dark theme/like.png" alt=""><img class="icon-light" src="icon/light theme/like.png" alt=""></button><span id="viewerLikesCount" data-post-count="likes">0</span></div>
+                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-action="comment" aria-label="Комментарии"><img class="icon-dark" src="icon/dark theme/comment.png" alt=""><img class="icon-light" src="icon/light theme/comment.png" alt=""></button><span id="viewerCommentsCount" data-post-count="comments">0</span></div>
+                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-action="repost" aria-label="Репост"><img class="icon-dark" src="icon/dark theme/repost.png" alt=""><img class="icon-light" src="icon/light theme/repost.png" alt=""></button><span id="viewerRepostsCount" data-post-count="reposts">0</span></div>
+                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-action="share" aria-label="Отправить в сообщения"><img class="icon-dark" src="icon/dark theme/share.png" alt=""><img class="icon-light" src="icon/light theme/share.png" alt=""></button><span id="viewerSharesCount" data-post-count="shares">0</span></div>
+                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-action="save" aria-label="Избранное"><img class="icon-dark" src="icon/dark theme/favourites.png" alt=""><img class="icon-light" src="icon/light theme/favourites.png" alt=""></button><span id="viewerSavesCount" data-post-count="saves">0</span></div>
+                    </div>
+                    <?php if ($currentUser): ?>
+                        <form method="post" class="profile-post-viewer-input-row" id="profilePostViewerCommentForm">
+                            <input type="hidden" name="action" value="add_comment"><input type="hidden" name="post_id" value=""><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                            <div class="profile-post-viewer-input-shell"><textarea class="profile-post-viewer-input" name="comment_text" rows="1" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"></textarea><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
+                        </form>
+                    <?php endif; ?>
+                </aside>
+            </div>
+        </div>
+    <?php endif; ?>
     <?php if ($currentUser): ?>
         <div class="share-modal" id="share-post-modal">
             <div class="share-modal-overlay js-close-share-modal"></div>
@@ -795,6 +839,95 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 popover.classList.remove('is-open');
             });
         })();
+
+        document.querySelectorAll('[data-profile-tab-button]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const tab = button.getAttribute('data-profile-tab-button');
+                document.querySelectorAll('[data-profile-tab-button]').forEach((item) => {
+                    item.classList.toggle('is-active', item === button);
+                });
+                document.querySelectorAll('[data-profile-tab-panel]').forEach((panel) => {
+                    panel.hidden = panel.getAttribute('data-profile-tab-panel') !== tab;
+                });
+            });
+        });
+
+        const profilePostViewer = document.getElementById('profilePostViewer');
+        const profileViewerMedia = document.getElementById('profilePostViewerMedia');
+        const profileViewerComments = document.getElementById('profilePostViewerComments');
+        const profileViewerCommentForm = document.getElementById('profilePostViewerCommentForm');
+
+        function closeProfilePostViewer() {
+            if (profilePostViewer) {
+                profilePostViewer.classList.remove('is-open');
+                profilePostViewer.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        function openProfilePostViewer(card) {
+            if (!profilePostViewer || !card) return;
+            const postId = card.getAttribute('data-post-id') || '';
+            profilePostViewer.dataset.postId = postId;
+            profilePostViewer.classList.add('is-open');
+            profilePostViewer.setAttribute('aria-hidden', 'false');
+
+            const mediaUrl = card.dataset.postMediaUrl || '';
+            const mediaType = card.dataset.postMediaType || 'image';
+            if (profileViewerMedia) {
+                profileViewerMedia.innerHTML = mediaType === 'video'
+                    ? '<video controls autoplay src="' + mediaUrl.replace(/"/g, '&quot;') + '"></video>'
+                    : '<div class="profile-post-viewer-image" style="background-image:url(\'' + mediaUrl.replace(/'/g, "\\'") + '\')"></div>';
+            }
+
+            const login = document.getElementById('profilePostViewerLogin');
+            const loginLink = document.getElementById('profilePostViewerLoginLink');
+            const avatar = document.getElementById('profilePostViewerAvatar');
+            if (login) login.textContent = card.dataset.postAuthorLogin || '';
+            if (loginLink) loginLink.href = 'user.php?id=' + (card.dataset.postAuthorId || '');
+            if (avatar) avatar.style.backgroundImage = card.dataset.postAuthorAvatar ? 'url(' + card.dataset.postAuthorAvatar + ')' : '';
+
+            const counts = { viewerLikesCount: 'postLikesCount', viewerCommentsCount: 'postCommentsCount', viewerRepostsCount: 'postRepostsCount', viewerSharesCount: 'postSharesCount', viewerSavesCount: 'postSavesCount' };
+            Object.keys(counts).forEach((id) => { const node = document.getElementById(id); if (node) node.textContent = card.dataset[counts[id]] || '0'; });
+            profilePostViewer.querySelector('[data-post-action="like"]')?.classList.toggle('is-active', card.dataset.postLiked === '1');
+            profilePostViewer.querySelector('[data-post-action="repost"]')?.classList.toggle('is-reposted', card.dataset.postReposted === '1');
+            profilePostViewer.querySelector('[data-post-action="save"]')?.classList.toggle('is-saved', card.dataset.postSaved === '1');
+            if (profileViewerCommentForm) profileViewerCommentForm.querySelector('input[name="post_id"]').value = postId;
+
+            const commentsButton = card.querySelector('.js-open-comments-modal');
+            const modal = commentsButton ? document.getElementById(commentsButton.getAttribute('data-modal') || '') : null;
+            const sourceComments = modal ? modal.querySelector('.comments-modal-body') : null;
+            if (profileViewerComments) {
+                profileViewerComments.innerHTML = sourceComments && sourceComments.innerHTML.trim() ? sourceComments.innerHTML : '<p class="profile-post-viewer-empty">Комментариев нет</p>';
+            }
+        }
+
+        document.getElementById('profilePostViewerClose')?.addEventListener('click', closeProfilePostViewer);
+        document.getElementById('profilePostViewerBackdrop')?.addEventListener('click', closeProfilePostViewer);
+        document.querySelectorAll('.profile-media-grid .post-card').forEach((card) => {
+            card.addEventListener('click', (event) => {
+                if (event.target.closest('form, button, a, video, .comments-modal')) return;
+                openProfilePostViewer(card);
+            });
+        });
+
+        profilePostViewer?.querySelectorAll('[data-post-action]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const postId = profilePostViewer.dataset.postId || '';
+                const card = document.querySelector('.post-card[data-post-id="' + postId + '"]');
+                const action = button.getAttribute('data-post-action');
+                if (action === 'comment') {
+                    profileViewerCommentForm?.querySelector('textarea[name="comment_text"]')?.focus();
+                    return;
+                }
+                if (action === 'share') {
+                    card?.querySelector('.js-open-share-modal')?.click();
+                    return;
+                }
+                const formAction = action === 'like' ? 'toggle_like' : (action === 'save' ? 'toggle_save' : 'add_repost');
+                const form = card ? Array.from(card.querySelectorAll('form.inline-action-form')).find((item) => item.querySelector('input[name="action"]')?.value === formAction) : null;
+                form?.requestSubmit();
+            });
+        });
 
         document.querySelectorAll('.js-open-comments-modal').forEach((button) => {
             button.addEventListener('click', () => {
@@ -866,7 +999,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
     function updateActionState(form, data) {
         var actionInput = form.querySelector('input[name="action"]');
         var action = actionInput ? actionInput.value : '';
-        var item = form.closest('.feed-action-item');
+        var item = form.closest('.feed-action-item, .profile-hover-action-item');
         var button = form.querySelector('.feed-action-btn');
         var countNode = item ? item.querySelector('.feed-action-count') : null;
 
