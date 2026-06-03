@@ -56,6 +56,20 @@ function ensureCommentAttachmentStorage(PDO $pdo): void
             CONSTRAINT fk_moderation_queue_comment FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS comment_likes (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            comment_id BIGINT UNSIGNED NOT NULL,
+            user_id BIGINT UNSIGNED NOT NULL,
+            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_comment_likes_comment_user (comment_id, user_id),
+            KEY idx_comment_likes_user (user_id),
+            CONSTRAINT fk_comment_likes_comment FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE,
+            CONSTRAINT fk_comment_likes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    ");
 }
 
 function combineModerationResults(array ...$results): array
@@ -306,7 +320,7 @@ $reportReasons = $reportReasonsStmt->fetchAll();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     $action = $_POST['action'] ?? '';
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'delete_comment', 'get_post_counts', 'modal_follow_author'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'delete_comment', 'toggle_comment_like', 'get_post_counts', 'modal_follow_author'], true);
     $ajaxExtra = [];
 
     if ($action === 'modal_follow_author') {
@@ -442,6 +456,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
         exit;
     }
 
+    if ($action === 'toggle_comment_like') {
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        if ($commentId <= 0) {
+            snapix_send_post_action_error('invalid_comment', 422);
+        }
+
+        $commentStmt = $pdo->prepare("SELECT id FROM comments WHERE id = :id AND is_deleted = 0 AND (status = 'published' OR status IS NULL) LIMIT 1");
+        $commentStmt->execute(['id' => $commentId]);
+        if (!$commentStmt->fetchColumn()) {
+            snapix_send_post_action_error('comment_not_found', 404);
+        }
+
+        $likeStmt = $pdo->prepare('SELECT id FROM comment_likes WHERE comment_id = :comment_id AND user_id = :user_id LIMIT 1');
+        $likeStmt->execute([
+            'comment_id' => $commentId,
+            'user_id' => $user['id'],
+        ]);
+        $likeId = $likeStmt->fetchColumn();
+
+        if ($likeId) {
+            $pdo->prepare('DELETE FROM comment_likes WHERE id = :id')->execute(['id' => $likeId]);
+            $liked = false;
+        } else {
+            $pdo->prepare('INSERT INTO comment_likes (comment_id, user_id) VALUES (:comment_id, :user_id)')->execute([
+                'comment_id' => $commentId,
+                'user_id' => $user['id'],
+            ]);
+            $liked = true;
+        }
+
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM comment_likes WHERE comment_id = :comment_id');
+        $countStmt->execute(['comment_id' => $commentId]);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'comment_id' => $commentId,
+            'liked' => $liked,
+            'comment_likes_count' => (int) $countStmt->fetchColumn(),
+        ]);
+        exit;
+    }
+
     $postId = (int) ($_POST['post_id'] ?? 0);
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
     $postExists = false;
@@ -573,6 +630,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                     'attachment_type' => $attachment['type'] ?? '',
                     'created_at' => 'только что',
                     'status' => $commentStatus,
+                    'likes_count' => 0,
+                    'is_liked' => false,
                 ] : null;
             } elseif ($isAjaxPostAction) {
                 snapix_send_post_action_error('empty_comment');
@@ -829,7 +888,9 @@ if ($feedPosts) {
             comments.created_at,
             users.id AS user_id,
             users.login,
-            users.avatar
+            users.avatar,
+            (SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.id) AS likes_count,
+            (SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.id AND comment_likes.user_id = {$currentUserId}) AS is_liked
         FROM comments
         INNER JOIN users ON users.id = comments.user_id
         WHERE comments.is_deleted = 0
@@ -852,6 +913,8 @@ if ($feedPosts) {
         $comment['text'] = (string) ($comment['comment_text'] ?? '');
         $comment['attachment_url'] = (string) ($comment['attachment_url'] ?? '');
         $comment['attachment_type'] = (string) ($comment['attachment_type'] ?? '');
+        $comment['likes_count'] = (int) ($comment['likes_count'] ?? 0);
+        $comment['is_liked'] = (int) ($comment['is_liked'] ?? 0) > 0;
         $comment['created_at'] = !empty($comment['created_at']) ? date('d.m.Y H:i', strtotime((string) $comment['created_at'])) : '';
         $commentMap[$currentPostId][] = $comment;
     }
@@ -1292,6 +1355,17 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         });
     }
 
+    function updateCommentLikeCache(commentId, isLiked, likesCount) {
+        Object.keys(window.snapixProfileComments || {}).forEach(function (postId) {
+            (window.snapixProfileComments[postId] || []).forEach(function (comment) {
+                if (String(comment.comment_id || comment.id || '') === String(commentId)) {
+                    comment.is_liked = !!isLiked;
+                    comment.likes_count = Number(likesCount || 0);
+                }
+            });
+        });
+    }
+
     function closeCommentMenus(exceptMenu) {
         document.querySelectorAll('#profilePostViewer .profile-viewer-comment-menu.is-open').forEach(function (menu) {
             if (!exceptMenu || menu !== exceptMenu) {
@@ -1380,6 +1454,15 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
             replyButton.className = 'profile-viewer-comment-reply';
             replyButton.textContent = 'Ответить';
             meta.appendChild(replyButton);
+
+            var likeButton = document.createElement('button');
+            likeButton.type = 'button';
+            likeButton.className = 'profile-viewer-comment-like' + (comment.is_liked ? ' is-active' : '');
+            likeButton.setAttribute('aria-label', 'Лайк комментария');
+            likeButton.innerHTML = '<img src="icon/dark theme/like.png" alt=""><span data-comment-like-count></span>';
+            var likeCount = likeButton.querySelector('[data-comment-like-count]');
+            if (likeCount) likeCount.textContent = String(Number(comment.likes_count || 0));
+            meta.appendChild(likeButton);
 
             if (canDeleteComment(comment)) {
                 var menu = document.createElement('div');
@@ -1571,6 +1654,40 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
 
     document.addEventListener('click', function (event) {
         closeCommentMenus(event.target.closest ? event.target.closest('#profilePostViewer .profile-viewer-comment-menu') : null);
+
+        var likeButton = event.target.closest ? event.target.closest('#profilePostViewer .profile-viewer-comment-like') : null;
+        if (likeButton) {
+            event.preventDefault();
+            if (!currentUserId) return;
+            var likeCommentNode = likeButton.closest('.profile-viewer-comment');
+            var likeCommentId = likeCommentNode ? likeCommentNode.getAttribute('data-comment-id') : '';
+            if (!likeCommentId || likeButton.disabled) return;
+
+            var likeParams = new URLSearchParams();
+            likeParams.set('action', 'toggle_comment_like');
+            likeParams.set('comment_id', likeCommentId);
+            likeButton.disabled = true;
+
+            fetch(window.location.href, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'Accept': 'application/json'
+                },
+                body: likeParams.toString()
+            }).then(function (response) { return response.json(); }).then(function (data) {
+                if (!data || !data.ok) return;
+                likeButton.classList.toggle('is-active', !!data.liked);
+                var countNode = likeButton.querySelector('[data-comment-like-count]');
+                if (countNode) countNode.textContent = String(Number(data.comment_likes_count || 0));
+                updateCommentLikeCache(likeCommentId, data.liked, data.comment_likes_count);
+            }).catch(function () {}).finally(function () {
+                likeButton.disabled = false;
+            });
+            return;
+        }
 
         var toggle = event.target.closest ? event.target.closest('#profilePostViewer .profile-viewer-comment-menu-toggle') : null;
         if (toggle) {
