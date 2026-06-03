@@ -853,13 +853,14 @@ if ($feedPosts) {
                     <input type="hidden" name="post_id" value="">
                     <input type="hidden" name="parent_comment_id" value="">
                     <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerAttachmentButton" aria-label="Прикрепить фото"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
+                    <input class="profile-post-viewer-file-input" id="profilePostViewerAttachmentInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
                     <div class="profile-post-viewer-emoji-wrap">
                         <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerEmojiButton" aria-label="Выбрать эмодзи" aria-expanded="false" aria-controls="profilePostViewerEmojiPicker"><img class="icon-dark" src="icon/dark theme/add stickers.png" alt=""><img class="icon-light" src="icon/light theme/add stickers.png" alt=""></button>
                         <div class="profile-post-viewer-emoji-picker" id="profilePostViewerEmojiPicker" hidden>
                             <button type="button" data-emoji="😀">😀</button><button type="button" data-emoji="😂">😂</button><button type="button" data-emoji="😍">😍</button><button type="button" data-emoji="🥰">🥰</button><button type="button" data-emoji="😎">😎</button><button type="button" data-emoji="👍">👍</button><button type="button" data-emoji="🔥">🔥</button><button type="button" data-emoji="❤️">❤️</button>
                         </div>
                     </div>
-                    <div class="profile-post-viewer-input-shell" id="profilePostViewerInputShell"><textarea class="profile-post-viewer-input" name="comment_text" rows="1" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"></textarea><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
+                    <div class="profile-post-viewer-input-shell" id="profilePostViewerInputShell"><div class="profile-post-viewer-attachment-preview" id="profilePostViewerAttachmentPreview" hidden><img src="" alt="Предпросмотр вложения"><button type="button" id="profilePostViewerAttachmentRemove" aria-label="Удалить вложение">×</button></div><textarea class="profile-post-viewer-input" name="comment_text" rows="1" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"></textarea><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
                 </form>
             <?php else: ?>
                 <div class="profile-post-viewer-input-row"><a class="profile-post-viewer-login-link" href="login.php">Войдите, чтобы комментировать</a></div>
@@ -1086,6 +1087,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
             if (postIdInput) postIdInput.value = postId;
             if (parentInput) parentInput.value = '';
             if (textInput) textInput.value = '';
+            if (window.snapixClearViewerAttachment) window.snapixClearViewerAttachment();
         }
         setViewerCounts(card);
         viewer.querySelector('[data-post-action="like"]')?.classList.toggle('is-active', actionStateFromCard(card, 'like'));
@@ -1181,6 +1183,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
             }).then(function (response) { return response.json(); }).then(function (data) {
                 if (!data || !data.ok) return;
                 if (input) input.value = '';
+                if (window.snapixClearViewerAttachment) window.snapixClearViewerAttachment();
                 if (data.comment) {
                     var comment = {
                         id: Date.now(),
@@ -1238,6 +1241,63 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
             });
         });
     }
+
+    (function () {
+        var attachmentButton = document.getElementById('profilePostViewerAttachmentButton');
+        var attachmentInput = document.getElementById('profilePostViewerAttachmentInput');
+        var preview = document.getElementById('profilePostViewerAttachmentPreview');
+        var previewImage = preview ? preview.querySelector('img') : null;
+        var removeButton = document.getElementById('profilePostViewerAttachmentRemove');
+        var inputShell = document.getElementById('profilePostViewerInputShell');
+        var allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        var allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+        var previewUrl = '';
+
+        if (!attachmentButton || !attachmentInput || !preview || !previewImage || !removeButton || !inputShell) {
+            return;
+        }
+
+        function clearAttachment() {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                previewUrl = '';
+            }
+            attachmentInput.value = '';
+            previewImage.removeAttribute('src');
+            preview.hidden = true;
+            inputShell.classList.remove('has-attachment');
+        }
+
+        window.snapixClearViewerAttachment = clearAttachment;
+
+        attachmentButton.addEventListener('click', function () {
+            attachmentInput.click();
+        });
+
+        attachmentInput.addEventListener('change', function () {
+            var file = attachmentInput.files && attachmentInput.files[0] ? attachmentInput.files[0] : null;
+            if (!file) {
+                clearAttachment();
+                return;
+            }
+
+            var extension = (file.name.split('.').pop() || '').toLowerCase();
+            if ((file.type && allowedTypes.indexOf(file.type) === -1) || allowedExtensions.indexOf(extension) === -1) {
+                clearAttachment();
+                return;
+            }
+
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+            previewUrl = URL.createObjectURL(file);
+            previewImage.src = previewUrl;
+            preview.hidden = false;
+            inputShell.classList.add('has-attachment');
+        });
+
+        removeButton.addEventListener('click', clearAttachment);
+    })();
 
     var emojiButton = document.getElementById('profilePostViewerEmojiButton');
     var emojiPicker = document.getElementById('profilePostViewerEmojiPicker');
