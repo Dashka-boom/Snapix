@@ -53,8 +53,61 @@ $reportReasons = $reportReasonsStmt->fetchAll();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     $action = $_POST['action'] ?? '';
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'get_post_counts'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'get_post_counts', 'modal_follow_author'], true);
     $ajaxExtra = [];
+
+    if ($action === 'modal_follow_author') {
+        $targetUserId = (int) ($_POST['author_id'] ?? 0);
+
+        if (!$user || $targetUserId <= 0 || $targetUserId === (int) $user['id']) {
+            snapix_send_post_action_error('invalid_target_user', 400);
+        }
+
+        $targetStmt = $pdo->prepare('SELECT id, is_private FROM users WHERE id = :id LIMIT 1');
+        $targetStmt->execute(['id' => $targetUserId]);
+        $targetUser = $targetStmt->fetch();
+
+        if (!$targetUser) {
+            snapix_send_post_action_error('user_not_found', 404);
+        }
+
+        $relationStmt = $pdo->prepare('SELECT id, status, declined_until FROM followers WHERE follower_id = :follower_id AND following_id = :following_id LIMIT 1');
+        $relationStmt->execute([
+            'follower_id' => (int) $user['id'],
+            'following_id' => $targetUserId,
+        ]);
+        $relation = $relationStmt->fetch();
+
+        $isBlocked = $relation
+            && $relation['status'] === 'declined'
+            && !empty($relation['declined_until'])
+            && strtotime((string) $relation['declined_until']) > time();
+
+        if ($isBlocked) {
+            snapix_send_post_action_error('follow_blocked', 403);
+        }
+
+        $nextStatus = !empty($targetUser['is_private']) ? 'pending' : 'accepted';
+
+        if (!$relation) {
+            $insertFollowStmt = $pdo->prepare('INSERT INTO followers (follower_id, following_id, status, declined_until) VALUES (:follower_id, :following_id, :status, NULL)');
+            $insertFollowStmt->execute([
+                'follower_id' => (int) $user['id'],
+                'following_id' => $targetUserId,
+                'status' => $nextStatus,
+            ]);
+        } elseif ($relation['status'] !== 'accepted') {
+            $updateFollowStmt = $pdo->prepare('UPDATE followers SET status = :status, declined_until = NULL WHERE id = :id');
+            $updateFollowStmt->execute([
+                'status' => $nextStatus,
+                'id' => (int) $relation['id'],
+            ]);
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => true, 'status' => $nextStatus]);
+        exit;
+    }
 
     if ($action === 'report_comment') {
         $commentId = (int) ($_POST['comment_id'] ?? 0);
@@ -778,9 +831,9 @@ if ($feedPosts) {
         <aside class="profile-post-viewer-side">
             <header class="profile-post-viewer-head">
                 <div class="profile-post-viewer-author">
-                    <span class="profile-post-viewer-avatar" id="profilePostViewerAvatar"></span>
-                    <strong id="profilePostViewerLogin"></strong>
-                    <span class="profile-post-viewer-follow" id="profilePostViewerFollow">Подписаться</span>
+                    <a href="#" class="profile-post-viewer-author-link" id="profilePostViewerAvatarLink"><span class="profile-post-viewer-avatar" id="profilePostViewerAvatar"></span></a>
+                    <a href="#" class="profile-post-viewer-login-link-name" id="profilePostViewerLoginLink"><strong id="profilePostViewerLogin"></strong></a>
+                    <button type="button" class="profile-post-viewer-follow" id="profilePostViewerFollow">Подписаться</button>
                 </div>
                 <button type="button" class="profile-post-viewer-more" aria-label="Ещё">•••</button>
             </header>
@@ -1008,9 +1061,17 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         var avatarUrl = card.dataset.postAuthorAvatar || '';
         avatar.style.backgroundImage = avatarUrl ? "url('" + avatarUrl.replace(/'/g, "\\'") + "')" : '';
         avatar.textContent = avatarUrl ? '' : (login.textContent || '?').slice(0, 1).toUpperCase();
+        var authorId = Number(card.dataset.postAuthorId || 0);
+        var authorUrl = currentUserId && authorId === currentUserId ? 'profile.php' : 'user.php?id=' + encodeURIComponent(String(authorId));
+        var avatarLink = document.getElementById('profilePostViewerAvatarLink');
+        var loginLink = document.getElementById('profilePostViewerLoginLink');
+        if (avatarLink) avatarLink.href = authorUrl;
+        if (loginLink) loginLink.href = authorUrl;
         if (follow) {
-            var authorId = Number(card.dataset.postAuthorId || 0);
             follow.hidden = !currentUserId || currentUserId === authorId || card.dataset.postIsFollowingAuthor === '1';
+            follow.disabled = false;
+            follow.classList.remove('is-following');
+            follow.dataset.authorId = String(authorId || '');
         }
 
         viewer.dataset.postId = postId;
@@ -1137,6 +1198,44 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
                     window.SnapixPostSync.syncPostState(postId, data, 'add_comment', true);
                 }
             }).catch(function () {});
+        });
+    }
+
+    if (follow) {
+        follow.addEventListener('click', function () {
+            var authorId = follow.dataset.authorId || viewer.dataset.postAuthorId || '';
+            if (!authorId || follow.disabled) return;
+            follow.disabled = true;
+            follow.classList.remove('is-following');
+            void follow.offsetWidth;
+            follow.classList.add('is-following');
+            fetch(window.location.href, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'Accept': 'application/json'
+                },
+                body: new URLSearchParams({ action: 'modal_follow_author', author_id: authorId }).toString()
+            }).then(function (response) { return response.json(); }).then(function (data) {
+                if (!data || !data.ok) {
+                    follow.disabled = false;
+                    follow.classList.remove('is-following');
+                    return;
+                }
+                document.querySelectorAll('[data-post-author-id="' + authorId + '"]').forEach(function (node) {
+                    if (node.dataset) node.dataset.postIsFollowingAuthor = '1';
+                });
+                window.setTimeout(function () {
+                    follow.hidden = true;
+                    follow.disabled = false;
+                    follow.classList.remove('is-following');
+                }, 900);
+            }).catch(function () {
+                follow.disabled = false;
+                follow.classList.remove('is-following');
+            });
         });
     }
 

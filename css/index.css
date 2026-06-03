@@ -6771,3 +6771,75 @@ html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-more:hov
 html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-more:focus-visible {
     color: rgba(4, 6, 7, 0.45) !important;
 }
+
+/* Shared post viewer author/follow controls: follow is a turquoise text link, not a filled button. */
+.profile-post-viewer-author-link,
+.profile-post-viewer-login-link-name {
+    color: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.profile-post-viewer-author-link:hover,
+.profile-post-viewer-author-link:focus-visible,
+.profile-post-viewer-login-link-name:hover,
+.profile-post-viewer-login-link-name:focus-visible {
+    color: #68C5DB;
+    outline: none;
+}
+
+.profile-post-viewer-follow,
+.profile-post-viewer-follow:hover,
+.profile-post-viewer-follow:focus-visible,
+.profile-post-viewer-follow:active {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    color: #68C5DB !important;
+    cursor: pointer;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.2;
+    text-decoration: none;
+    transform: none;
+}
+
+.profile-post-viewer-follow:hover,
+.profile-post-viewer-follow:focus-visible {
+    opacity: 0.75;
+}
+
+.profile-post-viewer-follow:disabled {
+    cursor: default;
+    opacity: 0.75;
+}
+
+.profile-post-viewer-follow.is-following {
+    animation: post-viewer-follow-success 1s ease forwards;
+}
+
+@keyframes post-viewer-follow-success {
+    0% {
+        opacity: 1;
+        text-shadow: 0 0 0 rgba(104, 197, 219, 0);
+        transform: scale(1);
+    }
+
+    35% {
+        opacity: 1;
+        text-shadow: 0 0 14px rgba(104, 197, 219, 0.95);
+        transform: scale(1.08);
+    }
+
+    100% {
+        opacity: 0;
+        text-shadow: 0 0 0 rgba(104, 197, 219, 0);
+        transform: scale(0.98);
+    }
+}
