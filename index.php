@@ -272,7 +272,7 @@ $user = null;
 $shareRecipients = [];
 
 if (isset($_SESSION['user_id'])) {
-    $stmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, login, avatar, role FROM users WHERE id = :id');
     $stmt->execute(['id' => $_SESSION['user_id']]);
     $user = $stmt->fetch();
 
@@ -306,7 +306,7 @@ $reportReasons = $reportReasonsStmt->fetchAll();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     $action = $_POST['action'] ?? '';
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'get_post_counts', 'modal_follow_author'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'delete_comment', 'get_post_counts', 'modal_follow_author'], true);
     $ajaxExtra = [];
 
     if ($action === 'modal_follow_author') {
@@ -397,6 +397,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 'report_reason' => $reportReasonText,
                 'dedupe_minutes' => 10,
             ], (int) $user['id']);
+        }
+
+        header('Location: index.php');
+        exit;
+    }
+
+    if ($action === 'delete_comment') {
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        if ($commentId <= 0) {
+            snapix_send_post_action_error('invalid_comment', 422);
+        }
+
+        $commentStmt = $pdo->prepare("SELECT id, post_id, user_id, attachment_url FROM comments WHERE id = :id AND is_deleted = 0 AND (status = 'published' OR status IS NULL) LIMIT 1");
+        $commentStmt->execute(['id' => $commentId]);
+        $comment = $commentStmt->fetch();
+        if (!$comment) {
+            snapix_send_post_action_error('comment_not_found', 404);
+        }
+
+        $canModerateComments = in_array((string) ($user['role'] ?? ''), ['admin', 'moderator'], true);
+        if ((int) $comment['user_id'] !== (int) $user['id'] && !$canModerateComments) {
+            snapix_send_post_action_error('comment_delete_forbidden', 403);
+        }
+
+        $deleteCommentStmt = $pdo->prepare('DELETE FROM comments WHERE id = :id LIMIT 1');
+        $deleteCommentStmt->execute(['id' => $commentId]);
+
+        $attachmentUrl = (string) ($comment['attachment_url'] ?? '');
+        if ($attachmentUrl !== '' && str_starts_with($attachmentUrl, 'uploads/comment_attachments/')) {
+            $attachmentPath = __DIR__ . '/' . $attachmentUrl;
+            if (is_file($attachmentPath)) {
+                unlink($attachmentPath);
+            }
+        }
+
+        if ($isAjaxPostAction) {
+            snapix_send_post_action_json($pdo, (int) $comment['post_id'], (int) $user['id'], [
+                'deleted_comment_id' => $commentId,
+            ]);
         }
 
         header('Location: index.php');
@@ -1228,6 +1267,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     var commentsHost = document.getElementById('profilePostViewerComments');
     var commentForm = document.getElementById('profilePostViewerCommentForm');
     var currentUserId = <?php echo (int) ($user['id'] ?? 0); ?>;
+    var currentUserRole = <?php echo json_encode((string) ($user['role'] ?? 'user'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     var actionToEndpoint = { like: 'toggle_like', repost: 'add_repost', save: 'toggle_save' };
 
     if (!viewer || !mediaHost) {
@@ -1236,6 +1276,28 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
 
     function postComments(postId) {
         return (window.snapixProfileComments || {})[String(postId)] || [];
+    }
+
+    function canDeleteComment(comment) {
+        if (!currentUserId || !comment) return false;
+        if (['admin', 'moderator'].indexOf(currentUserRole) !== -1) return true;
+        return Number(comment.user_id || 0) === Number(currentUserId);
+    }
+
+    function removeCommentFromCache(postId, commentId) {
+        var comments = postComments(postId);
+        window.snapixProfileComments = window.snapixProfileComments || {};
+        window.snapixProfileComments[String(postId)] = comments.filter(function (comment) {
+            return String(comment.comment_id || comment.id || '') !== String(commentId);
+        });
+    }
+
+    function closeCommentMenus(exceptMenu) {
+        document.querySelectorAll('#profilePostViewer .profile-viewer-comment-menu.is-open').forEach(function (menu) {
+            if (!exceptMenu || menu !== exceptMenu) {
+                menu.classList.remove('is-open');
+            }
+        });
     }
 
     function escapeText(value) {
@@ -1319,12 +1381,29 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
             replyButton.textContent = 'Ответить';
             meta.appendChild(replyButton);
 
-            var moreButton = document.createElement('button');
-            moreButton.type = 'button';
-            moreButton.className = 'profile-viewer-comment-more';
-            moreButton.setAttribute('aria-label', 'Ещё');
-            moreButton.textContent = '•••';
-            meta.appendChild(moreButton);
+            if (canDeleteComment(comment)) {
+                var menu = document.createElement('div');
+                menu.className = 'profile-viewer-comment-menu';
+
+                var toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'profile-viewer-comment-menu-toggle';
+                toggle.setAttribute('aria-label', 'Действия с комментарием');
+                toggle.textContent = '⋯';
+                menu.appendChild(toggle);
+
+                var panel = document.createElement('div');
+                panel.className = 'profile-viewer-comment-menu-panel';
+
+                var deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'profile-viewer-comment-delete';
+                deleteButton.textContent = 'Удалить комментарий';
+                panel.appendChild(deleteButton);
+
+                menu.appendChild(panel);
+                meta.appendChild(menu);
+            }
 
             body.appendChild(meta);
             row.appendChild(avatarNode);
@@ -1488,6 +1567,55 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     });
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && viewer.classList.contains('is-open')) closeViewer();
+    });
+
+    document.addEventListener('click', function (event) {
+        closeCommentMenus(event.target.closest ? event.target.closest('#profilePostViewer .profile-viewer-comment-menu') : null);
+
+        var toggle = event.target.closest ? event.target.closest('#profilePostViewer .profile-viewer-comment-menu-toggle') : null;
+        if (toggle) {
+            event.preventDefault();
+            var menu = toggle.closest('.profile-viewer-comment-menu');
+            if (menu) {
+                var isOpen = menu.classList.contains('is-open');
+                closeCommentMenus(menu);
+                menu.classList.toggle('is-open', !isOpen);
+            }
+            return;
+        }
+
+        var deleteButton = event.target.closest ? event.target.closest('#profilePostViewer .profile-viewer-comment-delete') : null;
+        if (!deleteButton) return;
+
+        event.preventDefault();
+        var commentNode = deleteButton.closest('.profile-viewer-comment');
+        var commentId = commentNode ? commentNode.getAttribute('data-comment-id') : '';
+        var postId = commentNode ? (commentNode.getAttribute('data-post-id') || viewer.dataset.postId || '') : '';
+        if (!commentId || !postId) return;
+
+        var params = new URLSearchParams();
+        params.set('action', 'delete_comment');
+        params.set('comment_id', commentId);
+
+        fetch(window.location.href, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Accept': 'application/json'
+            },
+            body: params.toString()
+        }).then(function (response) { return response.json(); }).then(function (data) {
+            if (!data || !data.ok) return;
+            removeCommentFromCache(postId, commentId);
+            renderComments(postId);
+            syncCardDataset(postId, data);
+            applyViewerState(data);
+            if (window.SnapixPostSync && window.SnapixPostSync.syncPostState) {
+                window.SnapixPostSync.syncPostState(postId, data, 'delete_comment', true);
+            }
+        }).catch(function () {});
     });
 
     function showViewerModerationMessage(message, isError) {
