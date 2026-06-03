@@ -6112,3 +6112,734 @@ body.light-theme .profile-viewer-comment-like.is-active:hover,
 body.light-theme .profile-viewer-comment-like.is-active:focus-visible {
     color: #ef4444 !important;
 }
+
+/* Home page foundation: two-column layout with compact post grid and right sidebar */
+body[data-page="home"] main[data-feed-content] {
+    width: 100%;
+    max-width: 1230px;
+    margin: 0 auto;
+    padding: 28px 24px 64px;
+}
+
+.main-feed-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 32px;
+    align-items: start;
+}
+
+body[data-page="home"] .feed-wrap {
+    min-width: 0;
+    width: 100%;
+}
+
+body[data-page="home"] .feed-list.feed-posts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 34px 28px;
+    justify-content: start;
+    align-items: start;
+    width: 100%;
+    max-width: 888px;
+    margin: 0;
+}
+
+body[data-page="home"] .feed-posts-grid .feed-card {
+    width: 100%;
+    max-width: 430px;
+    min-width: 0;
+}
+
+body[data-page="home"] .feed-card-media {
+    width: 100%;
+    max-width: 430px;
+    aspect-ratio: 1 / 1;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+body[data-page="home"] .feed-card-media > img,
+body[data-page="home"] .feed-card-media > video {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: cover;
+    border-radius: inherit;
+}
+
+.home-right-sidebar {
+    position: sticky;
+    top: 24px;
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+}
+
+.home-sidebar-card {
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+    border: 1px solid rgba(104, 197, 219, 0.18);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--home-text);
+}
+
+.home-sidebar-card h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.25;
+}
+
+.home-sidebar-user-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+.home-sidebar-avatar {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1f2937 0%, #68C5DB 100%);
+    background-position: center;
+    background-size: cover;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    overflow: hidden;
+}
+
+.home-sidebar-user-meta {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.home-sidebar-user-meta strong,
+.home-sidebar-user-meta small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-sidebar-user-meta small,
+.home-sidebar-copyright {
+    color: var(--home-secondary-text);
+    font-size: 13px;
+}
+
+.home-sidebar-hashtags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.home-sidebar-hashtags a {
+    padding: 8px 11px;
+    border: 1px solid rgba(104, 197, 219, 0.22);
+    border-radius: 999px;
+    background: rgba(104, 197, 219, 0.08);
+    color: #68C5DB;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.home-sidebar-links a {
+    color: var(--home-secondary-text);
+    font-size: 13px;
+    line-height: 1.45;
+    text-decoration: none;
+}
+
+.home-sidebar-user-link:hover,
+.home-sidebar-user-link:focus-visible,
+.home-sidebar-hashtags a:hover,
+.home-sidebar-hashtags a:focus-visible,
+.home-sidebar-links a:hover,
+.home-sidebar-links a:focus-visible {
+    color: #68C5DB;
+}
+
+.home-sidebar-copyright {
+    margin: 0;
+    padding: 0 4px;
+}
+
+body.theme-light .home-sidebar-card,
+body[data-theme="light"] .home-sidebar-card,
+html.theme-light .home-sidebar-card,
+html[data-theme="light"] .home-sidebar-card {
+    background: #FFFDF8 !important;
+    border-color: rgba(31, 41, 55, 0.12) !important;
+    color: #1f2937 !important;
+}
+
+body.theme-light .home-sidebar-user-meta small,
+body.theme-light .home-sidebar-links a,
+body.theme-light .home-sidebar-copyright,
+body[data-theme="light"] .home-sidebar-user-meta small,
+body[data-theme="light"] .home-sidebar-links a,
+body[data-theme="light"] .home-sidebar-copyright,
+html.theme-light .home-sidebar-user-meta small,
+html.theme-light .home-sidebar-links a,
+html.theme-light .home-sidebar-copyright,
+html[data-theme="light"] .home-sidebar-user-meta small,
+html[data-theme="light"] .home-sidebar-links a,
+html[data-theme="light"] .home-sidebar-copyright {
+    color: #64748b !important;
+}
+
+@media (max-width: 1120px) {
+    body[data-page="home"] main[data-feed-content] {
+        max-width: 920px;
+    }
+
+    .main-feed-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .home-right-sidebar {
+        position: static;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .home-sidebar-links,
+    .home-sidebar-copyright {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 860px) {
+    body[data-page="home"] main[data-feed-content] {
+        padding: 22px 14px 48px;
+    }
+
+    body[data-page="home"] .feed-list.feed-posts-grid {
+        grid-template-columns: minmax(0, 430px);
+        justify-content: center;
+        max-width: 430px;
+        margin: 0 auto;
+    }
+
+    .home-right-sidebar {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    body[data-page="home"] main[data-feed-content] {
+        padding-inline: 10px;
+    }
+
+    body[data-page="home"] .feed-list.feed-posts-grid {
+        grid-template-columns: minmax(0, 1fr);
+        max-width: 100%;
+    }
+
+    body[data-page="home"] .feed-posts-grid .feed-card,
+    body[data-page="home"] .feed-card-media {
+        max-width: 100%;
+    }
+}
+
+/* Home feed cards: profile-style media hover actions */
+body[data-page="home"] .feed-posts-grid .feed-card {
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+}
+
+body[data-page="home"] .feed-card-media {
+    position: relative;
+    background: #0b1118;
+}
+
+body[data-page="home"] .feed-card-media > img,
+body[data-page="home"] .feed-card-media > video {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: cover;
+    display: block;
+    border-radius: inherit;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 22px !important;
+    padding: 18px !important;
+    background: rgba(0, 0, 0, 0.48) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: none !important;
+    transition: opacity 0.2s ease !important;
+    z-index: 7 !important;
+}
+
+body[data-page="home"] .feed-card:hover .post-hover-overlay,
+body[data-page="home"] .feed-card:focus-within .post-hover-overlay {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body[data-page="home"] .profile-hover-action-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+}
+
+body[data-page="home"] .profile-hover-action-form {
+    margin: 0 !important;
+    pointer-events: auto !important;
+}
+
+body[data-page="home"] .profile-hover-action-btn {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body[data-page="home"] .profile-hover-action-btn img,
+body[data-page="home"] .post-hover-overlay img {
+    width: 28px !important;
+    height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+    object-fit: contain !important;
+    border-radius: 0 !important;
+    filter: brightness(0) invert(1) !important;
+}
+
+body[data-page="home"] .profile-hover-action-item .feed-action-count {
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+body[data-page="home"] .profile-hover-like-btn.is-active img {
+    filter: brightness(0) saturate(100%) invert(36%) sepia(96%) saturate(1913%) hue-rotate(336deg) brightness(99%) contrast(98%) !important;
+}
+
+body[data-page="home"] .profile-hover-save-btn.is-saved img {
+    filter: brightness(0) saturate(100%) invert(86%) sepia(35%) saturate(1847%) hue-rotate(334deg) brightness(104%) contrast(98%) !important;
+}
+
+body[data-page="home"] .profile-hover-repost-btn.is-reposted img {
+    filter: brightness(0) saturate(100%) invert(62%) sepia(90%) saturate(430%) hue-rotate(83deg) brightness(90%) contrast(92%) !important;
+}
+
+@media (max-width: 520px) {
+    body[data-page="home"] .feed-card-media .post-hover-overlay {
+        gap: 14px !important;
+        padding: 14px !important;
+    }
+
+    body[data-page="home"] .profile-hover-action-btn {
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        min-height: 42px !important;
+    }
+
+    body[data-page="home"] .profile-hover-action-btn img,
+    body[data-page="home"] .post-hover-overlay img {
+        width: 24px !important;
+        height: 24px !important;
+        max-width: 24px !important;
+        max-height: 24px !important;
+    }
+}
+
+/* Home feed cleanup: make cards clean by default, like profile thumbnails */
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-header {
+    display: none !important;
+}
+
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-body {
+    padding: 0 !important;
+    gap: 0 !important;
+}
+
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-body > .feed-card-actions,
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-body > .feed-card-caption,
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-body > .feed-reposts-note,
+body[data-page="home"] .feed-posts-grid .feed-card > .feed-card-body > .feed-card-stats {
+    display: none !important;
+}
+
+body[data-page="home"] .feed-card-media .post-type-badge {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    z-index: 8 !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 50% !important;
+    background: rgba(4, 6, 7, 0.72) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+}
+
+body[data-page="home"] .feed-card-media .post-type-badge img {
+    width: 26px !important;
+    height: 26px !important;
+    object-fit: contain !important;
+    filter: none !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+body[data-page="home"] .feed-card:hover .post-type-badge,
+body[data-page="home"] .feed-card:focus-within .post-type-badge {
+    opacity: 0 !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-item {
+    flex: 0 0 auto !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn,
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn:hover,
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn:focus-visible,
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn.is-active,
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn.is-saved,
+body[data-page="home"] .feed-card-media .post-hover-overlay .feed-action-btn.is-reposted {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #fff !important;
+    transform: none !important;
+}
+
+/* Home hover icon source/shape fix: render real icons, never colored button squares */
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:hover,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:focus,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:focus-visible,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn.is-active,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn.is-reposted,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn.is-saved {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    outline: none !important;
+    border-radius: 0 !important;
+    background: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+    transform: none !important;
+    overflow: visible !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn::before,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn::after {
+    content: none !important;
+    display: none !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn img {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 34px !important;
+    height: 34px !important;
+    max-width: 34px !important;
+    max-height: 34px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    object-fit: contain !important;
+    pointer-events: none !important;
+    filter: brightness(0) invert(1) !important;
+}
+
+body[data-page="home"] .feed-card-media .post-type-badge,
+body[data-page="home"] .feed-card:hover .post-type-badge,
+body[data-page="home"] .feed-card:focus-within .post-type-badge {
+    opacity: 1 !important;
+    visibility: visible !important;
+    border-radius: 50% !important;
+    background: rgba(4, 6, 7, 0.72) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+html.theme-light body[data-page="home"] .home-hover-like-icon,
+html[data-theme="light"] body[data-page="home"] .home-hover-like-icon,
+body.theme-light[data-page="home"] .home-hover-like-icon,
+body[data-theme="light"][data-page="home"] .home-hover-like-icon {
+    content: url("../icon/light theme/like.png");
+}
+
+html.theme-light body[data-page="home"] .home-hover-repost-icon,
+html[data-theme="light"] body[data-page="home"] .home-hover-repost-icon,
+body.theme-light[data-page="home"] .home-hover-repost-icon,
+body[data-theme="light"][data-page="home"] .home-hover-repost-icon {
+    content: url("../icon/light theme/repost.png");
+}
+
+html.theme-light body[data-page="home"] .home-hover-save-icon,
+html[data-theme="light"] body[data-page="home"] .home-hover-save-icon,
+body.theme-light[data-page="home"] .home-hover-save-icon,
+body[data-theme="light"][data-page="home"] .home-hover-save-icon {
+    content: url("../icon/light theme/favourites.png");
+}
+
+html.theme-light body[data-page="home"] .home-post-type-image-icon,
+html[data-theme="light"] body[data-page="home"] .home-post-type-image-icon,
+body.theme-light[data-page="home"] .home-post-type-image-icon,
+body[data-theme="light"][data-page="home"] .home-post-type-image-icon {
+    content: url("../icon/light theme/images.png");
+}
+
+html.theme-light body[data-page="home"] .home-post-type-video-icon,
+html[data-theme="light"] body[data-page="home"] .home-post-type-video-icon,
+body.theme-light[data-page="home"] .home-post-type-video-icon,
+body[data-theme="light"][data-page="home"] .home-post-type-video-icon {
+    content: url("../icon/light theme/video.png");
+}
+
+@media (max-width: 520px) {
+    body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn,
+    body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:hover,
+    body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:focus-visible {
+        width: 46px !important;
+        height: 46px !important;
+        min-width: 46px !important;
+        min-height: 46px !important;
+    }
+
+    body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn img {
+        width: 30px !important;
+        height: 30px !important;
+        max-width: 30px !important;
+        max-height: 30px !important;
+    }
+}
+
+/* Home hover active states: color the icon itself and animate only on click */
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn.is-activating img {
+    animation: feed-action-pop 0.24s ease-out !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-like-btn.is-active img,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-like-btn.is-active .home-hover-like-icon {
+    filter: brightness(0) saturate(100%) invert(36%) sepia(96%) saturate(1913%) hue-rotate(336deg) brightness(99%) contrast(98%) !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-repost-btn.is-reposted img,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-repost-btn.is-reposted .home-hover-repost-icon {
+    filter: brightness(0) saturate(100%) invert(62%) sepia(90%) saturate(430%) hue-rotate(83deg) brightness(90%) contrast(92%) !important;
+}
+
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-save-btn.is-saved img,
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-save-btn.is-saved .home-hover-save-icon {
+    filter: brightness(0) saturate(100%) invert(86%) sepia(35%) saturate(1847%) hue-rotate(334deg) brightness(104%) contrast(98%) !important;
+}
+
+/* Home uses the shared profile viewer; keep the close button as the requested turquoise circle. */
+body[data-page="home"] .profile-post-viewer-close {
+    background: #68C5DB !important;
+    color: #040607 !important;
+}
+
+body[data-page="home"] .profile-post-viewer-login-link {
+    color: #68C5DB;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+body[data-page="home"] .profile-viewer-comment-top,
+body[data-page="home"] .profile-viewer-comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body[data-page="home"] .profile-viewer-comment-top {
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+body[data-page="home"] .profile-viewer-comment-top strong {
+    font-size: 14px;
+}
+
+body[data-page="home"] .profile-viewer-comment-body p {
+    margin: 0 0 8px;
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+body[data-page="home"] .profile-viewer-comment-actions {
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 12px;
+}
+
+body[data-page="home"] .profile-viewer-comment-actions button,
+body[data-page="home"] .profile-viewer-comment-more {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+}
+
+/* Home viewer comment controls should match the muted date color, without turquoise button fills. */
+body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like),
+body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):hover,
+body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):focus-visible,
+body[data-page="home"] .profile-viewer-comment-more,
+body[data-page="home"] .profile-viewer-comment-more:hover,
+body[data-page="home"] .profile-viewer-comment-more:focus-visible {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+    outline: none;
+    transform: none !important;
+}
+
+body.light-theme[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like),
+body.light-theme[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):hover,
+body.light-theme[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):focus-visible,
+body.light-theme[data-page="home"] .profile-viewer-comment-more,
+body.light-theme[data-page="home"] .profile-viewer-comment-more:hover,
+body.light-theme[data-page="home"] .profile-viewer-comment-more:focus-visible,
+html.theme-light body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like),
+html.theme-light body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):hover,
+html.theme-light body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):focus-visible,
+html.theme-light body[data-page="home"] .profile-viewer-comment-more,
+html.theme-light body[data-page="home"] .profile-viewer-comment-more:hover,
+html.theme-light body[data-page="home"] .profile-viewer-comment-more:focus-visible,
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like),
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):hover,
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-actions button:not(.profile-viewer-comment-like):focus-visible,
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-more,
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-more:hover,
+html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-more:focus-visible {
+    color: rgba(4, 6, 7, 0.45) !important;
+}
+
+/* Shared post viewer author/follow controls: follow is a turquoise text link, not a filled button. */
+.profile-post-viewer-author-link,
+.profile-post-viewer-login-link-name {
+    color: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.profile-post-viewer-author-link:hover,
+.profile-post-viewer-author-link:focus-visible,
+.profile-post-viewer-login-link-name:hover,
+.profile-post-viewer-login-link-name:focus-visible {
+    color: #68C5DB;
+    outline: none;
+}
+
+.profile-post-viewer-follow,
+.profile-post-viewer-follow:hover,
+.profile-post-viewer-follow:focus-visible,
+.profile-post-viewer-follow:active {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    color: #68C5DB !important;
+    cursor: pointer;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.2;
+    text-decoration: none;
+    transform: none;
+}
+
+.profile-post-viewer-follow:hover,
+.profile-post-viewer-follow:focus-visible {
+    opacity: 0.75;
+}
+
+.profile-post-viewer-follow:disabled {
+    cursor: default;
+    opacity: 0.75;
+}
+
+.profile-post-viewer-follow.is-following {
+    animation: post-viewer-follow-success 1s ease forwards;
+}
+
+@keyframes post-viewer-follow-success {
+    0% {
+        opacity: 1;
+        text-shadow: 0 0 0 rgba(104, 197, 219, 0);
+        transform: scale(1);
+    }
+
+    35% {
+        opacity: 1;
+        text-shadow: 0 0 14px rgba(104, 197, 219, 0.95);
+        transform: scale(1.08);
+    }
+
+    100% {
+        opacity: 0;
+        text-shadow: 0 0 0 rgba(104, 197, 219, 0);
+        transform: scale(0.98);
+    }
+}
