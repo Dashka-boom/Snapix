@@ -32,6 +32,30 @@ function formatBlockedUntil(?string $value): string
 function ensureUserCommentAttachmentStorage(PDO $pdo): void
 {
     try {
+        $pdo->exec('ALTER TABLE comments ADD COLUMN parent_comment_id BIGINT UNSIGNED NULL AFTER post_id');
+    } catch (PDOException $exception) {
+        if (($exception->errorInfo[1] ?? null) !== 1060) {
+            throw $exception;
+        }
+    }
+
+    try {
+        $pdo->exec('ALTER TABLE comments ADD KEY idx_user_comments_parent (parent_comment_id)');
+    } catch (PDOException $exception) {
+        if (($exception->errorInfo[1] ?? null) !== 1061) {
+            throw $exception;
+        }
+    }
+
+    try {
+        $pdo->exec('ALTER TABLE comments ADD CONSTRAINT fk_user_comments_parent FOREIGN KEY (parent_comment_id) REFERENCES comments(id) ON DELETE CASCADE');
+    } catch (PDOException $exception) {
+        if (($exception->errorInfo[1] ?? null) !== 1826) {
+            throw $exception;
+        }
+    }
+
+    try {
         $pdo->exec('ALTER TABLE comments ADD COLUMN attachment_url VARCHAR(255) NULL AFTER comment_text');
     } catch (PDOException $exception) {
         if (($exception->errorInfo[1] ?? null) !== 1060) {
@@ -573,6 +597,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
 
         if ($postExists && $action === 'add_comment') {
             $commentText = trim($_POST['comment_text'] ?? '');
+            $parentCommentId = max(0, (int) ($_POST['parent_comment_id'] ?? 0));
+            if ($parentCommentId > 0) {
+                $parentCommentStmt = $pdo->prepare("
+                    SELECT id
+                    FROM comments
+                    WHERE id = :id
+                      AND post_id = :post_id
+                      AND is_deleted = 0
+                      AND status = 'published'
+                    LIMIT 1
+                ");
+                $parentCommentStmt->execute([
+                    'id' => $parentCommentId,
+                    'post_id' => $postId,
+                ]);
+                if (!$parentCommentStmt->fetchColumn()) {
+                    $parentCommentId = 0;
+                }
+            }
             $attachment = uploadUserCommentAttachment($_FILES['attachment'] ?? ['error' => UPLOAD_ERR_NO_FILE]);
             if ($commentText !== '' || $attachment !== null) {
                 $commentValue = mb_substr($commentText, 0, 1000);
@@ -593,10 +636,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                     $attachment['target_path'] = null;
                 }
 
-                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text, attachment_url, attachment_type, status) VALUES (:post_id, :user_id, :comment_text, :attachment_url, :attachment_type, :status)');
+                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, parent_comment_id, user_id, comment_text, attachment_url, attachment_type, status) VALUES (:post_id, :parent_comment_id, :user_id, :comment_text, :attachment_url, :attachment_type, :status)');
                 try {
                     $insertCommentStmt->execute([
                         'post_id' => $postId,
+                        'parent_comment_id' => $parentCommentId > 0 ? $parentCommentId : null,
                         'user_id' => $currentUser['id'],
                         'comment_text' => $commentValue,
                         'attachment_url' => $commentStatus === 'rejected' ? null : ($attachment['path'] ?? null),
@@ -627,6 +671,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                     'comment_id' => $commentId,
                     'post_id' => $postId,
                     'post_owner_id' => $postOwnerId,
+                    'parent_comment_id' => $parentCommentId,
                     'user_id' => (int) $currentUser['id'],
                     'login' => (string) $currentUser['login'],
                     'profile_url' => profileDestination((int) $currentUser['id'], (int) $currentUser['id']),
@@ -976,7 +1021,7 @@ if ($posts || $repostedPosts || $savedPosts) {
 
     $viewerUserId = (int) ($currentUser['id'] ?? 0);
     $commentsStmt = $pdo->prepare("
-        SELECT comments.id, comments.post_id, comment_posts.user_id AS post_owner_id, comments.comment_text, comments.attachment_url, comments.attachment_type, comments.created_at, users.id AS user_id, users.login, users.avatar,
+        SELECT comments.id, comments.post_id, comment_posts.user_id AS post_owner_id, comments.parent_comment_id, comments.comment_text, comments.attachment_url, comments.attachment_type, comments.created_at, users.id AS user_id, users.login, users.avatar,
                (SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.id) AS likes_count,
                (SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.id AND comment_likes.user_id = {$viewerUserId}) AS is_liked
         FROM comments
@@ -1001,7 +1046,7 @@ if ($posts || $repostedPosts || $savedPosts) {
             'comment_id' => (int) $comment['id'],
             'post_id' => $currentPostId,
             'post_owner_id' => (int) ($comment['post_owner_id'] ?? 0),
-            'parent_comment_id' => 0,
+            'parent_comment_id' => (int) ($comment['parent_comment_id'] ?? 0),
             'user_id' => (int) $comment['user_id'],
             'login' => (string) $comment['login'],
             'avatar_url' => (string) ($comment['avatar'] ?? ''),
@@ -1310,7 +1355,20 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             function removeViewerCommentFromCache(postId, commentId) {
                 const key = String(postId || '');
                 const comments = (window.snapixProfileComments || {})[key] || [];
-                window.snapixProfileComments[key] = comments.filter((comment) => Number(comment.comment_id || 0) !== Number(commentId || 0));
+                const idsToRemove = [Number(commentId || 0)];
+                let changed = true;
+                while (changed) {
+                    changed = false;
+                    comments.forEach((comment) => {
+                        const currentId = Number(comment.comment_id || 0);
+                        const parentId = Number(comment.parent_comment_id || 0);
+                        if (idsToRemove.indexOf(parentId) !== -1 && idsToRemove.indexOf(currentId) === -1) {
+                            idsToRemove.push(currentId);
+                            changed = true;
+                        }
+                    });
+                }
+                window.snapixProfileComments[key] = comments.filter((comment) => idsToRemove.indexOf(Number(comment.comment_id || 0)) === -1);
             }
 
             function updateViewerCommentLikeCache(commentId, isLiked, likesCount) {
@@ -1324,7 +1382,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 });
             }
 
-            function buildViewerComment(comment) {
+            function buildViewerComment(comment, repliesByParent = {}) {
                 const item = document.createElement('article');
                 item.className = 'profile-viewer-comment';
                 item.dataset.commentId = String(comment.comment_id || '');
@@ -1432,7 +1490,37 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 body.appendChild(meta);
                 item.appendChild(avatarLinkNode);
                 item.appendChild(body);
+
+                const replies = repliesByParent[String(comment.comment_id || '')] || [];
+                if (replies.length) {
+                    const repliesWrap = document.createElement('div');
+                    repliesWrap.className = 'profile-viewer-comment-replies';
+                    replies.forEach((replyComment) => repliesWrap.appendChild(buildViewerComment(replyComment, repliesByParent)));
+                    item.appendChild(repliesWrap);
+                }
+
                 return item;
+            }
+
+            function splitViewerCommentsByParent(comments) {
+                const repliesByParent = {};
+                const ids = {};
+                comments.forEach((comment) => {
+                    ids[String(comment.comment_id || '')] = true;
+                });
+
+                const roots = [];
+                comments.forEach((comment) => {
+                    const parentId = String(comment.parent_comment_id || '');
+                    if (parentId && parentId !== '0' && ids[parentId]) {
+                        if (!repliesByParent[parentId]) repliesByParent[parentId] = [];
+                        repliesByParent[parentId].push(comment);
+                    } else {
+                        roots.push(comment);
+                    }
+                });
+
+                return {roots, repliesByParent};
             }
 
             window.snapixRenderViewerComments = function (postId) {
@@ -1444,7 +1532,8 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     commentsHost.innerHTML = '<p class="profile-post-viewer-empty">Комментариев нет</p>';
                     return;
                 }
-                list.forEach((comment) => commentsHost.appendChild(buildViewerComment(comment)));
+                const grouped = splitViewerCommentsByParent(list);
+                grouped.roots.forEach((comment) => commentsHost.appendChild(buildViewerComment(comment, grouped.repliesByParent)));
             };
 
             function openViewer(card) {
@@ -1617,9 +1706,16 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 const replyButton = event.target.closest('.profile-viewer-comment-reply');
                 if (replyButton) {
                     const input = commentForm?.querySelector('[name="comment_text"]');
+                    const parentInput = commentForm?.querySelector('[name="parent_comment_id"]');
+                    const replyNode = replyButton.closest('.profile-viewer-comment');
+                    if (parentInput && replyNode?.dataset.commentId) {
+                        parentInput.value = replyNode.dataset.commentId;
+                    }
                     if (input) {
-                        input.value = '@' + (replyButton.dataset.replyLogin || '') + ' ';
+                        const prefix = '@' + (replyButton.dataset.replyLogin || '') + ' ';
+                        input.value = prefix;
                         input.focus();
+                        input.setSelectionRange(prefix.length, prefix.length);
                     }
                 }
             });
@@ -1735,6 +1831,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                         window.snapixProfileComments[String(postId)].unshift(Object.assign({
                             comment_id: Date.now(),
                             post_id: postId,
+                            parent_comment_id: Number(formData.get('parent_comment_id') || 0),
                             user_id: (window.snapixCurrentUser || {}).id || 0,
                             login: '',
                             profile_url: 'profile.php',
@@ -1753,6 +1850,8 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                         window.snapixRenderViewerComments(postId);
                     }
                     if (textInput) textInput.value = '';
+                    const parentInput = commentForm.querySelector('[name="parent_comment_id"]');
+                    if (parentInput) parentInput.value = '';
                     clearViewerAttachment();
                     if (window.snapixSyncPostState) window.snapixSyncPostState(postId, data);
                 }).catch(() => {}).finally(() => {

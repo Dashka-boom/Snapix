@@ -53,6 +53,7 @@ INSERT INTO `chats` (`id`, `user_one_id`, `user_two_id`, `created_at`, `updated_
 CREATE TABLE `comments` (
   `id` bigint UNSIGNED NOT NULL,
   `post_id` bigint UNSIGNED NOT NULL,
+  `parent_comment_id` bigint UNSIGNED DEFAULT NULL,
   `user_id` bigint UNSIGNED NOT NULL,
   `comment_text` text COLLATE utf8mb4_general_ci NOT NULL,
   `attachment_url` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -718,7 +719,8 @@ ALTER TABLE `chats`
 ALTER TABLE `comments`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_comments_post_id` (`post_id`),
-  ADD KEY `idx_comments_user_id` (`user_id`);
+  ADD KEY `idx_comments_user_id` (`user_id`),
+  ADD KEY `idx_comments_parent` (`parent_comment_id`);
 
 
 --
@@ -1052,6 +1054,7 @@ ALTER TABLE `chats`
 --
 ALTER TABLE `comments`
   ADD CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `fk_comments_parent` FOREIGN KEY (`parent_comment_id`) REFERENCES `comments` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
 
 
