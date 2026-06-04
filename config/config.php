@@ -37,6 +37,14 @@ try {
         }
     }
 
+    try {
+        $pdo->exec("ALTER TABLE comments ADD COLUMN status ENUM('published','pending_review','rejected') NOT NULL DEFAULT 'published' AFTER is_deleted");
+    } catch (PDOException $e) {
+        if (!in_array(($e->errorInfo[1] ?? null), [1060, 1146], true)) {
+            throw $e;
+        }
+    }
+
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS moderation_reasons (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -87,6 +95,45 @@ try {
             CONSTRAINT fk_notifications_report FOREIGN KEY (report_id) REFERENCES moderation_reports(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     ");
+
+
+    $notificationColumns = [
+        'actor_user_id' => 'ALTER TABLE user_notifications ADD COLUMN actor_user_id BIGINT UNSIGNED DEFAULT NULL AFTER user_id',
+        'target_user_id' => 'ALTER TABLE user_notifications ADD COLUMN target_user_id BIGINT UNSIGNED DEFAULT NULL AFTER actor_user_id',
+        'notification_type' => 'ALTER TABLE user_notifications ADD COLUMN notification_type VARCHAR(50) DEFAULT NULL AFTER target_user_id',
+        'post_id' => 'ALTER TABLE user_notifications ADD COLUMN post_id BIGINT UNSIGNED DEFAULT NULL AFTER notification_type',
+        'comment_id' => 'ALTER TABLE user_notifications ADD COLUMN comment_id BIGINT UNSIGNED DEFAULT NULL AFTER post_id',
+        'comment_text' => 'ALTER TABLE user_notifications ADD COLUMN comment_text TEXT NULL AFTER message',
+        'report_reason' => 'ALTER TABLE user_notifications ADD COLUMN report_reason VARCHAR(1000) DEFAULT NULL AFTER comment_text',
+    ];
+
+    foreach ($notificationColumns as $notificationColumnSql) {
+        try {
+            $pdo->exec($notificationColumnSql);
+        } catch (PDOException $e) {
+            if (($e->errorInfo[1] ?? null) !== 1060) {
+                throw $e;
+            }
+        }
+    }
+
+    $notificationIndexes = [
+        'ALTER TABLE user_notifications ADD KEY idx_notifications_type_post (notification_type, post_id, created_at)',
+        'ALTER TABLE user_notifications ADD KEY idx_notifications_actor (actor_user_id)',
+        'ALTER TABLE user_notifications ADD KEY idx_notifications_target (target_user_id)',
+        'ALTER TABLE user_notifications ADD KEY idx_notifications_post (post_id)',
+        'ALTER TABLE user_notifications ADD KEY idx_notifications_comment (comment_id)',
+    ];
+
+    foreach ($notificationIndexes as $notificationIndexSql) {
+        try {
+            $pdo->exec($notificationIndexSql);
+        } catch (PDOException $e) {
+            if (!in_array(($e->errorInfo[1] ?? null), [1061, 1060, 1146], true)) {
+                throw $e;
+            }
+        }
+    }
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS user_blocks (

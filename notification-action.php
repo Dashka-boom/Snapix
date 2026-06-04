@@ -1,6 +1,7 @@
 <?php
 session_start();
 require './config/config.php';
+require_once './includes/side-menu.php';
 
 function snapix_json_response(array $payload, int $statusCode = 200): void
 {
@@ -14,13 +15,37 @@ if (!isset($_SESSION['user_id'])) {
     snapix_json_response(['success' => false, 'message' => 'Нужно войти в аккаунт.'], 401);
 }
 
+
+$viewerId = (int) $_SESSION['user_id'];
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+$requestId = (int) ($_POST['request_id'] ?? 0);
+
+if ($action === 'fetch_notifications') {
+    $notifications = snapix_side_fetch_notifications(['id' => $viewerId]);
+    $sections = [];
+    foreach (['likes', 'reposts', 'saved', 'complaints', 'comments'] as $section) {
+        ob_start();
+        if (!empty($notifications[$section])) {
+            echo '<div class="notifications-drawer-list">';
+            foreach ($notifications[$section] as $item) {
+                snapix_side_render_notification_card($item, $viewerId);
+            }
+            echo '</div>';
+        } else {
+            echo '<p class="notifications-drawer-empty">' . ($section === 'complaints' ? 'Жалоб пока нет.' : 'Здесь пока нет уведомлений.') . '</p>';
+        }
+        $sections[$section] = ob_get_clean();
+    }
+
+    snapix_json_response([
+        'success' => true,
+        'sections' => $sections,
+    ]);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     snapix_json_response(['success' => false, 'message' => 'Метод не поддерживается.'], 405);
 }
-
-$viewerId = (int) $_SESSION['user_id'];
-$action = $_POST['action'] ?? '';
-$requestId = (int) ($_POST['request_id'] ?? 0);
 
 if ($action === 'mark_moderation_notification_read') {
     $notificationId = (int) ($_POST['notification_id'] ?? 0);

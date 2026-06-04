@@ -34,35 +34,256 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
     $requestsStmt->execute(['user_id' => $userId]);
     $empty['requests'] = $requestsStmt->fetchAll();
 
-    $likesStmt = $pdo->prepare("\n        SELECT likes.id, likes.created_at, users.id AS user_id, users.login, users.avatar\n        FROM likes\n        INNER JOIN posts ON posts.id = likes.post_id\n        INNER JOIN users ON users.id = likes.user_id\n        WHERE posts.user_id = :user_id\n          AND posts.is_deleted = 0\n          AND likes.user_id <> :user_id\n        ORDER BY likes.created_at DESC\n        LIMIT 30\n    ");
-    $likesStmt->execute(['user_id' => $userId]);
-    $empty['likes'] = $likesStmt->fetchAll();
+    $notificationStmt = $pdo->prepare("\n        SELECT\n            user_notifications.id,\n            user_notifications.actor_user_id,\n            user_notifications.notification_type,\n            user_notifications.post_id,\n            user_notifications.comment_id,\n            user_notifications.report_id,\n            user_notifications.title,\n            user_notifications.message,\n            user_notifications.comment_text,\n            user_notifications.report_reason,\n            user_notifications.created_at,\n            actor.id AS user_id,\n            actor.login,\n            actor.avatar,\n            moderation_reports.target_user_id AS reported_user_id,\n            reported_user.login AS reported_login\n        FROM user_notifications\n        LEFT JOIN users AS actor ON actor.id = user_notifications.actor_user_id\n        LEFT JOIN moderation_reports ON moderation_reports.id = user_notifications.report_id\n        LEFT JOIN users AS reported_user ON reported_user.id = moderation_reports.target_user_id\n        WHERE user_notifications.user_id = :user_id\n        ORDER BY user_notifications.created_at DESC, user_notifications.id DESC\n        LIMIT 120\n    ");
+    $notificationStmt->execute(['user_id' => $userId]);
 
-    $commentsStmt = $pdo->prepare("\n        SELECT comments.id, comments.comment_text, comments.created_at, users.id AS user_id, users.login, users.avatar\n        FROM comments\n        INNER JOIN posts ON posts.id = comments.post_id\n        INNER JOIN users ON users.id = comments.user_id\n        WHERE posts.user_id = :user_id\n          AND posts.is_deleted = 0\n          AND comments.is_deleted = 0\n          AND comments.user_id <> :user_id\n        ORDER BY comments.created_at DESC\n        LIMIT 30\n    ");
-    $commentsStmt->execute(['user_id' => $userId]);
-    $empty['comments'] = $commentsStmt->fetchAll();
+    $typeMap = [
+        'post_like' => 'likes',
+        'comment_like' => 'likes',
+        'like' => 'likes',
+        'likes' => 'likes',
+        'post_comment' => 'comments',
+        'comment_reply' => 'comments',
+        'comment' => 'comments',
+        'comments' => 'comments',
+        'comment_deleted' => 'complaints',
+        'comment_deleted_under_post' => 'complaints',
+        'deleted_comment' => 'complaints',
+        'post_repost' => 'reposts',
+        'repost' => 'reposts',
+        'reposts' => 'reposts',
+        'post_saved' => 'saved',
+        'saved' => 'saved',
+        'favorite' => 'saved',
+        'favourite' => 'saved',
+        'post_forward' => 'reposts',
+        'forward' => 'reposts',
+        'report_post' => 'complaints',
+        'report_comment' => 'complaints',
+        'report_user' => 'complaints',
+        'report' => 'complaints',
+        'complaint' => 'complaints',
+    ];
+    $seenContext = [];
 
-    $repostsStmt = $pdo->prepare("\n        SELECT reposts.id, reposts.created_at, users.id AS user_id, users.login, users.avatar\n        FROM reposts\n        INNER JOIN posts ON posts.id = reposts.post_id\n        INNER JOIN users ON users.id = reposts.user_id\n        WHERE posts.user_id = :user_id\n          AND posts.is_deleted = 0\n          AND reposts.user_id <> :user_id\n        ORDER BY reposts.created_at DESC\n        LIMIT 30\n    ");
-    $repostsStmt->execute(['user_id' => $userId]);
-    $empty['reposts'] = $repostsStmt->fetchAll();
+    foreach ($notificationStmt->fetchAll() as $notification) {
+        $type = (string) ($notification['notification_type'] ?? '');
+        $section = $typeMap[$type] ?? '';
+        if ($section === '') {
+            $legacyTitle = mb_strtolower((string) ($notification['title'] ?? ''));
+            $legacyMessage = mb_strtolower((string) ($notification['message'] ?? ''));
+            if (str_contains($legacyTitle . ' ' . $legacyMessage, 'коммент') && str_contains($legacyTitle . ' ' . $legacyMessage, 'удал')) {
+                $section = 'complaints';
+            } elseif (str_contains($legacyTitle . ' ' . $legacyMessage, 'коммент')) {
+                $section = 'comments';
+            } elseif (str_contains($legacyTitle . ' ' . $legacyMessage, 'лайк')) {
+                $section = 'likes';
+            } elseif (str_contains($legacyTitle . ' ' . $legacyMessage, 'репост')) {
+                $section = 'reposts';
+            } elseif (str_contains($legacyTitle . ' ' . $legacyMessage, 'избран')) {
+                $section = 'saved';
+            } else {
+                $section = 'complaints';
+            }
+        }
+        if (isset($empty[$section])) {
+            $empty[$section][] = $notification;
+        }
 
-    $savedStmt = $pdo->prepare("\n        SELECT saved_posts.id, saved_posts.created_at, users.id AS user_id, users.login, users.avatar\n        FROM saved_posts\n        INNER JOIN posts ON posts.id = saved_posts.post_id\n        INNER JOIN users ON users.id = saved_posts.user_id\n        WHERE posts.user_id = :user_id\n          AND posts.is_deleted = 0\n          AND saved_posts.user_id <> :user_id\n        ORDER BY saved_posts.created_at DESC\n        LIMIT 30\n    ");
-    $savedStmt->execute(['user_id' => $userId]);
-    $empty['saved'] = $savedStmt->fetchAll();
+        $contextKey = snapix_side_notification_context_key($type, $notification);
+        if ($contextKey !== '') {
+            $seenContext[$contextKey] = true;
+        }
+    }
 
-    $complaintsStmt = $pdo->prepare("
-        SELECT user_notifications.id, user_notifications.title, user_notifications.message, user_notifications.created_at
-        FROM user_notifications
-        WHERE user_notifications.user_id = :user_id
-        ORDER BY user_notifications.created_at DESC
-        LIMIT 30
-    ");
-    $complaintsStmt->execute(['user_id' => $userId]);
-    $empty['complaints'] = $complaintsStmt->fetchAll();
+    snapix_side_append_legacy_activity_notifications($pdo, $empty, $userId, $seenContext);
+    snapix_side_append_legacy_report_notifications($pdo, $empty, $userId);
 
     return $empty;
 }
 
+
+
+function snapix_side_notification_context_key(string $type, array $item): string
+{
+    $actorId = (int) ($item['actor_user_id'] ?? $item['user_id'] ?? 0);
+    $postId = (int) ($item['post_id'] ?? 0);
+    $commentId = (int) ($item['comment_id'] ?? 0);
+
+    if ($actorId <= 0 || $postId <= 0 || $type === '') {
+        return '';
+    }
+
+    if (in_array($type, ['post_comment', 'comment_reply', 'comment_like', 'comment'], true)) {
+        return $type . ':' . $actorId . ':' . $postId . ':' . $commentId;
+    }
+
+    return $type . ':' . $actorId . ':' . $postId;
+}
+
+function snapix_side_append_legacy_activity_notifications(PDO $pdo, array &$notifications, int $userId, array $seenContext): void
+{
+    $legacyQueries = [
+        'likes' => [
+            'type' => 'post_like',
+            'message' => 'поставил(а) лайк вашей публикации',
+            'sql' => "
+                SELECT likes.id, likes.post_id, likes.user_id AS actor_user_id, likes.created_at, users.id AS user_id, users.login, users.avatar
+                FROM likes
+                LEFT JOIN posts ON posts.id = likes.post_id
+                LEFT JOIN users ON users.id = likes.user_id
+                WHERE posts.user_id = :user_id
+                  AND posts.is_deleted = 0
+                  AND likes.user_id <> :user_id
+                ORDER BY likes.created_at DESC
+                LIMIT 30
+            ",
+        ],
+        'comments' => [
+            'type' => 'post_comment',
+            'message' => 'прокомментировал(а) вашу публикацию',
+            'sql' => "
+                SELECT comments.id, comments.post_id, comments.id AS comment_id, comments.comment_text, comments.user_id AS actor_user_id, comments.created_at, users.id AS user_id, users.login, users.avatar
+                FROM comments
+                LEFT JOIN posts ON posts.id = comments.post_id
+                LEFT JOIN users ON users.id = comments.user_id
+                WHERE posts.user_id = :user_id
+                  AND posts.is_deleted = 0
+                  AND comments.is_deleted = 0
+                  AND (comments.status = 'published' OR comments.status IS NULL)
+                  AND comments.user_id <> :user_id
+                ORDER BY comments.created_at DESC
+                LIMIT 30
+            ",
+        ],
+        'reposts' => [
+            'type' => 'post_repost',
+            'message' => 'сделал(а) репост вашей публикации',
+            'sql' => "
+                SELECT reposts.id, reposts.post_id, reposts.user_id AS actor_user_id, reposts.created_at, users.id AS user_id, users.login, users.avatar
+                FROM reposts
+                LEFT JOIN posts ON posts.id = reposts.post_id
+                LEFT JOIN users ON users.id = reposts.user_id
+                WHERE posts.user_id = :user_id
+                  AND posts.is_deleted = 0
+                  AND reposts.user_id <> :user_id
+                ORDER BY reposts.created_at DESC
+                LIMIT 30
+            ",
+        ],
+        'saved' => [
+            'type' => 'post_saved',
+            'message' => 'добавил(а) вашу публикацию в избранное',
+            'sql' => "
+                SELECT saved_posts.id, saved_posts.post_id, saved_posts.user_id AS actor_user_id, saved_posts.created_at, users.id AS user_id, users.login, users.avatar
+                FROM saved_posts
+                LEFT JOIN posts ON posts.id = saved_posts.post_id
+                LEFT JOIN users ON users.id = saved_posts.user_id
+                WHERE posts.user_id = :user_id
+                  AND posts.is_deleted = 0
+                  AND saved_posts.user_id <> :user_id
+                ORDER BY saved_posts.created_at DESC
+                LIMIT 30
+            ",
+        ],
+    ];
+
+    foreach ($legacyQueries as $section => $legacyQuery) {
+        $stmt = $pdo->prepare($legacyQuery['sql']);
+        $stmt->execute(['user_id' => $userId]);
+
+        foreach ($stmt->fetchAll() as $legacyItem) {
+            $legacyItem['notification_type'] = $legacyQuery['type'];
+            $legacyItem['message'] = '@' . (string) ($legacyItem['login'] ?? 'user') . ' ' . $legacyQuery['message'];
+            if ($section === 'comments' && (string) ($legacyItem['comment_text'] ?? '') !== '') {
+                $legacyItem['message'] .= ': "' . mb_substr((string) $legacyItem['comment_text'], 0, 120) . '"';
+            }
+            $legacyItem['title'] = 'Уведомление';
+            $contextKey = snapix_side_notification_context_key($legacyQuery['type'], $legacyItem);
+            if ($contextKey !== '' && isset($seenContext[$contextKey])) {
+                continue;
+            }
+
+            $notifications[$section][] = $legacyItem;
+        }
+    }
+}
+
+
+function snapix_side_append_legacy_report_notifications(PDO $pdo, array &$notifications, int $userId): void
+{
+    $roleStmt = $pdo->prepare("SELECT role FROM users WHERE id = :id LIMIT 1");
+    $roleStmt->execute(['id' => $userId]);
+    $viewerRole = (string) ($roleStmt->fetchColumn() ?: 'user');
+    if (!in_array($viewerRole, ['admin', 'moderator'], true)) {
+        return;
+    }
+
+    $seenReportIds = [];
+    foreach ($notifications['complaints'] as $complaint) {
+        $reportId = (int) ($complaint['report_id'] ?? 0);
+        if ($reportId > 0) {
+            $seenReportIds[$reportId] = true;
+        }
+    }
+
+    $reportsStmt = $pdo->prepare("
+        SELECT
+            moderation_reports.id AS report_id,
+            moderation_reports.target_comment_id AS comment_id,
+            moderation_reports.reason_text AS report_reason,
+            moderation_reports.created_at,
+            comments.comment_text,
+            comments.post_id,
+            reporter.id AS user_id,
+            reporter.id AS actor_user_id,
+            reporter.login,
+            reporter.avatar,
+            target.id AS reported_user_id,
+            target.login AS reported_login
+        FROM moderation_reports
+        LEFT JOIN users AS reporter ON reporter.id = moderation_reports.reporter_user_id
+        LEFT JOIN users AS target ON target.id = moderation_reports.target_user_id
+        LEFT JOIN comments ON comments.id = moderation_reports.target_comment_id
+        ORDER BY moderation_reports.created_at DESC, moderation_reports.id DESC
+        LIMIT 60
+    ");
+    $reportsStmt->execute();
+
+    foreach ($reportsStmt->fetchAll() as $report) {
+        $reportId = (int) ($report['report_id'] ?? 0);
+        if ($reportId > 0 && isset($seenReportIds[$reportId])) {
+            continue;
+        }
+
+        $reason = (string) ($report['report_reason'] ?? '');
+        $commentId = (int) ($report['comment_id'] ?? 0);
+        $postId = (int) ($report['post_id'] ?? 0);
+        if ($postId <= 0 && preg_match('/(?:пост|публикац[^#]*)\s*#\s*(\d+)/iu', $reason, $matches)) {
+            $postId = (int) $matches[1];
+        }
+
+        $isUserReport = preg_match('/пользовател/u', mb_strtolower($reason)) === 1 && $commentId <= 0;
+        if ($commentId > 0) {
+            $report['notification_type'] = 'report_comment';
+            $report['message'] = 'Поступила жалоба на комментарий под публикацией';
+            $report['title'] = 'Жалоба на комментарий';
+        } elseif ($isUserReport) {
+            $report['notification_type'] = 'report_user';
+            $report['message'] = 'Поступила жалоба на пользователя';
+            $report['title'] = 'Жалоба на пользователя';
+        } else {
+            $report['notification_type'] = 'report_post';
+            $report['message'] = 'Поступила жалоба на публикацию';
+            $report['title'] = 'Жалоба на публикацию';
+        }
+
+        $report['id'] = 'legacy-report-' . $reportId;
+        $report['post_id'] = $postId > 0 ? $postId : null;
+        $report['report_reason'] = $reason;
+        $notifications['complaints'][] = $report;
+    }
+}
 
 function snapix_side_fetch_unread_moderation_notification(?array $sideMenuUser): ?array
 {
@@ -100,6 +321,64 @@ function snapix_side_render_avatar(array $item, int $viewerId): void
     <a href="<?php echo htmlspecialchars(snapix_side_profile_url((int) $item['user_id'], $viewerId), ENT_QUOTES); ?>" class="notifications-drawer-avatar" aria-label="Открыть профиль <?php echo htmlspecialchars($login, ENT_QUOTES); ?>"<?php if ($avatar !== ''): ?> style="background-image: url('<?php echo htmlspecialchars($avatar, ENT_QUOTES); ?>');"<?php endif; ?>>
         <?php if ($avatar === ''): ?><?php echo htmlspecialchars(mb_substr($login, 0, 1)); ?><?php endif; ?>
     </a>
+    <?php
+}
+
+
+function snapix_side_notification_date(?string $value): string
+{
+    if (!$value) {
+        return '';
+    }
+
+    $timestamp = strtotime($value);
+    return $timestamp ? date('d.m.Y H:i', $timestamp) : $value;
+}
+
+function snapix_side_render_notification_card(array $item, int $viewerId): void
+{
+    $actorId = (int) ($item['user_id'] ?? 0);
+    $login = (string) ($item['login'] ?? 'Snapix');
+    $avatar = (string) ($item['avatar'] ?? '');
+    $postId = (int) ($item['post_id'] ?? 0);
+    $message = (string) ($item['message'] ?? 'Уведомление');
+    $commentText = trim((string) ($item['comment_text'] ?? ''));
+    $reportReason = trim((string) ($item['report_reason'] ?? ''));
+    $reportedUserId = (int) ($item['reported_user_id'] ?? 0);
+    $reportedLogin = (string) ($item['reported_login'] ?? '');
+    ?>
+    <article class="notifications-drawer-item">
+        <?php if ($actorId > 0): ?>
+            <a href="<?php echo htmlspecialchars(snapix_side_profile_url($actorId, $viewerId), ENT_QUOTES); ?>" class="notifications-drawer-avatar" aria-label="Открыть профиль <?php echo htmlspecialchars($login, ENT_QUOTES); ?>"<?php if ($avatar !== ''): ?> style="background-image: url('<?php echo htmlspecialchars($avatar, ENT_QUOTES); ?>');"<?php endif; ?>>
+                <?php if ($avatar === ''): ?><?php echo htmlspecialchars(mb_substr($login, 0, 1)); ?><?php endif; ?>
+            </a>
+        <?php else: ?>
+            <span class="notifications-drawer-avatar notifications-drawer-avatar-system">S</span>
+        <?php endif; ?>
+        <div class="notifications-drawer-copy">
+            <?php if ($actorId > 0): ?>
+                <a href="<?php echo htmlspecialchars(snapix_side_profile_url($actorId, $viewerId), ENT_QUOTES); ?>" class="notifications-drawer-login">@<?php echo htmlspecialchars($login); ?></a>
+            <?php else: ?>
+                <p class="notifications-drawer-title"><?php echo htmlspecialchars((string) ($item['title'] ?? 'Уведомление')); ?></p>
+            <?php endif; ?>
+            <p><?php echo nl2br(htmlspecialchars($message)); ?></p>
+            <?php if ($commentText !== ''): ?>
+                <p class="notifications-drawer-context">Комментарий: “<?php echo htmlspecialchars(mb_substr($commentText, 0, 140)); ?><?php echo mb_strlen($commentText) > 140 ? '…' : ''; ?>”</p>
+            <?php endif; ?>
+            <?php if ($reportReason !== ''): ?>
+                <p class="notifications-drawer-context">Причина: <?php echo htmlspecialchars($reportReason); ?></p>
+            <?php endif; ?>
+            <?php if ($reportedUserId > 0): ?>
+                <a class="notifications-drawer-link" href="<?php echo htmlspecialchars(snapix_side_profile_url($reportedUserId, $viewerId), ENT_QUOTES); ?>">Открыть профиль<?php echo $reportedLogin !== '' ? ' @' . htmlspecialchars($reportedLogin) : ''; ?></a>
+            <?php endif; ?>
+            <?php if ($postId > 0): ?>
+                <a class="notifications-drawer-link" href="post.php?id=<?php echo $postId; ?>">Открыть публикацию</a>
+            <?php endif; ?>
+            <?php if (!empty($item['created_at'])): ?>
+                <time class="notifications-drawer-date" datetime="<?php echo htmlspecialchars((string) $item['created_at'], ENT_QUOTES); ?>"><?php echo htmlspecialchars(snapix_side_notification_date((string) $item['created_at'])); ?></time>
+            <?php endif; ?>
+        </div>
+    </article>
     <?php
 }
 
@@ -169,68 +448,19 @@ function render_notifications_drawer(?array $sideMenuUser = null): void
                     <?php endif; ?>
                 </div>
 
-                <?php
-                $simpleSections = [
-                    'likes' => 'поставил(а) лайк вашей публикации',
-                    'reposts' => 'сделал(а) репост вашей публикации',
-                    'saved' => 'добавил(а) вашу публикацию в избранное',
-                ];
-                foreach ($simpleSections as $section => $text):
-                ?>
+                <?php foreach (['likes', 'reposts', 'saved', 'complaints', 'comments'] as $section): ?>
                     <div class="notifications-drawer-panel" data-notification-panel="<?php echo htmlspecialchars($section, ENT_QUOTES); ?>">
                         <?php if ($notifications[$section]): ?>
                             <div class="notifications-drawer-list">
                                 <?php foreach ($notifications[$section] as $item): ?>
-                                    <article class="notifications-drawer-item">
-                                        <?php snapix_side_render_avatar($item, $viewerId); ?>
-                                        <div class="notifications-drawer-copy">
-                                            <a href="<?php echo htmlspecialchars(snapix_side_profile_url((int) $item['user_id'], $viewerId)); ?>" class="notifications-drawer-login"><?php echo htmlspecialchars($item['login']); ?></a>
-                                            <p><?php echo htmlspecialchars($text); ?>.</p>
-                                        </div>
-                                    </article>
+                                    <?php snapix_side_render_notification_card($item, $viewerId); ?>
                                 <?php endforeach; ?>
                             </div>
                         <?php else: ?>
-                            <p class="notifications-drawer-empty">Здесь пока нет уведомлений.</p>
+                            <p class="notifications-drawer-empty"><?php echo $section === 'complaints' ? 'Жалоб пока нет.' : 'Здесь пока нет уведомлений.'; ?></p>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
-
-
-                <div class="notifications-drawer-panel" data-notification-panel="complaints">
-                    <?php if ($notifications['complaints']): ?>
-                        <div class="notifications-drawer-list">
-                            <?php foreach ($notifications['complaints'] as $complaint): ?>
-                                <article class="notifications-drawer-item notifications-drawer-item-complaint">
-                                    <div class="notifications-drawer-copy">
-                                        <p class="notifications-drawer-title"><?php echo htmlspecialchars((string) ($complaint['title'] ?? 'Жалоба')); ?></p>
-                                        <p><?php echo nl2br(htmlspecialchars((string) ($complaint['message'] ?? ''))); ?></p>
-                                    </div>
-                                </article>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <p class="notifications-drawer-empty">Жалоб пока нет.</p>
-                    <?php endif; ?>
-                </div>
-
-                <div class="notifications-drawer-panel" data-notification-panel="comments">
-                    <?php if ($notifications['comments']): ?>
-                        <div class="notifications-drawer-list">
-                            <?php foreach ($notifications['comments'] as $comment): ?>
-                                <article class="notifications-drawer-item">
-                                    <?php snapix_side_render_avatar($comment, $viewerId); ?>
-                                    <div class="notifications-drawer-copy">
-                                        <a href="<?php echo htmlspecialchars(snapix_side_profile_url((int) $comment['user_id'], $viewerId)); ?>" class="notifications-drawer-login"><?php echo htmlspecialchars($comment['login']); ?></a>
-                                        <p><?php echo htmlspecialchars(mb_substr((string) $comment['comment_text'], 0, 120)); ?></p>
-                                    </div>
-                                </article>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <p class="notifications-drawer-empty">Новых комментариев пока нет.</p>
-                    <?php endif; ?>
-                </div>
             <?php endif; ?>
         </div>
     </section>
@@ -254,7 +484,7 @@ function render_side_menu(?array $sideMenuUser = null): void
 
         <nav class="side-menu-nav" aria-label="Навигация по сайту">
             <a href="index.php" class="side-menu-item" aria-label="Главная">
-                <img src="icon/logo.png" alt="" class="side-menu-icon">
+                <img src="icon/dark theme/logo.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Главная</span>
             </a>
             <a href="<?php echo htmlspecialchars($clipsUrl, ENT_QUOTES); ?>" class="side-menu-item" aria-label="Clips">
@@ -351,8 +581,12 @@ function render_side_menu(?array $sideMenuUser = null): void
         </section>
     </div>
 
+    <script>
+        window.IS_AUTH = <?php echo $sideMenuUser ? 'true' : 'false'; ?>;
+    </script>
     <script src="js/notifications-drawer.js" defer></script>
     <script src="js/moderation-alert.js" defer></script>
     <script src="js/report-modal.js" defer></script>
+    <script src="js/theme-toggle.js" defer></script>
     <?php
 }
