@@ -1685,6 +1685,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     const params = new URLSearchParams();
                     params.set('action', 'delete_comment');
                     params.set('comment_id', commentId);
+                    params.set('post_id', postId);
                     params.set('target_user_id', String(<?php echo (int) $profileUser['id']; ?>));
 
                     deleteButton.dataset.deleting = '1';
