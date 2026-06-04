@@ -7731,3 +7731,44 @@ body.light-theme .profile-post-viewer-attachment-preview button {
     background: rgba(252,251,248,.92) !important;
     color: #040607 !important;
 }
+
+/* Publication modal attachment/emoji icons: support every active theme marker. */
+.profile-post-viewer-round-btn .icon-dark {
+    display: block !important;
+}
+
+.profile-post-viewer-round-btn .icon-light {
+    display: none !important;
+}
+
+body.theme-light .profile-post-viewer-round-btn .icon-dark,
+body[data-theme="light"] .profile-post-viewer-round-btn .icon-dark,
+html.theme-light .profile-post-viewer-round-btn .icon-dark,
+html[data-theme="light"] .profile-post-viewer-round-btn .icon-dark,
+body.light-theme .profile-post-viewer-round-btn .icon-dark {
+    display: none !important;
+}
+
+body.theme-light .profile-post-viewer-round-btn .icon-light,
+body[data-theme="light"] .profile-post-viewer-round-btn .icon-light,
+html.theme-light .profile-post-viewer-round-btn .icon-light,
+html[data-theme="light"] .profile-post-viewer-round-btn .icon-light,
+body.light-theme .profile-post-viewer-round-btn .icon-light {
+    display: block !important;
+}
+
+.profile-post-viewer-round-btn img.icon-dark,
+.profile-post-viewer-round-btn img.icon-light {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    flex: 0 0 20px !important;
+    object-fit: contain !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
