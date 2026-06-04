@@ -6880,3 +6880,14 @@ body[data-profile-owner="other"] .profile-post-viewer-follow:focus-visible {
     box-shadow: none !important;
     color: #18cfd5 !important;
 }
+
+body[data-profile-owner="other"] .profile-viewer-comment {
+    flex-wrap: nowrap;
+}
+
+body[data-profile-owner="other"] .profile-viewer-comment-attachment img {
+    max-width: 220px;
+    max-height: 220px;
+    border-radius: 12px;
+    object-fit: cover;
+}
