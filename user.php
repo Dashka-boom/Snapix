@@ -717,11 +717,11 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                 <div class="follow-state-card"><strong>Заявка временно недоступна</strong><p>Повторную заявку можно будет отправить после <?php echo htmlspecialchars(formatBlockedUntil($followDeclinedUntil)); ?>.</p></div>
                             <?php elseif ($currentUser): ?>
                                 <?php if ($followStatus === 'accepted'): ?>
-                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="toggle_follow"><button type="submit" class="secondary-link profile-edit-btn">Отписаться</button></form>
+                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="toggle_follow"><button type="submit" class="secondary-link profile-edit-btn profile-follow-btn">Отписаться</button></form>
                                 <?php elseif ($followStatus === 'pending'): ?>
-                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="cancel_follow_request"><button type="submit" class="secondary-link profile-edit-btn">Заявка отправлена</button></form>
+                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="cancel_follow_request"><button type="submit" class="secondary-link profile-edit-btn profile-follow-btn">Заявка отправлена</button></form>
                                 <?php else: ?>
-                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="toggle_follow"><button type="submit" class="primary-link profile-edit-btn"><?php echo $isPrivateProfile ? 'Подписаться' : 'Подписаться'; ?></button></form>
+                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="toggle_follow"><button type="submit" class="primary-link profile-edit-btn profile-follow-btn"><?php echo $isPrivateProfile ? 'Подписаться' : 'Подписаться'; ?></button></form>
                                 <?php endif; ?>
                             <?php else: ?>
                                 <a href="login.php" class="secondary-link profile-edit-btn">Войти</a>

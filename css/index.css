@@ -6843,3 +6843,24 @@ html[data-theme="light"] body[data-page="home"] .profile-viewer-comment-more:foc
         transform: scale(0.98);
     }
 }
+
+body[data-profile-owner="other"] .profile-post-tabs.home-feed-tabs {
+    justify-content: flex-start !important;
+    gap: 28px !important;
+}
+
+body[data-profile-owner="other"] .profile-actions .profile-follow-btn {
+    background: #68C5DB !important;
+    color: #040607 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+body[data-profile-owner="other"] .profile-actions .profile-follow-btn:hover,
+body[data-profile-owner="other"] .profile-actions .profile-follow-btn:focus-visible {
+    background: #18cfd5 !important;
+    color: #040607 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
