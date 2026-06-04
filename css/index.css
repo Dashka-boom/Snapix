@@ -7187,3 +7187,24 @@ html[data-theme="light"] .share-recipient-avatar {
         padding: 8px 12px !important;
     }
 }
+
+/* Share modal close button: white cross inside the circular button */
+.share-modal-header .js-close-share-modal {
+    position: relative !important;
+    font-size: 0 !important;
+}
+
+.share-modal-header .js-close-share-modal::before {
+    content: '×';
+    color: #fff !important;
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    display: block !important;
+    transform: translateY(-1px);
+}
+
+.share-modal-header .js-close-share-modal svg,
+.share-modal-header .js-close-share-modal img {
+    display: none !important;
+}
