@@ -142,3 +142,68 @@ function snapix_notify_post_action(PDO $pdo, int $postId, int $actorUserId, stri
         'dedupe_minutes' => $type === 'post_comment' ? 0 : 10,
     ]);
 }
+
+function snapix_notify_comment_reply(PDO $pdo, int $parentCommentId, int $actorUserId, string $commentText, int $replyCommentId): void
+{
+    if ($parentCommentId <= 0 || $replyCommentId <= 0) {
+        return;
+    }
+
+    $parentStmt = $pdo->prepare("\n        SELECT comments.id, comments.user_id, comments.post_id, comments.comment_text\n        FROM comments\n        INNER JOIN posts ON posts.id = comments.post_id\n        WHERE comments.id = :id\n          AND comments.is_deleted = 0\n          AND (comments.status = 'published' OR comments.status IS NULL)\n          AND posts.is_deleted = 0\n        LIMIT 1\n    ");
+    $parentStmt->execute(['id' => $parentCommentId]);
+    $parentComment = $parentStmt->fetch();
+    if (!$parentComment) {
+        return;
+    }
+
+    $targetUserId = (int) ($parentComment['user_id'] ?? 0);
+    if ($targetUserId <= 0 || $targetUserId === $actorUserId) {
+        return;
+    }
+
+    $login = snapix_actor_login($pdo, $actorUserId);
+    $excerpt = snapix_notification_excerpt($commentText, 120);
+    snapix_create_notification($pdo, [
+        'target_user_id' => $targetUserId,
+        'actor_user_id' => $actorUserId,
+        'notification_type' => 'comment_reply',
+        'post_id' => (int) ($parentComment['post_id'] ?? 0),
+        'comment_id' => $replyCommentId,
+        'title' => 'Комментарий',
+        'message' => '@' . $login . ' ответил(а) на ваш комментарий' . ($excerpt !== '' ? ': "' . $excerpt . '"' : ''),
+        'comment_text' => $commentText,
+        'dedupe_minutes' => 0,
+    ]);
+}
+
+function snapix_notify_comment_like(PDO $pdo, int $commentId, int $actorUserId): void
+{
+    if ($commentId <= 0) {
+        return;
+    }
+
+    $commentStmt = $pdo->prepare("\n        SELECT comments.id, comments.user_id, comments.post_id, comments.comment_text\n        FROM comments\n        INNER JOIN posts ON posts.id = comments.post_id\n        WHERE comments.id = :id\n          AND comments.is_deleted = 0\n          AND (comments.status = 'published' OR comments.status IS NULL)\n          AND posts.is_deleted = 0\n        LIMIT 1\n    ");
+    $commentStmt->execute(['id' => $commentId]);
+    $comment = $commentStmt->fetch();
+    if (!$comment) {
+        return;
+    }
+
+    $targetUserId = (int) ($comment['user_id'] ?? 0);
+    if ($targetUserId <= 0 || $targetUserId === $actorUserId) {
+        return;
+    }
+
+    $login = snapix_actor_login($pdo, $actorUserId);
+    snapix_create_notification($pdo, [
+        'target_user_id' => $targetUserId,
+        'actor_user_id' => $actorUserId,
+        'notification_type' => 'comment_like',
+        'post_id' => (int) ($comment['post_id'] ?? 0),
+        'comment_id' => $commentId,
+        'title' => 'Комментарий',
+        'message' => '@' . $login . ' поставил(а) лайк вашему комментарию',
+        'comment_text' => (string) ($comment['comment_text'] ?? ''),
+        'dedupe_minutes' => 10,
+    ]);
+}

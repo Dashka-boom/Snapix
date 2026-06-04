@@ -22,6 +22,7 @@
         }
         setTriggerState(true);
         window.setTimeout(scheduleIndicatorUpdate, 40);
+        refreshNotificationPanels();
     }
 
     function closeDrawer() {
@@ -101,6 +102,41 @@
         });
     }
 
+
+    var refreshInFlight = false;
+
+    function refreshNotificationPanels() {
+        if (refreshInFlight) {
+            return;
+        }
+        refreshInFlight = true;
+        fetch('notification-action.php?action=fetch_notifications', {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        }).then(function (response) {
+            return response.json();
+        }).then(function (data) {
+            if (!data || !data.success || !data.sections) {
+                return;
+            }
+            Object.keys(data.sections).forEach(function (section) {
+                var panel = drawer.querySelector('[data-notification-panel="' + section + '"]');
+                if (panel) {
+                    panel.innerHTML = data.sections[section];
+                }
+            });
+            scheduleIndicatorUpdate();
+        }).catch(function () {}).finally(function () {
+            refreshInFlight = false;
+        });
+    }
+
+    window.SnapixRefreshNotifications = refreshNotificationPanels;
+    window.addEventListener('snapix:notifications-refresh', refreshNotificationPanels);
     function setCommentsTabState(tabName) {
         drawer.classList.toggle('is-comments-tab-active', tabName === 'comments');
     }
@@ -140,6 +176,8 @@
         setCommentsTabState(initiallyActiveTab.getAttribute('data-notification-tab'));
     }
     scheduleIndicatorUpdate();
+
+    window.setInterval(refreshNotificationPanels, 15000);
 
     drawer.querySelectorAll('[data-notification-request-form]').forEach(function (form) {
         form.addEventListener('submit', function (event) {
