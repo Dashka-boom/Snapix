@@ -1133,6 +1133,22 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             const attachmentInput = document.getElementById('profilePostViewerAttachmentInput');
             const attachmentPreview = document.getElementById('profilePostViewerAttachmentPreview');
             const attachmentRemove = document.getElementById('profilePostViewerAttachmentRemove');
+            let selectedViewerAttachment = null;
+
+            function clearViewerAttachment() {
+                selectedViewerAttachment = null;
+                if (attachmentInput) attachmentInput.value = '';
+                if (attachmentPreview) {
+                    attachmentPreview.hidden = true;
+                    const previewImage = attachmentPreview.querySelector('img');
+                    if (previewImage) previewImage.removeAttribute('src');
+                }
+            }
+
+            function viewerCommentText() {
+                return (commentForm?.querySelector('[name="comment_text"]')?.value || '').trim();
+            }
+
             emojiButton?.addEventListener('click', () => {
                 if (!emojiPicker) return;
                 emojiPicker.hidden = !emojiPicker.hidden;
@@ -1152,18 +1168,41 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             attachmentInput?.addEventListener('change', () => {
                 const file = attachmentInput.files && attachmentInput.files[0];
                 const img = attachmentPreview?.querySelector('img');
-                if (!file || !img || !attachmentPreview) return;
+                if (!file || !img || !attachmentPreview) {
+                    selectedViewerAttachment = null;
+                    return;
+                }
+                selectedViewerAttachment = file;
                 img.src = URL.createObjectURL(file);
                 attachmentPreview.hidden = false;
             });
-            attachmentRemove?.addEventListener('click', () => {
-                if (attachmentInput) attachmentInput.value = '';
-                if (attachmentPreview) attachmentPreview.hidden = true;
+            attachmentRemove?.addEventListener('click', clearViewerAttachment);
+
+            commentForm?.querySelector('[name="comment_text"]')?.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' || event.shiftKey) return;
+                event.preventDefault();
+                if (viewerCommentText() !== '') {
+                    commentForm.requestSubmit();
+                }
             });
 
             commentForm?.addEventListener('submit', (event) => {
                 event.preventDefault();
+                event.stopPropagation();
+
+                if (commentForm.dataset.viewerSubmitting === '1') return;
+
+                const textInput = commentForm.querySelector('[name="comment_text"]');
+                const textValue = viewerCommentText();
+                if (textValue === '') {
+                    if (!selectedViewerAttachment) return;
+                    return;
+                }
+
                 const formData = new FormData(commentForm);
+                formData.set('comment_text', textValue);
+                commentForm.dataset.viewerSubmitting = '1';
+
                 fetch(commentForm.getAttribute('action') || window.location.href, {
                     method: 'POST',
                     credentials: 'same-origin',
@@ -1189,9 +1228,12 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                         });
                         window.snapixRenderViewerComments(postId);
                     }
-                    commentForm.querySelector('[name="comment_text"]').value = '';
+                    if (textInput) textInput.value = '';
+                    clearViewerAttachment();
                     if (window.snapixSyncPostState) window.snapixSyncPostState(postId, data);
-                }).catch(() => {});
+                }).catch(() => {}).finally(() => {
+                    commentForm.dataset.viewerSubmitting = '0';
+                });
             });
         })();
 
