@@ -7772,3 +7772,203 @@ body.light-theme .profile-post-viewer-round-btn .icon-light {
     position: relative !important;
     z-index: 1 !important;
 }
+
+/* Light theme profile pages: keep dark profile styling untouched. */
+html.theme-light body[data-page="profile"],
+html[data-theme="light"] body[data-page="profile"],
+body.theme-light[data-page="profile"],
+body[data-theme="light"][data-page="profile"] {
+    background: #FCFBF8 !important;
+    background-color: #FCFBF8 !important;
+    color: #040607 !important;
+}
+
+html.theme-light body[data-page="profile"] main,
+html.theme-light body[data-page="profile"] .profile-page,
+html.theme-light body[data-page="profile"] .profile-hero,
+html.theme-light body[data-page="profile"] .profile-summary,
+html.theme-light body[data-page="profile"] .profile-tabs-line,
+html.theme-light body[data-page="profile"] .profile-post-tabs.home-feed-tabs,
+html.theme-light body[data-page="profile"] .profile-posts,
+html.theme-light body[data-page="profile"] .profile-posts-stream,
+html.theme-light body[data-page="profile"] .profile-media-grid,
+html.theme-light body[data-page="profile"] [data-profile-tab-panel],
+html[data-theme="light"] body[data-page="profile"] main,
+html[data-theme="light"] body[data-page="profile"] .profile-page,
+html[data-theme="light"] body[data-page="profile"] .profile-hero,
+html[data-theme="light"] body[data-page="profile"] .profile-summary,
+html[data-theme="light"] body[data-page="profile"] .profile-tabs-line,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tabs.home-feed-tabs,
+html[data-theme="light"] body[data-page="profile"] .profile-posts,
+html[data-theme="light"] body[data-page="profile"] .profile-posts-stream,
+html[data-theme="light"] body[data-page="profile"] .profile-media-grid,
+html[data-theme="light"] body[data-page="profile"] [data-profile-tab-panel],
+body.theme-light[data-page="profile"] main,
+body.theme-light[data-page="profile"] .profile-page,
+body.theme-light[data-page="profile"] .profile-hero,
+body.theme-light[data-page="profile"] .profile-summary,
+body.theme-light[data-page="profile"] .profile-tabs-line,
+body.theme-light[data-page="profile"] .profile-post-tabs.home-feed-tabs,
+body.theme-light[data-page="profile"] .profile-posts,
+body.theme-light[data-page="profile"] .profile-posts-stream,
+body.theme-light[data-page="profile"] .profile-media-grid,
+body.theme-light[data-page="profile"] [data-profile-tab-panel],
+body[data-theme="light"][data-page="profile"] main,
+body[data-theme="light"][data-page="profile"] .profile-page,
+body[data-theme="light"][data-page="profile"] .profile-hero,
+body[data-theme="light"][data-page="profile"] .profile-summary,
+body[data-theme="light"][data-page="profile"] .profile-tabs-line,
+body[data-theme="light"][data-page="profile"] .profile-post-tabs.home-feed-tabs,
+body[data-theme="light"][data-page="profile"] .profile-posts,
+body[data-theme="light"][data-page="profile"] .profile-posts-stream,
+body[data-theme="light"][data-page="profile"] .profile-media-grid,
+body[data-theme="light"][data-page="profile"] [data-profile-tab-panel] {
+    background: #FCFBF8 !important;
+    background-color: #FCFBF8 !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    color: #040607 !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-cover,
+html[data-theme="light"] body[data-page="profile"] .profile-cover,
+body.theme-light[data-page="profile"] .profile-cover,
+body[data-theme="light"][data-page="profile"] .profile-cover {
+    background-color: #FCFBF8 !important;
+    background-image: linear-gradient(160deg, #EAF8FB 0%, #FCFBF8 100%);
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-cover.has-image,
+html[data-theme="light"] body[data-page="profile"] .profile-cover.has-image,
+body.theme-light[data-page="profile"] .profile-cover.has-image,
+body[data-theme="light"][data-page="profile"] .profile-cover.has-image {
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-cover::after,
+html[data-theme="light"] body[data-page="profile"] .profile-cover::after,
+body.theme-light[data-page="profile"] .profile-cover::after,
+body[data-theme="light"][data-page="profile"] .profile-cover::after {
+    background: linear-gradient(to bottom, rgba(252,251,248,0), #FCFBF8) !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-header,
+html[data-theme="light"] body[data-page="profile"] .profile-header,
+body.theme-light[data-page="profile"] .profile-header,
+body[data-theme="light"][data-page="profile"] .profile-header {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #040607 !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-avatar,
+html[data-theme="light"] body[data-page="profile"] .profile-avatar,
+body.theme-light[data-page="profile"] .profile-avatar,
+body[data-theme="light"][data-page="profile"] .profile-avatar {
+    border-color: #FCFBF8 !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-username,
+html.theme-light body[data-page="profile"] .profile-bio,
+html.theme-light body[data-page="profile"] .profile-metrics,
+html.theme-light body[data-page="profile"] .profile-metrics strong,
+html.theme-light body[data-page="profile"] .profile-metrics span,
+html.theme-light body[data-page="profile"] .profile-metric-inline-link,
+html[data-theme="light"] body[data-page="profile"] .profile-username,
+html[data-theme="light"] body[data-page="profile"] .profile-bio,
+html[data-theme="light"] body[data-page="profile"] .profile-metrics,
+html[data-theme="light"] body[data-page="profile"] .profile-metrics strong,
+html[data-theme="light"] body[data-page="profile"] .profile-metrics span,
+html[data-theme="light"] body[data-page="profile"] .profile-metric-inline-link,
+body.theme-light[data-page="profile"] .profile-username,
+body.theme-light[data-page="profile"] .profile-bio,
+body.theme-light[data-page="profile"] .profile-metrics,
+body.theme-light[data-page="profile"] .profile-metrics strong,
+body.theme-light[data-page="profile"] .profile-metrics span,
+body.theme-light[data-page="profile"] .profile-metric-inline-link,
+body[data-theme="light"][data-page="profile"] .profile-username,
+body[data-theme="light"][data-page="profile"] .profile-bio,
+body[data-theme="light"][data-page="profile"] .profile-metrics,
+body[data-theme="light"][data-page="profile"] .profile-metrics strong,
+body[data-theme="light"][data-page="profile"] .profile-metrics span,
+body[data-theme="light"][data-page="profile"] .profile-metric-inline-link {
+    color: #040607 !important;
+    text-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-post-tab.home-feed-tab,
+html.theme-light body[data-page="profile"] .profile-post-tab.home-feed-tab:hover,
+html.theme-light body[data-page="profile"] .profile-post-tab.home-feed-tab:focus-visible,
+html.theme-light body[data-page="profile"] .profile-post-tab.home-feed-tab.is-active,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tab.home-feed-tab,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tab.home-feed-tab:hover,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tab.home-feed-tab:focus-visible,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tab.home-feed-tab.is-active,
+body.theme-light[data-page="profile"] .profile-post-tab.home-feed-tab,
+body.theme-light[data-page="profile"] .profile-post-tab.home-feed-tab:hover,
+body.theme-light[data-page="profile"] .profile-post-tab.home-feed-tab:focus-visible,
+body.theme-light[data-page="profile"] .profile-post-tab.home-feed-tab.is-active,
+body[data-theme="light"][data-page="profile"] .profile-post-tab.home-feed-tab,
+body[data-theme="light"][data-page="profile"] .profile-post-tab.home-feed-tab:hover,
+body[data-theme="light"][data-page="profile"] .profile-post-tab.home-feed-tab:focus-visible,
+body[data-theme="light"][data-page="profile"] .profile-post-tab.home-feed-tab.is-active {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #040607 !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-post-tab.is-active::before,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tab.is-active::before,
+body.theme-light[data-page="profile"] .profile-post-tab.is-active::before,
+body[data-theme="light"][data-page="profile"] .profile-post-tab.is-active::before {
+    background: #68C5DB !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-media-grid .post-card,
+html.theme-light body[data-page="profile"] [data-profile-tab-panel] .post-card,
+html[data-theme="light"] body[data-page="profile"] .profile-media-grid .post-card,
+html[data-theme="light"] body[data-page="profile"] [data-profile-tab-panel] .post-card,
+body.theme-light[data-page="profile"] .profile-media-grid .post-card,
+body.theme-light[data-page="profile"] [data-profile-tab-panel] .post-card,
+body[data-theme="light"][data-page="profile"] .profile-media-grid .post-card,
+body[data-theme="light"][data-page="profile"] [data-profile-tab-panel] .post-card {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-media-grid .post-card-media,
+html.theme-light body[data-page="profile"] [data-profile-tab-panel] .post-card-media,
+html[data-theme="light"] body[data-page="profile"] .profile-media-grid .post-card-media,
+html[data-theme="light"] body[data-page="profile"] [data-profile-tab-panel] .post-card-media,
+body.theme-light[data-page="profile"] .profile-media-grid .post-card-media,
+body.theme-light[data-page="profile"] [data-profile-tab-panel] .post-card-media,
+body[data-theme="light"][data-page="profile"] .profile-media-grid .post-card-media,
+body[data-theme="light"][data-page="profile"] [data-profile-tab-panel] .post-card-media {
+    background-color: #FCFBF8 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .post-type-badge,
+html[data-theme="light"] body[data-page="profile"] .post-type-badge,
+body.theme-light[data-page="profile"] .post-type-badge,
+body[data-theme="light"][data-page="profile"] .post-type-badge {
+    background: rgba(252,251,248,.92) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .post-type-badge img,
+html[data-theme="light"] body[data-page="profile"] .post-type-badge img,
+body.theme-light[data-page="profile"] .post-type-badge img,
+body[data-theme="light"][data-page="profile"] .post-type-badge img {
+    filter: none !important;
+}
