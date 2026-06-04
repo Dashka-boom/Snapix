@@ -6864,3 +6864,19 @@ body[data-profile-owner="other"] .profile-actions .profile-follow-btn:focus-visi
     border: 0 !important;
     box-shadow: none !important;
 }
+
+body[data-profile-owner="other"] .profile-post-viewer-follow {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #68C5DB !important;
+    padding: 0 !important;
+}
+
+body[data-profile-owner="other"] .profile-post-viewer-follow:hover,
+body[data-profile-owner="other"] .profile-post-viewer-follow:focus-visible {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #18cfd5 !important;
+}

@@ -266,9 +266,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                 snapix_notify_post_action($pdo, $postId, (int) $currentUser['id'], 'post_comment', $commentValue, $commentId);
                 $commentsPostId = $postId;
                 $ajaxExtra['comment'] = [
+                    'comment_id' => $commentId,
                     'login' => (string) $currentUser['login'],
                     'profile_url' => profileDestination((int) $currentUser['id'], (int) $currentUser['id']),
+                    'avatar_url' => (string) ($currentUser['avatar'] ?? ''),
                     'text' => $commentValue,
+                    'created_at' => date('d.m.Y H:i'),
                 ];
             } elseif ($isAjaxPostAction) {
                 snapix_send_post_action_error('empty_comment');
@@ -521,7 +524,7 @@ if ($profileUser) {
     if ($canViewPrivateProfile) {
         $stmt = $pdo->prepare('
             SELECT posts.*, post_media.media_url, post_media.media_type,
-                   users.id AS author_user_id, users.login AS author_login,
+                   users.id AS author_user_id, users.login AS author_login, users.avatar AS author_avatar,
                    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
                    (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0) AS comments_count,
                    (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
@@ -597,6 +600,7 @@ if ($profileUser) {
 }
 
 $commentMap = [];
+$viewerCommentMap = [];
 $repostMap = [];
 if ($posts || $repostedPosts || $savedPosts) {
     $allVisiblePosts = array_merge($posts, $repostedPosts, $savedPosts);
@@ -604,9 +608,10 @@ if ($posts || $repostedPosts || $savedPosts) {
     $placeholders = implode(',', array_fill(0, count($postIds), '?'));
 
     $commentsStmt = $pdo->prepare("
-        SELECT comments.id, comments.post_id, comments.comment_text, users.id AS user_id, users.login
+        SELECT comments.id, comments.post_id, comment_posts.user_id AS post_owner_id, comments.comment_text, comments.created_at, users.id AS user_id, users.login, users.avatar
         FROM comments
         INNER JOIN users ON users.id = comments.user_id
+        INNER JOIN posts comment_posts ON comment_posts.id = comments.post_id
         WHERE comments.is_deleted = 0
           AND comments.post_id IN ($placeholders)
         ORDER BY comments.post_id ASC, comments.created_at DESC, comments.id DESC
@@ -618,6 +623,27 @@ if ($posts || $repostedPosts || $savedPosts) {
             $commentMap[$currentPostId] = [];
         }
         $commentMap[$currentPostId][] = $comment;
+        if (!isset($viewerCommentMap[$currentPostId])) {
+            $viewerCommentMap[$currentPostId] = [];
+        }
+        $viewerCommentMap[$currentPostId][] = [
+            'comment_id' => (int) $comment['id'],
+            'post_id' => $currentPostId,
+            'post_owner_id' => (int) ($comment['post_owner_id'] ?? 0),
+            'parent_comment_id' => 0,
+            'user_id' => (int) $comment['user_id'],
+            'login' => (string) $comment['login'],
+            'avatar_url' => (string) ($comment['avatar'] ?? ''),
+            'profile_url' => profileDestination((int) $comment['user_id'], $currentUser ? (int) $currentUser['id'] : null),
+            'comment_text' => (string) $comment['comment_text'],
+            'text' => (string) $comment['comment_text'],
+            'attachment_url' => '',
+            'attachment_type' => '',
+            'created_at' => !empty($comment['created_at']) ? date('d.m.Y H:i', strtotime((string) $comment['created_at'])) : '',
+            'status' => 'published',
+            'likes_count' => 0,
+            'is_liked' => false,
+        ];
     }
 
     $repostsStmt = $pdo->prepare("
@@ -760,28 +786,44 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
     </main>
     <?php if ($profileUser && !($isPrivateProfile && !$canViewPrivateProfile)): ?>
         <div class="profile-post-viewer" id="profilePostViewer" aria-hidden="true">
-            <div class="profile-post-viewer-backdrop" id="profilePostViewerBackdrop"></div>
-            <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Публикация">
-                <button type="button" class="profile-post-viewer-close" id="profilePostViewerClose" aria-label="Закрыть">×</button>
+            <div class="profile-post-viewer-overlay" data-post-viewer-close></div>
+            <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Просмотр публикации">
+                <button type="button" class="profile-post-viewer-close" data-post-viewer-close aria-label="Закрыть">×</button>
                 <div class="profile-post-viewer-media" id="profilePostViewerMedia"></div>
                 <aside class="profile-post-viewer-side">
-                    <div class="profile-post-viewer-author">
-                        <span class="profile-post-viewer-avatar" id="profilePostViewerAvatar"></span>
-                        <a href="#" class="profile-post-viewer-login-link-name" id="profilePostViewerLoginLink"><strong id="profilePostViewerLogin"></strong></a>
-                        <button type="button" class="profile-post-viewer-follow" id="profilePostViewerFollow"><?php echo $followStatus === 'accepted' ? 'Вы подписаны' : 'Подписаться'; ?></button>
+                    <header class="profile-post-viewer-head">
+                        <div class="profile-post-viewer-author">
+                            <a href="#" class="profile-post-viewer-author-link" id="profilePostViewerAvatarLink"><span class="profile-post-viewer-avatar" id="profilePostViewerAvatar"></span></a>
+                            <a href="#" class="profile-post-viewer-login-link-name" id="profilePostViewerLoginLink"><strong id="profilePostViewerLogin"></strong></a>
+                            <button type="button" class="profile-post-viewer-follow" id="profilePostViewerFollow">Подписаться</button>
+                        </div>
+                        <button type="button" class="profile-post-viewer-more" aria-label="Ещё">•••</button>
+                    </header>
+                    <div class="profile-post-viewer-comments" id="profilePostViewerComments">
+                        <p class="profile-post-viewer-empty">Комментариев нет</p>
                     </div>
-                    <div class="profile-post-viewer-comments" id="profilePostViewerComments"><p class="profile-post-viewer-empty">Комментариев нет</p></div>
                     <div class="profile-post-viewer-metrics" data-post-id="">
-                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-action="like" aria-label="Лайк"><img class="icon-dark" src="icon/dark theme/like.png" alt=""><img class="icon-light" src="icon/light theme/like.png" alt=""></button><span id="viewerLikesCount" data-post-count="likes">0</span></div>
-                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-action="comment" aria-label="Комментарии"><img class="icon-dark" src="icon/dark theme/comment.png" alt=""><img class="icon-light" src="icon/light theme/comment.png" alt=""></button><span id="viewerCommentsCount" data-post-count="comments">0</span></div>
-                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-action="repost" aria-label="Репост"><img class="icon-dark" src="icon/dark theme/repost.png" alt=""><img class="icon-light" src="icon/light theme/repost.png" alt=""></button><span id="viewerRepostsCount" data-post-count="reposts">0</span></div>
-                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-action="share" aria-label="Отправить в сообщения"><img class="icon-dark" src="icon/dark theme/share.png" alt=""><img class="icon-light" src="icon/light theme/share.png" alt=""></button><span id="viewerSharesCount" data-post-count="shares">0</span></div>
-                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-action="save" aria-label="Избранное"><img class="icon-dark" src="icon/dark theme/favourites.png" alt=""><img class="icon-light" src="icon/light theme/favourites.png" alt=""></button><span id="viewerSavesCount" data-post-count="saves">0</span></div>
+                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-id="" data-post-action="like" aria-label="Лайк"><img class="icon-dark" src="icon/dark theme/like.png" alt=""><img class="icon-light" src="icon/light theme/like.png" alt=""></button><span id="viewerLikesCount" data-post-id="" data-post-count="likes">0</span></div>
+                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-id="" data-post-action="comment" aria-label="Комментарии"><img class="icon-dark" src="icon/dark theme/comment.png" alt=""><img class="icon-light" src="icon/light theme/comment.png" alt=""></button><span id="viewerCommentsCount" data-post-id="" data-post-count="comments">0</span></div>
+                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-id="" data-post-action="repost" aria-label="Репост"><img class="icon-dark" src="icon/dark theme/repost.png" alt=""><img class="icon-light" src="icon/light theme/repost.png" alt=""></button><span id="viewerRepostsCount" data-post-id="" data-post-count="reposts">0</span></div>
+                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-id="" data-post-action="share" aria-label="Отправить в сообщения"><img class="icon-dark" src="icon/dark theme/share.png" alt=""><img class="icon-light" src="icon/light theme/share.png" alt=""></button><span id="viewerSharesCount" data-post-id="" data-post-count="shares">0</span></div>
+                        <div class="profile-post-viewer-metric"><button type="button" class="profile-post-viewer-action" data-post-id="" data-post-action="save" aria-label="Избранное"><img class="icon-dark" src="icon/dark theme/favourites.png" alt=""><img class="icon-light" src="icon/light theme/favourites.png" alt=""></button><span id="viewerSavesCount" data-post-id="" data-post-count="saves">0</span></div>
                     </div>
                     <?php if ($currentUser): ?>
                         <form method="post" class="profile-post-viewer-input-row" id="profilePostViewerCommentForm">
-                            <input type="hidden" name="action" value="add_comment"><input type="hidden" name="post_id" value=""><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
-                            <div class="profile-post-viewer-input-shell"><textarea class="profile-post-viewer-input" name="comment_text" rows="1" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"></textarea><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
+                            <input type="hidden" name="action" value="add_comment">
+                            <input type="hidden" name="post_id" value="">
+                            <input type="hidden" name="parent_comment_id" value="">
+                            <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                            <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerAttachmentButton" aria-label="Прикрепить фото"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
+                            <input class="profile-post-viewer-file-input" id="profilePostViewerAttachmentInput" type="file" accept="image/gif,image/jpeg,image/png,image/webp" hidden>
+                            <div class="profile-post-viewer-emoji-wrap">
+                                <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerEmojiButton" aria-label="Выбрать эмодзи" aria-expanded="false" aria-controls="profilePostViewerEmojiPicker"><img class="icon-dark" src="icon/dark theme/add stickers.png" alt=""><img class="icon-light" src="icon/light theme/add stickers.png" alt=""></button>
+                                <div class="profile-post-viewer-emoji-picker" id="profilePostViewerEmojiPicker" hidden>
+                                    <button type="button" data-emoji="😀">😀</button><button type="button" data-emoji="😂">😂</button><button type="button" data-emoji="😍">😍</button><button type="button" data-emoji="🥰">🥰</button><button type="button" data-emoji="😎">😎</button><button type="button" data-emoji="😢">😢</button><button type="button" data-emoji="😡">😡</button><button type="button" data-emoji="👍">👍</button><button type="button" data-emoji="🔥">🔥</button><button type="button" data-emoji="❤️">❤️</button>
+                                </div>
+                            </div>
+                            <div class="profile-post-viewer-input-shell" id="profilePostViewerInputShell"><div class="profile-post-viewer-attachment-preview" id="profilePostViewerAttachmentPreview" hidden><img src="" alt="Предпросмотр вложения"><button type="button" id="profilePostViewerAttachmentRemove" aria-label="Удалить вложение">×</button></div><textarea class="profile-post-viewer-input" name="comment_text" rows="1" maxlength="1000" placeholder="Добавить комментарий" aria-label="Добавить комментарий"></textarea><button type="submit" class="profile-post-viewer-send-btn" aria-label="Отправить"><img src="icon/message.png" alt=""></button></div>
                         </form>
                     <?php endif; ?>
                 </aside>
@@ -822,6 +864,8 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
 
     <script src="js/post-sync.js"></script>
 <script>
+        window.snapixProfileComments = <?php echo json_encode($viewerCommentMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+        window.snapixCurrentUser = <?php echo json_encode(['id' => (int) ($currentUser['id'] ?? 0), 'role' => (string) ($currentUser['role'] ?? 'user')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
         (() => {
             const bell = document.querySelector('[data-notification-toggle]');
             const popover = document.getElementById('notificationPopover');
@@ -852,82 +896,304 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             });
         });
 
-        const profilePostViewer = document.getElementById('profilePostViewer');
-        const profileViewerMedia = document.getElementById('profilePostViewerMedia');
-        const profileViewerComments = document.getElementById('profilePostViewerComments');
-        const profileViewerCommentForm = document.getElementById('profilePostViewerCommentForm');
-
-        function closeProfilePostViewer() {
-            if (profilePostViewer) {
-                profilePostViewer.classList.remove('is-open');
-                profilePostViewer.setAttribute('aria-hidden', 'true');
-            }
-        }
-
-        function openProfilePostViewer(card) {
-            if (!profilePostViewer || !card) return;
-            const postId = card.getAttribute('data-post-id') || '';
-            profilePostViewer.dataset.postId = postId;
-            profilePostViewer.classList.add('is-open');
-            profilePostViewer.setAttribute('aria-hidden', 'false');
-
-            const mediaUrl = card.dataset.postMediaUrl || '';
-            const mediaType = card.dataset.postMediaType || 'image';
-            if (profileViewerMedia) {
-                profileViewerMedia.innerHTML = mediaType === 'video'
-                    ? '<video controls autoplay src="' + mediaUrl.replace(/"/g, '&quot;') + '"></video>'
-                    : '<div class="profile-post-viewer-image" style="background-image:url(\'' + mediaUrl.replace(/'/g, "\\'") + '\')"></div>';
-            }
-
-            const login = document.getElementById('profilePostViewerLogin');
-            const loginLink = document.getElementById('profilePostViewerLoginLink');
+        (() => {
+            const viewer = document.getElementById('profilePostViewer');
+            const mediaHost = document.getElementById('profilePostViewerMedia');
             const avatar = document.getElementById('profilePostViewerAvatar');
-            if (login) login.textContent = card.dataset.postAuthorLogin || '';
-            if (loginLink) loginLink.href = 'user.php?id=' + (card.dataset.postAuthorId || '');
-            if (avatar) avatar.style.backgroundImage = card.dataset.postAuthorAvatar ? 'url(' + card.dataset.postAuthorAvatar + ')' : '';
+            const login = document.getElementById('profilePostViewerLogin');
+            const avatarLink = document.getElementById('profilePostViewerAvatarLink');
+            const loginLink = document.getElementById('profilePostViewerLoginLink');
+            const follow = document.getElementById('profilePostViewerFollow');
+            const likes = document.getElementById('viewerLikesCount');
+            const comments = document.getElementById('viewerCommentsCount');
+            const reposts = document.getElementById('viewerRepostsCount');
+            const shares = document.getElementById('viewerSharesCount');
+            const saves = document.getElementById('viewerSavesCount');
+            const commentsHost = document.getElementById('profilePostViewerComments');
+            const commentForm = document.getElementById('profilePostViewerCommentForm');
+            if (!viewer || !mediaHost) return;
 
-            const counts = { viewerLikesCount: 'postLikesCount', viewerCommentsCount: 'postCommentsCount', viewerRepostsCount: 'postRepostsCount', viewerSharesCount: 'postSharesCount', viewerSavesCount: 'postSavesCount' };
-            Object.keys(counts).forEach((id) => { const node = document.getElementById(id); if (node) node.textContent = card.dataset[counts[id]] || '0'; });
-            profilePostViewer.querySelector('[data-post-action="like"]')?.classList.toggle('is-active', card.dataset.postLiked === '1');
-            profilePostViewer.querySelector('[data-post-action="repost"]')?.classList.toggle('is-reposted', card.dataset.postReposted === '1');
-            profilePostViewer.querySelector('[data-post-action="save"]')?.classList.toggle('is-saved', card.dataset.postSaved === '1');
-            if (profileViewerCommentForm) profileViewerCommentForm.querySelector('input[name="post_id"]').value = postId;
-
-            const commentsButton = card.querySelector('.js-open-comments-modal');
-            const modal = commentsButton ? document.getElementById(commentsButton.getAttribute('data-modal') || '') : null;
-            const sourceComments = modal ? modal.querySelector('.comments-modal-body') : null;
-            if (profileViewerComments) {
-                profileViewerComments.innerHTML = sourceComments && sourceComments.innerHTML.trim() ? sourceComments.innerHTML : '<p class="profile-post-viewer-empty">Комментариев нет</p>';
+            function closeViewer() {
+                viewer.classList.remove('is-open');
+                viewer.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('is-modal-open');
+                document.body.style.overflow = '';
+                mediaHost.innerHTML = '';
             }
-        }
 
-        document.getElementById('profilePostViewerClose')?.addEventListener('click', closeProfilePostViewer);
-        document.getElementById('profilePostViewerBackdrop')?.addEventListener('click', closeProfilePostViewer);
-        document.querySelectorAll('.profile-media-grid .post-card').forEach((card) => {
-            card.addEventListener('click', (event) => {
-                if (event.target.closest('form, button, a, video, .comments-modal')) return;
-                openProfilePostViewer(card);
-            });
-        });
+            function commentAuthorInitial(comment) {
+                return String(comment.login || '?').slice(0, 1).toUpperCase();
+            }
 
-        profilePostViewer?.querySelectorAll('[data-post-action]').forEach((button) => {
-            button.addEventListener('click', () => {
-                const postId = profilePostViewer.dataset.postId || '';
-                const card = document.querySelector('.post-card[data-post-id="' + postId + '"]');
-                const action = button.getAttribute('data-post-action');
-                if (action === 'comment') {
-                    profileViewerCommentForm?.querySelector('textarea[name="comment_text"]')?.focus();
+            function buildViewerComment(comment) {
+                const item = document.createElement('article');
+                item.className = 'profile-viewer-comment';
+                item.dataset.commentId = String(comment.comment_id || '');
+                item.dataset.postId = String(comment.post_id || '');
+
+                const avatarLinkNode = document.createElement('a');
+                avatarLinkNode.className = 'profile-viewer-comment-avatar';
+                avatarLinkNode.href = comment.profile_url || '#';
+                if (comment.avatar_url) {
+                    avatarLinkNode.style.backgroundImage = 'url(' + comment.avatar_url + ')';
+                } else {
+                    avatarLinkNode.textContent = commentAuthorInitial(comment);
+                }
+
+                const body = document.createElement('div');
+                body.className = 'profile-viewer-comment-body';
+
+                const top = document.createElement('div');
+                top.className = 'profile-viewer-comment-top';
+                const loginNode = document.createElement('a');
+                loginNode.className = 'profile-viewer-comment-login';
+                loginNode.href = comment.profile_url || '#';
+                loginNode.textContent = comment.login || '';
+                top.appendChild(loginNode);
+
+                const text = document.createElement('div');
+                text.className = 'profile-viewer-comment-text';
+                text.dataset.commentText = '1';
+                text.textContent = comment.comment_text || comment.text || '';
+
+                body.appendChild(top);
+                body.appendChild(text);
+
+                if (comment.attachment_url) {
+                    const attachment = document.createElement('a');
+                    attachment.className = 'profile-viewer-comment-attachment';
+                    attachment.href = comment.attachment_url;
+                    attachment.target = '_blank';
+                    attachment.rel = 'noopener';
+                    const attachmentImg = document.createElement('img');
+                    attachmentImg.src = comment.attachment_url;
+                    attachmentImg.alt = 'Вложение комментария';
+                    attachment.appendChild(attachmentImg);
+                    body.appendChild(attachment);
+                }
+
+                const meta = document.createElement('div');
+                meta.className = 'profile-viewer-comment-meta';
+                const date = document.createElement('span');
+                date.className = 'profile-viewer-comment-date';
+                date.textContent = comment.created_at || '';
+                meta.appendChild(date);
+
+                const reply = document.createElement('button');
+                reply.type = 'button';
+                reply.className = 'profile-viewer-comment-reply';
+                reply.dataset.replyLogin = comment.login || '';
+                reply.textContent = 'Ответить';
+                meta.appendChild(reply);
+
+                const like = document.createElement('button');
+                like.type = 'button';
+                like.className = 'profile-viewer-comment-like' + (comment.is_liked ? ' is-active' : '');
+                like.dataset.commentId = String(comment.comment_id || '');
+                like.setAttribute('aria-label', 'Лайк комментария');
+                like.innerHTML = '<img src="icon/dark theme/like.png" alt=""><span>' + Number(comment.likes_count || 0) + '</span>';
+                meta.appendChild(like);
+
+                const menu = document.createElement('div');
+                menu.className = 'profile-viewer-comment-menu';
+                menu.innerHTML = '<button type="button" class="profile-viewer-comment-menu-toggle" aria-label="Действия с комментарием">•••</button><div class="profile-viewer-comment-menu-panel"><button type="button" class="profile-viewer-comment-report">Пожаловаться</button></div>';
+                meta.appendChild(menu);
+
+                body.appendChild(meta);
+                item.appendChild(avatarLinkNode);
+                item.appendChild(body);
+                return item;
+            }
+
+            window.snapixRenderViewerComments = function (postId) {
+                if (!commentsHost) return;
+                const list = (window.snapixProfileComments || {})[String(postId || '')] || [];
+                commentsHost.innerHTML = '';
+                commentsHost.classList.toggle('has-comments', list.length > 0);
+                if (!list.length) {
+                    commentsHost.innerHTML = '<p class="profile-post-viewer-empty">Комментариев нет</p>';
                     return;
                 }
-                if (action === 'share') {
-                    card?.querySelector('.js-open-share-modal')?.click();
+                list.forEach((comment) => commentsHost.appendChild(buildViewerComment(comment)));
+            };
+
+            function openViewer(card) {
+                const mediaUrl = card.dataset.postMediaUrl || '';
+                const mediaType = card.dataset.postMediaType || 'image';
+                mediaHost.innerHTML = '';
+                if (mediaType === 'video') {
+                    const video = document.createElement('video');
+                    video.src = mediaUrl;
+                    video.controls = true;
+                    video.playsInline = true;
+                    mediaHost.appendChild(video);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = mediaUrl;
+                    img.alt = 'Публикация';
+                    mediaHost.appendChild(img);
+                }
+
+                if (login) login.textContent = card.dataset.postAuthorLogin || '';
+                const avatarUrl = card.dataset.postAuthorAvatar || '';
+                if (avatar) {
+                    avatar.style.backgroundImage = avatarUrl ? `url('${avatarUrl}')` : '';
+                    avatar.textContent = avatarUrl ? '' : ((card.dataset.postAuthorLogin || '?').slice(0, 1).toUpperCase());
+                }
+
+                const authorId = Number(card.dataset.postAuthorId || 0);
+                const currentUserId = Number((window.snapixCurrentUser || {}).id || 0);
+                const authorUrl = authorId && authorId === currentUserId ? 'profile.php' : 'user.php?id=' + encodeURIComponent(String(authorId));
+                if (avatarLink) avatarLink.href = authorUrl;
+                if (loginLink) loginLink.href = authorUrl;
+                if (follow) {
+                    follow.hidden = !authorId || authorId === currentUserId || ['accepted', 'pending'].indexOf(card.dataset.postViewerFollowStatus || '') !== -1;
+                    follow.disabled = false;
+                    follow.dataset.authorId = String(authorId || '');
+                }
+
+                const postId = card.dataset.postId || '';
+                window.snapixRenderViewerComments(postId);
+                viewer.dataset.postId = postId;
+                viewer.dataset.postAuthorId = card.dataset.postAuthorId || '';
+                viewer.querySelectorAll('[data-post-action], [data-post-count], .profile-post-viewer-metrics').forEach((node) => node.setAttribute('data-post-id', postId));
+                if (commentForm) {
+                    const postIdInput = commentForm.querySelector('input[name="post_id"]');
+                    const parentCommentInput = commentForm.querySelector('input[name="parent_comment_id"]');
+                    const commentInput = commentForm.querySelector('[name="comment_text"]');
+                    if (postIdInput) postIdInput.value = postId;
+                    if (parentCommentInput) parentCommentInput.value = '';
+                    if (commentInput) commentInput.value = '';
+                }
+                if (likes) likes.textContent = card.dataset.postLikesCount || '0';
+                if (comments) comments.textContent = card.dataset.postCommentsCount || '0';
+                if (reposts) reposts.textContent = card.dataset.postRepostsCount || '0';
+                if (shares) shares.textContent = card.dataset.postSharesCount || '0';
+                if (saves) saves.textContent = card.dataset.postSavesCount || '0';
+                viewer.querySelector('[data-post-action="like"]')?.classList.toggle('is-active', card.dataset.postLiked === '1');
+                viewer.querySelector('[data-post-action="save"]')?.classList.toggle('is-saved', card.dataset.postSaved === '1');
+                viewer.querySelector('[data-post-action="repost"]')?.classList.toggle('is-reposted', card.dataset.postReposted === '1');
+                viewer.classList.add('is-open');
+                viewer.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('is-modal-open');
+                document.body.style.overflow = 'hidden';
+            }
+
+            document.querySelectorAll('.profile-media-grid .post-card').forEach((card) => {
+                card.addEventListener('click', (event) => {
+                    if (event.target.closest('button, a, form, .post-hover-overlay, .post-menu-wrap, .comments-modal')) return;
+                    openViewer(card);
+                });
+            });
+
+            viewer.querySelectorAll('[data-post-viewer-close]').forEach((node) => node.addEventListener('click', closeViewer));
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && viewer.classList.contains('is-open')) closeViewer();
+            });
+
+            viewer.querySelectorAll('[data-post-action]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const postId = viewer.dataset.postId || '';
+                    const card = document.querySelector('.post-card[data-post-id="' + postId + '"]');
+                    const action = button.getAttribute('data-post-action');
+                    if (action === 'comment') {
+                        commentForm?.querySelector('textarea[name="comment_text"]')?.focus();
+                        return;
+                    }
+                    if (action === 'share') {
+                        card?.querySelector('.js-open-share-modal')?.click();
+                        return;
+                    }
+                    const formAction = action === 'like' ? 'toggle_like' : (action === 'save' ? 'toggle_save' : 'add_repost');
+                    const form = card ? Array.from(card.querySelectorAll('form.inline-action-form')).find((item) => item.querySelector('input[name="action"]')?.value === formAction) : null;
+                    form?.requestSubmit();
+                });
+            });
+
+            commentsHost?.addEventListener('click', (event) => {
+                const menuToggle = event.target.closest('.profile-viewer-comment-menu-toggle');
+                if (menuToggle) {
+                    const menu = menuToggle.closest('.profile-viewer-comment-menu');
+                    menu?.classList.toggle('is-open');
                     return;
                 }
-                const formAction = action === 'like' ? 'toggle_like' : (action === 'save' ? 'toggle_save' : 'add_repost');
-                const form = card ? Array.from(card.querySelectorAll('form.inline-action-form')).find((item) => item.querySelector('input[name="action"]')?.value === formAction) : null;
-                form?.requestSubmit();
+                const replyButton = event.target.closest('.profile-viewer-comment-reply');
+                if (replyButton) {
+                    const input = commentForm?.querySelector('[name="comment_text"]');
+                    if (input) {
+                        input.value = '@' + (replyButton.dataset.replyLogin || '') + ' ';
+                        input.focus();
+                    }
+                }
             });
-        });
+
+            const emojiButton = document.getElementById('profilePostViewerEmojiButton');
+            const emojiPicker = document.getElementById('profilePostViewerEmojiPicker');
+            const attachmentButton = document.getElementById('profilePostViewerAttachmentButton');
+            const attachmentInput = document.getElementById('profilePostViewerAttachmentInput');
+            const attachmentPreview = document.getElementById('profilePostViewerAttachmentPreview');
+            const attachmentRemove = document.getElementById('profilePostViewerAttachmentRemove');
+            emojiButton?.addEventListener('click', () => {
+                if (!emojiPicker) return;
+                emojiPicker.hidden = !emojiPicker.hidden;
+                emojiButton.setAttribute('aria-expanded', emojiPicker.hidden ? 'false' : 'true');
+            });
+            emojiPicker?.querySelectorAll('[data-emoji]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const input = commentForm?.querySelector('[name="comment_text"]');
+                    if (!input) return;
+                    input.value += button.dataset.emoji || '';
+                    input.focus();
+                    emojiPicker.hidden = true;
+                    emojiButton?.setAttribute('aria-expanded', 'false');
+                });
+            });
+            attachmentButton?.addEventListener('click', () => attachmentInput?.click());
+            attachmentInput?.addEventListener('change', () => {
+                const file = attachmentInput.files && attachmentInput.files[0];
+                const img = attachmentPreview?.querySelector('img');
+                if (!file || !img || !attachmentPreview) return;
+                img.src = URL.createObjectURL(file);
+                attachmentPreview.hidden = false;
+            });
+            attachmentRemove?.addEventListener('click', () => {
+                if (attachmentInput) attachmentInput.value = '';
+                if (attachmentPreview) attachmentPreview.hidden = true;
+            });
+
+            commentForm?.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const formData = new FormData(commentForm);
+                fetch(commentForm.getAttribute('action') || window.location.href, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'Accept': 'application/json'},
+                    body: new URLSearchParams(formData).toString()
+                }).then((response) => response.json()).then((data) => {
+                    if (!data || !data.ok) return;
+                    const postId = formData.get('post_id') || viewer.dataset.postId || '';
+                    if (data.comment) {
+                        if (!window.snapixProfileComments[String(postId)]) window.snapixProfileComments[String(postId)] = [];
+                        window.snapixProfileComments[String(postId)].unshift({
+                            comment_id: data.comment.comment_id || Date.now(),
+                            post_id: postId,
+                            user_id: (window.snapixCurrentUser || {}).id || 0,
+                            login: data.comment.login || '',
+                            profile_url: data.comment.profile_url || 'profile.php',
+                            avatar_url: data.comment.avatar_url || '',
+                            comment_text: data.comment.text || '',
+                            text: data.comment.text || '',
+                            created_at: data.comment.created_at || '',
+                            likes_count: 0,
+                            is_liked: false
+                        });
+                        window.snapixRenderViewerComments(postId);
+                    }
+                    commentForm.querySelector('[name="comment_text"]').value = '';
+                    if (window.snapixSyncPostState) window.snapixSyncPostState(postId, data);
+                }).catch(() => {});
+            });
+        })();
 
         document.querySelectorAll('.js-open-comments-modal').forEach((button) => {
             button.addEventListener('click', () => {
