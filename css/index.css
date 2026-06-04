@@ -7972,3 +7972,42 @@ body.theme-light[data-page="profile"] .post-type-badge img,
 body[data-theme="light"][data-page="profile"] .post-type-badge img {
     filter: none !important;
 }
+
+/* Light theme own-profile plus button: remove the extra outer ring only. */
+html.theme-light body[data-page="profile"] .profile-create-btn,
+html[data-theme="light"] body[data-page="profile"] .profile-create-btn,
+body.theme-light[data-page="profile"] .profile-create-btn,
+body[data-theme="light"][data-page="profile"] .profile-create-btn {
+    background: #68C5DB !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-create-btn:hover,
+html.theme-light body[data-page="profile"] .profile-create-btn:focus-visible,
+html[data-theme="light"] body[data-page="profile"] .profile-create-btn:hover,
+html[data-theme="light"] body[data-page="profile"] .profile-create-btn:focus-visible,
+body.theme-light[data-page="profile"] .profile-create-btn:hover,
+body.theme-light[data-page="profile"] .profile-create-btn:focus-visible,
+body[data-theme="light"][data-page="profile"] .profile-create-btn:hover,
+body[data-theme="light"][data-page="profile"] .profile-create-btn:focus-visible {
+    box-shadow: none !important;
+    outline: 0 !important;
+    filter: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-create-btn::before,
+html.theme-light body[data-page="profile"] .profile-create-btn::after,
+html[data-theme="light"] body[data-page="profile"] .profile-create-btn::before,
+html[data-theme="light"] body[data-page="profile"] .profile-create-btn::after,
+body.theme-light[data-page="profile"] .profile-create-btn::before,
+body.theme-light[data-page="profile"] .profile-create-btn::after,
+body[data-theme="light"][data-page="profile"] .profile-create-btn::before,
+body[data-theme="light"][data-page="profile"] .profile-create-btn::after {
+    background: #040607 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    filter: none !important;
+}
