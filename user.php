@@ -329,7 +329,7 @@ $unreadMessagesCount = 0;
 $shareRecipients = [];
 
 if (isset($_SESSION['user_id'])) {
-    $viewerStmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id');
+    $viewerStmt = $pdo->prepare('SELECT id, login, avatar, role FROM users WHERE id = :id');
     $viewerStmt->execute(['id' => $_SESSION['user_id']]);
     $currentUser = $viewerStmt->fetch();
 
@@ -402,7 +402,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'get_post_counts'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_comment', 'add_repost', 'get_post_counts'], true);
     $ajaxExtra = [];
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
     $postExists = false;
@@ -419,6 +419,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
         $postOwnerId = $postExists ? (int) $postRow['user_id'] : 0;
         if ($ownerId <= 0) {
             $ownerId = $postOwnerId;
+        }
+
+        if ($action === 'delete_comment') {
+            $commentId = (int) ($_POST['comment_id'] ?? 0);
+            if ($commentId <= 0) {
+                snapix_send_post_action_error('invalid_comment', 422);
+            }
+
+            $commentStmt = $pdo->prepare('SELECT comments.id, comments.post_id, comments.user_id, comments.attachment_url FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id AND posts.is_deleted = 0 LIMIT 1');
+            $commentStmt->execute(['id' => $commentId]);
+            $comment = $commentStmt->fetch();
+            if (!$comment) {
+                snapix_send_post_action_error('comment_not_found', 404);
+            }
+
+            $canModerateComments = in_array((string) ($currentUser['role'] ?? ''), ['admin', 'moderator'], true);
+            if ((int) $comment['user_id'] !== (int) $currentUser['id'] && !$canModerateComments) {
+                snapix_send_post_action_error('comment_delete_forbidden', 403);
+            }
+
+            $deleteCommentStmt = $pdo->prepare('DELETE FROM comments WHERE id = :id LIMIT 1');
+            $deleteCommentStmt->execute(['id' => $commentId]);
+
+            $attachmentUrl = (string) ($comment['attachment_url'] ?? '');
+            if ($attachmentUrl !== '' && str_starts_with($attachmentUrl, 'uploads/comment_attachments/')) {
+                $attachmentPath = __DIR__ . '/' . $attachmentUrl;
+                if (is_file($attachmentPath)) {
+                    unlink($attachmentPath);
+                }
+            }
+
+            if ($isAjaxPostAction) {
+                snapix_send_post_action_json($pdo, (int) $comment['post_id'], (int) $currentUser['id'], [
+                    'deleted_comment_id' => $commentId,
+                ]);
+            }
+
+            header('Location: user.php?id=' . $targetUserId);
+            exit;
         }
 
         if ($postExists && $action === 'toggle_like') {
@@ -1183,6 +1222,23 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 return String(comment.login || '?').slice(0, 1).toUpperCase();
             }
 
+            function isOwnViewerComment(comment) {
+                const currentUser = window.snapixCurrentUser || {};
+                return Number(comment.user_id || 0) === Number(currentUser.id || 0);
+            }
+
+            function canDeleteViewerComment(comment) {
+                const currentUser = window.snapixCurrentUser || {};
+                const role = currentUser.role || '';
+                return isOwnViewerComment(comment) || role === 'admin' || role === 'moderator';
+            }
+
+            function removeViewerCommentFromCache(postId, commentId) {
+                const key = String(postId || '');
+                const comments = (window.snapixProfileComments || {})[key] || [];
+                window.snapixProfileComments[key] = comments.filter((comment) => Number(comment.comment_id || 0) !== Number(commentId || 0));
+            }
+
             function buildViewerComment(comment) {
                 const item = document.createElement('article');
                 item.className = 'profile-viewer-comment';
@@ -1252,10 +1308,41 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 like.innerHTML = '<img src="icon/dark theme/like.png" alt=""><span>' + Number(comment.likes_count || 0) + '</span>';
                 meta.appendChild(like);
 
-                const menu = document.createElement('div');
-                menu.className = 'profile-viewer-comment-menu';
-                menu.innerHTML = '<button type="button" class="profile-viewer-comment-menu-toggle" aria-label="Действия с комментарием">•••</button><div class="profile-viewer-comment-menu-panel"><button type="button" class="profile-viewer-comment-report">Пожаловаться</button></div>';
-                meta.appendChild(menu);
+                const canDelete = canDeleteViewerComment(comment);
+                const canReport = !isOwnViewerComment(comment);
+                if (canDelete || canReport) {
+                    const menu = document.createElement('div');
+                    menu.className = 'profile-viewer-comment-menu';
+
+                    const menuButton = document.createElement('button');
+                    menuButton.type = 'button';
+                    menuButton.className = 'profile-viewer-comment-menu-toggle';
+                    menuButton.setAttribute('aria-label', 'Действия с комментарием');
+                    menuButton.textContent = '⋯';
+                    menu.appendChild(menuButton);
+
+                    const menuPanel = document.createElement('div');
+                    menuPanel.className = 'profile-viewer-comment-menu-panel';
+
+                    if (canDelete) {
+                        const deleteButton = document.createElement('button');
+                        deleteButton.type = 'button';
+                        deleteButton.className = 'profile-viewer-comment-delete';
+                        deleteButton.textContent = 'Удалить комментарий';
+                        menuPanel.appendChild(deleteButton);
+                    }
+
+                    if (canReport) {
+                        const reportButton = document.createElement('button');
+                        reportButton.type = 'button';
+                        reportButton.className = 'profile-viewer-comment-report';
+                        reportButton.textContent = 'Пожаловаться';
+                        menuPanel.appendChild(reportButton);
+                    }
+
+                    menu.appendChild(menuPanel);
+                    meta.appendChild(menu);
+                }
 
                 body.appendChild(meta);
                 item.appendChild(avatarLinkNode);
@@ -1373,6 +1460,39 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 if (menuToggle) {
                     const menu = menuToggle.closest('.profile-viewer-comment-menu');
                     menu?.classList.toggle('is-open');
+                    return;
+                }
+                const deleteButton = event.target.closest('.profile-viewer-comment-delete');
+                if (deleteButton) {
+                    event.preventDefault();
+                    const commentNode = deleteButton.closest('.profile-viewer-comment');
+                    const commentId = commentNode?.dataset.commentId || '';
+                    const postId = commentNode?.dataset.postId || viewer.dataset.postId || '';
+                    if (!commentId || !postId || deleteButton.dataset.deleting === '1') return;
+
+                    const params = new URLSearchParams();
+                    params.set('action', 'delete_comment');
+                    params.set('comment_id', commentId);
+                    params.set('target_user_id', String(<?php echo (int) $profileUser['id']; ?>));
+
+                    deleteButton.dataset.deleting = '1';
+                    fetch(window.location.pathname + window.location.search, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'Accept': 'application/json'
+                        },
+                        body: params.toString()
+                    }).then((response) => response.json()).then((data) => {
+                        if (!data || !data.ok) return;
+                        removeViewerCommentFromCache(postId, commentId);
+                        window.snapixRenderViewerComments(postId);
+                        if (window.snapixSyncPostState) window.snapixSyncPostState(postId, data);
+                    }).catch(() => {}).finally(() => {
+                        deleteButton.dataset.deleting = '0';
+                    });
                     return;
                 }
                 const replyButton = event.target.closest('.profile-viewer-comment-reply');
