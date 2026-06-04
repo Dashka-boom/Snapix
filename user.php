@@ -71,6 +71,21 @@ function ensureUserCommentAttachmentStorage(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     "
     );
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS comment_likes (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            comment_id BIGINT UNSIGNED NOT NULL,
+            user_id BIGINT UNSIGNED NOT NULL,
+            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_comment_likes_comment_user (comment_id, user_id),
+            KEY idx_comment_likes_user (user_id),
+            CONSTRAINT fk_user_comment_likes_comment FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE,
+            CONSTRAINT fk_user_comment_likes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    "
+    );
 }
 
 function combineUserCommentModerationResults(array ...$results): array
@@ -402,7 +417,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_comment', 'add_repost', 'get_post_counts'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_comment', 'toggle_comment_like', 'add_repost', 'get_post_counts'], true);
     $ajaxExtra = [];
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
     $postExists = false;
@@ -419,6 +434,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
         $postOwnerId = $postExists ? (int) $postRow['user_id'] : 0;
         if ($ownerId <= 0) {
             $ownerId = $postOwnerId;
+        }
+
+        if ($action === 'toggle_comment_like') {
+            $commentId = (int) ($_POST['comment_id'] ?? 0);
+            if ($commentId <= 0) {
+                snapix_send_post_action_error('invalid_comment', 422);
+            }
+
+            $commentStmt = $pdo->prepare("
+                SELECT comments.id, comments.post_id
+                FROM comments
+                INNER JOIN posts ON posts.id = comments.post_id
+                WHERE comments.id = :id
+                  AND comments.is_deleted = 0
+                  AND comments.status = 'published'
+                  AND posts.is_deleted = 0
+                LIMIT 1
+            ");
+            $commentStmt->execute(['id' => $commentId]);
+            $comment = $commentStmt->fetch();
+            if (!$comment) {
+                snapix_send_post_action_error('comment_not_found', 404);
+            }
+
+            $commentLikeStmt = $pdo->prepare('SELECT id FROM comment_likes WHERE comment_id = :comment_id AND user_id = :user_id LIMIT 1');
+            $commentLikeStmt->execute([
+                'comment_id' => $commentId,
+                'user_id' => $currentUser['id'],
+            ]);
+            $commentLikeId = $commentLikeStmt->fetchColumn();
+            if ($commentLikeId) {
+                $pdo->prepare('DELETE FROM comment_likes WHERE id = :id AND user_id = :user_id')->execute([
+                    'id' => (int) $commentLikeId,
+                    'user_id' => $currentUser['id'],
+                ]);
+                $isCommentLiked = false;
+            } else {
+                $pdo->prepare('INSERT INTO comment_likes (comment_id, user_id) VALUES (:comment_id, :user_id)')->execute([
+                    'comment_id' => $commentId,
+                    'user_id' => $currentUser['id'],
+                ]);
+                $isCommentLiked = true;
+            }
+
+            $commentLikesCountStmt = $pdo->prepare('SELECT COUNT(*) FROM comment_likes WHERE comment_id = :comment_id');
+            $commentLikesCountStmt->execute(['comment_id' => $commentId]);
+
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => true,
+                'comment_id' => $commentId,
+                'post_id' => (int) $comment['post_id'],
+                'liked' => $isCommentLiked,
+                'comment_likes_count' => (int) $commentLikesCountStmt->fetchColumn(),
+            ]);
+            exit;
         }
 
         if ($action === 'delete_comment') {
@@ -903,8 +974,11 @@ if ($posts || $repostedPosts || $savedPosts) {
     $postIds = array_values(array_unique(array_map(static fn($post): int => (int) $post['id'], $allVisiblePosts)));
     $placeholders = implode(',', array_fill(0, count($postIds), '?'));
 
+    $viewerUserId = (int) ($currentUser['id'] ?? 0);
     $commentsStmt = $pdo->prepare("
-        SELECT comments.id, comments.post_id, comment_posts.user_id AS post_owner_id, comments.comment_text, comments.attachment_url, comments.attachment_type, comments.created_at, users.id AS user_id, users.login, users.avatar
+        SELECT comments.id, comments.post_id, comment_posts.user_id AS post_owner_id, comments.comment_text, comments.attachment_url, comments.attachment_type, comments.created_at, users.id AS user_id, users.login, users.avatar,
+               (SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.id) AS likes_count,
+               (SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = comments.id AND comment_likes.user_id = {$viewerUserId}) AS is_liked
         FROM comments
         INNER JOIN users ON users.id = comments.user_id
         INNER JOIN posts comment_posts ON comment_posts.id = comments.post_id
@@ -938,8 +1012,8 @@ if ($posts || $repostedPosts || $savedPosts) {
             'attachment_type' => (string) ($comment['attachment_type'] ?? ''),
             'created_at' => !empty($comment['created_at']) ? date('d.m.Y H:i', strtotime((string) $comment['created_at'])) : '',
             'status' => 'published',
-            'likes_count' => 0,
-            'is_liked' => false,
+            'likes_count' => (int) ($comment['likes_count'] ?? 0),
+            'is_liked' => (int) ($comment['is_liked'] ?? 0) > 0,
         ];
     }
 
@@ -1239,6 +1313,17 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 window.snapixProfileComments[key] = comments.filter((comment) => Number(comment.comment_id || 0) !== Number(commentId || 0));
             }
 
+            function updateViewerCommentLikeCache(commentId, isLiked, likesCount) {
+                Object.keys(window.snapixProfileComments || {}).forEach((postId) => {
+                    (window.snapixProfileComments[postId] || []).forEach((comment) => {
+                        if (Number(comment.comment_id || 0) === Number(commentId || 0)) {
+                            comment.is_liked = !!isLiked;
+                            comment.likes_count = Number(likesCount || 0);
+                        }
+                    });
+                });
+            }
+
             function buildViewerComment(comment) {
                 const item = document.createElement('article');
                 item.className = 'profile-viewer-comment';
@@ -1462,6 +1547,40 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     menu?.classList.toggle('is-open');
                     return;
                 }
+                const likeButton = event.target.closest('.profile-viewer-comment-like');
+                if (likeButton) {
+                    event.preventDefault();
+                    const commentNode = likeButton.closest('.profile-viewer-comment');
+                    const commentId = commentNode?.dataset.commentId || likeButton.dataset.commentId || '';
+                    if (!commentId || likeButton.dataset.liking === '1') return;
+
+                    const params = new URLSearchParams();
+                    params.set('action', 'toggle_comment_like');
+                    params.set('comment_id', commentId);
+                    params.set('target_user_id', String(<?php echo (int) $profileUser['id']; ?>));
+
+                    likeButton.dataset.liking = '1';
+                    fetch(window.location.pathname + window.location.search, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'Accept': 'application/json'
+                        },
+                        body: params.toString()
+                    }).then((response) => response.json()).then((data) => {
+                        if (!data || !data.ok) return;
+                        likeButton.classList.toggle('is-active', !!data.liked);
+                        const countNode = likeButton.querySelector('span');
+                        if (countNode) countNode.textContent = String(Number(data.comment_likes_count || 0));
+                        updateViewerCommentLikeCache(commentId, data.liked, data.comment_likes_count);
+                    }).catch(() => {}).finally(() => {
+                        likeButton.dataset.liking = '0';
+                    });
+                    return;
+                }
+
                 const deleteButton = event.target.closest('.profile-viewer-comment-delete');
                 if (deleteButton) {
                     event.preventDefault();

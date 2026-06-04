@@ -86,6 +86,19 @@ INSERT INTO `comments` (`id`, `post_id`, `user_id`, `comment_text`, `is_deleted`
 -- --------------------------------------------------------
 
 --
+-- Структура таблицы `comment_likes`
+--
+
+CREATE TABLE `comment_likes` (
+  `id` bigint UNSIGNED NOT NULL,
+  `comment_id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Структура таблицы `followers`
 --
 
@@ -707,6 +720,15 @@ ALTER TABLE `comments`
   ADD KEY `idx_comments_post_id` (`post_id`),
   ADD KEY `idx_comments_user_id` (`user_id`);
 
+
+--
+-- Индексы таблицы `comment_likes`
+--
+ALTER TABLE `comment_likes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_comment_likes_comment_user` (`comment_id`,`user_id`),
+  ADD KEY `idx_comment_likes_user` (`user_id`);
+
 --
 -- Индексы таблицы `followers`
 --
@@ -893,6 +915,13 @@ ALTER TABLE `chats`
 ALTER TABLE `comments`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
+
+--
+-- AUTO_INCREMENT для таблицы `comment_likes`
+--
+ALTER TABLE `comment_likes`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
 --
 -- AUTO_INCREMENT для таблицы `followers`
 --
@@ -1024,6 +1053,14 @@ ALTER TABLE `chats`
 ALTER TABLE `comments`
   ADD CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
+
+
+--
+-- Ограничения внешнего ключа таблицы `comment_likes`
+--
+ALTER TABLE `comment_likes`
+  ADD CONSTRAINT `fk_comment_likes_comment` FOREIGN KEY (`comment_id`) REFERENCES `comments` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_comment_likes_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `followers`
