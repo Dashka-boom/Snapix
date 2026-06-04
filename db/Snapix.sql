@@ -55,6 +55,8 @@ CREATE TABLE `comments` (
   `post_id` bigint UNSIGNED NOT NULL,
   `user_id` bigint UNSIGNED NOT NULL,
   `comment_text` text COLLATE utf8mb4_general_ci NOT NULL,
+  `attachment_url` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `attachment_type` enum('image','gif') COLLATE utf8mb4_general_ci DEFAULT NULL,
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
