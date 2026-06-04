@@ -6891,3 +6891,299 @@ body[data-profile-owner="other"] .profile-viewer-comment-attachment img {
     border-radius: 12px;
     object-fit: cover;
 }
+
+/* Share publication modal: fixed centered Snapix modal */
+.share-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    background: transparent !important;
+    overflow: hidden !important;
+    isolation: isolate;
+}
+
+.share-modal.is-open {
+    display: flex !important;
+}
+
+.share-modal-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: rgba(0, 0, 0, .65) !important;
+    backdrop-filter: blur(4px) !important;
+    z-index: 99999 !important;
+}
+
+.share-modal-dialog {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 100000 !important;
+    width: 700px !important;
+    max-width: 90vw !important;
+    max-height: 75vh !important;
+    border: 1px solid rgba(104, 197, 219, .18) !important;
+    border-radius: 24px !important;
+    background: #040607 !important;
+    color: #fff !important;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, .45) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.share-modal-header {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    padding: 22px 24px 16px !important;
+    border-bottom: 1px solid rgba(104, 197, 219, .18) !important;
+    background: #040607 !important;
+    color: #fff !important;
+}
+
+.share-modal-header h3 {
+    margin: 0 !important;
+    color: #fff !important;
+    font-size: clamp(28px, 3vw, 32px) !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+}
+
+.share-modal-header .js-close-share-modal {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    border: 1px solid rgba(104, 197, 219, .35) !important;
+    border-radius: 999px !important;
+    background: rgba(104, 197, 219, .1) !important;
+    color: #68C5DB !important;
+    box-shadow: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.share-modal-header .js-close-share-modal svg,
+.share-modal-header .js-close-share-modal img {
+    width: 18px !important;
+    height: 18px !important;
+    color: #68C5DB !important;
+    filter: none !important;
+}
+
+.share-modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: calc(75vh - 88px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 18px 24px 24px !important;
+    display: grid !important;
+    gap: 12px !important;
+    background: #040607 !important;
+    color: #fff !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(104, 197, 219, .4) rgba(255, 255, 255, .04);
+}
+
+.share-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.share-modal-body::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, .04);
+}
+
+.share-modal-body::-webkit-scrollbar-thumb {
+    background: rgba(104, 197, 219, .4);
+    border-radius: 999px;
+}
+
+.share-recipient-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    width: 100% !important;
+    border: 1px solid rgba(104, 197, 219, .14) !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, .03) !important;
+    color: #fff !important;
+    padding: 12px 14px !important;
+    transition: background .16s ease, border-color .16s ease, transform .16s ease;
+}
+
+.share-recipient-row:hover,
+.share-recipient-row:focus-within {
+    background: rgba(104, 197, 219, .08) !important;
+    border-color: rgba(104, 197, 219, .28) !important;
+}
+
+.share-recipient-user {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-width: 0 !important;
+    color: #fff !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+}
+
+.share-recipient-avatar {
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
+    border-radius: 50% !important;
+    border: 1px solid rgba(104, 197, 219, .22) !important;
+    background-color: rgba(104, 197, 219, .18) !important;
+    background-size: cover !important;
+    background-position: center !important;
+    color: #fff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+}
+
+.share-relation-note {
+    display: block !important;
+    margin-top: 4px !important;
+    color: rgba(255, 255, 255, .55) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    line-height: 1.25 !important;
+}
+
+.share-send-btn {
+    flex: 0 0 auto !important;
+    min-height: 38px !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: #68C5DB !important;
+    color: #040607 !important;
+    padding: 9px 16px !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    cursor: pointer !important;
+    box-shadow: 0 10px 24px rgba(104, 197, 219, .18) !important;
+    transition: filter .16s ease, transform .16s ease, opacity .16s ease;
+}
+
+.share-send-btn:hover,
+.share-send-btn:focus-visible {
+    filter: brightness(1.08) !important;
+    transform: translateY(-1px) !important;
+    outline: none !important;
+}
+
+.share-send-btn:disabled {
+    opacity: .55 !important;
+    cursor: default !important;
+    transform: none !important;
+}
+
+body.light-theme .share-modal-dialog,
+html.theme-light .share-modal-dialog,
+html[data-theme="light"] .share-modal-dialog {
+    background: #fff !important;
+    color: #040607 !important;
+    border-color: rgba(104, 197, 219, .28) !important;
+}
+
+body.light-theme .share-modal-header,
+body.light-theme .share-modal-body,
+html.theme-light .share-modal-header,
+html.theme-light .share-modal-body,
+html[data-theme="light"] .share-modal-header,
+html[data-theme="light"] .share-modal-body {
+    background: #fff !important;
+    color: #040607 !important;
+    border-color: rgba(4, 6, 7, .1) !important;
+}
+
+body.light-theme .share-modal-header h3,
+html.theme-light .share-modal-header h3,
+html[data-theme="light"] .share-modal-header h3,
+body.light-theme .share-recipient-user,
+html.theme-light .share-recipient-user,
+html[data-theme="light"] .share-recipient-user {
+    color: #040607 !important;
+}
+
+body.light-theme .share-recipient-row,
+html.theme-light .share-recipient-row,
+html[data-theme="light"] .share-recipient-row {
+    background: rgba(4, 6, 7, .03) !important;
+    border-color: rgba(104, 197, 219, .22) !important;
+    color: #040607 !important;
+}
+
+body.light-theme .share-recipient-row:hover,
+body.light-theme .share-recipient-row:focus-within,
+html.theme-light .share-recipient-row:hover,
+html.theme-light .share-recipient-row:focus-within,
+html[data-theme="light"] .share-recipient-row:hover,
+html[data-theme="light"] .share-recipient-row:focus-within {
+    background: rgba(104, 197, 219, .1) !important;
+}
+
+body.light-theme .share-relation-note,
+html.theme-light .share-relation-note,
+html[data-theme="light"] .share-relation-note {
+    color: rgba(4, 6, 7, .55) !important;
+}
+
+body.light-theme .share-recipient-avatar,
+html.theme-light .share-recipient-avatar,
+html[data-theme="light"] .share-recipient-avatar {
+    color: #040607 !important;
+    background-color: rgba(104, 197, 219, .2) !important;
+}
+
+@media (max-width: 640px) {
+    .share-modal-dialog {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        max-height: 82vh !important;
+        border-radius: 20px !important;
+    }
+
+    .share-modal-header {
+        padding: 18px 18px 14px !important;
+    }
+
+    .share-modal-header h3 {
+        font-size: 24px !important;
+    }
+
+    .share-modal-body {
+        max-height: calc(82vh - 80px) !important;
+        padding: 14px 16px 18px !important;
+    }
+
+    .share-recipient-row {
+        gap: 10px !important;
+        padding: 10px !important;
+    }
+
+    .share-send-btn {
+        padding: 8px 12px !important;
+    }
+}
