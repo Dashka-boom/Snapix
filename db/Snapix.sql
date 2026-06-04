@@ -57,6 +57,7 @@ CREATE TABLE `comments` (
   `comment_text` text COLLATE utf8mb4_general_ci NOT NULL,
   `attachment_url` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `attachment_type` enum('image','gif') COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `status` enum('published','pending_review','rejected') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'published',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -393,6 +394,26 @@ INSERT INTO `moderation_reasons` (`id`, `code`, `label`, `created_at`) VALUES
 (5, 'other', 'Другое', '2026-04-20 19:06:28');
 
 -- --------------------------------------------------------
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `moderation_queue`
+--
+
+CREATE TABLE `moderation_queue` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `comment_id` bigint UNSIGNED NOT NULL,
+  `reason` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `status` enum('pending','approved','rejected') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `moderator_id` bigint UNSIGNED DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_moderation_queue_comment` (`comment_id`),
+  KEY `idx_moderation_queue_status` (`status`,`created_at`),
+  CONSTRAINT `fk_moderation_queue_comment` FOREIGN KEY (`comment_id`) REFERENCES `comments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Структура таблицы `moderation_reports`

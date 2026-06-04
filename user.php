@@ -46,6 +46,121 @@ function ensureUserCommentAttachmentStorage(PDO $pdo): void
             throw $exception;
         }
     }
+
+    try {
+        $pdo->exec("ALTER TABLE comments ADD COLUMN status ENUM('published','pending_review','rejected') NOT NULL DEFAULT 'published' AFTER attachment_type");
+    } catch (PDOException $exception) {
+        if (($exception->errorInfo[1] ?? null) !== 1060) {
+            throw $exception;
+        }
+    }
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS moderation_queue (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            comment_id BIGINT UNSIGNED NOT NULL,
+            reason VARCHAR(255) NOT NULL,
+            status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+            reviewed_at TIMESTAMP NULL DEFAULT NULL,
+            moderator_id BIGINT UNSIGNED NULL,
+            PRIMARY KEY (id),
+            KEY idx_moderation_queue_comment (comment_id),
+            KEY idx_moderation_queue_status (status, created_at),
+            CONSTRAINT fk_user_moderation_queue_comment FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    "
+    );
+}
+
+function combineUserCommentModerationResults(array ...$results): array
+{
+    $status = 'published';
+    $reasons = [];
+
+    foreach ($results as $result) {
+        if (($result['status'] ?? 'published') === 'rejected') {
+            $status = 'rejected';
+        } elseif (($result['status'] ?? 'published') === 'pending_review' && $status !== 'rejected') {
+            $status = 'pending_review';
+        }
+
+        foreach (($result['reasons'] ?? []) as $reason) {
+            if ($reason !== '') {
+                $reasons[] = $reason;
+            }
+        }
+    }
+
+    return [
+        'status' => $status,
+        'reasons' => array_values(array_unique($reasons)),
+    ];
+}
+
+function moderateUserCommentText(string $text): array
+{
+    $normalized = mb_strtolower($text);
+    $reasons = [];
+    $status = 'published';
+
+    if ($text === '') {
+        return ['status' => $status, 'reasons' => []];
+    }
+
+    $rejectedPatterns = [
+        '/\b(?:fuck|shit|bitch|asshole)\b/iu',
+        '/(?:сука|бляд|хуй|пизд|еба|ёба|мудак|долбоеб|долбоёб)/iu',
+        '/(?:убей\s+себя|убейся|сдохни|ненавижу\s+тебя)/iu',
+    ];
+
+    foreach ($rejectedPatterns as $pattern) {
+        if (preg_match($pattern, $normalized)) {
+            return ['status' => 'rejected', 'reasons' => ['Запрещённая или оскорбительная лексика']];
+        }
+    }
+
+    $pendingPatterns = [
+        '/(?:лох|идиот|тупой|дурак|урод)/iu' => 'Потенциально оскорбительное выражение',
+        '/(?:казино|ставки|быстрый\s+заработок|крипта\s+доход)/iu' => 'Похоже на спам или рекламу',
+    ];
+
+    foreach ($pendingPatterns as $pattern => $reason) {
+        if (preg_match($pattern, $normalized)) {
+            $status = 'pending_review';
+            $reasons[] = $reason;
+        }
+    }
+
+    if (preg_match('/(.)\1{7,}/u', $text)) {
+        $status = $status === 'rejected' ? $status : 'pending_review';
+        $reasons[] = 'Слишком много одинаковых символов';
+    }
+
+    if (preg_match_all('/https?:\/\/|www\./iu', $text) > 2) {
+        $status = $status === 'rejected' ? $status : 'pending_review';
+        $reasons[] = 'Слишком много ссылок';
+    }
+
+    if (preg_match_all('/(?:https?:\/\/|www\.|t\.me\/|bit\.ly\/)/iu', $text) >= 2 && mb_strlen($text) < 80) {
+        $status = $status === 'rejected' ? $status : 'pending_review';
+        $reasons[] = 'Подозрение на спам';
+    }
+
+    return ['status' => $status, 'reasons' => array_values(array_unique($reasons))];
+}
+
+function userCommentModerationMessage(string $status): string
+{
+    if ($status === 'pending_review') {
+        return 'Комментарий отправлен на проверку модератором';
+    }
+
+    if ($status === 'rejected') {
+        return 'Комментарий отклонён, так как нарушает правила платформы';
+    }
+
+    return '';
 }
 
 function uploadUserCommentAttachment(array $file): ?array
@@ -89,8 +204,14 @@ function uploadUserCommentAttachment(array $file): ?array
         'image/gif' => ['ext' => 'gif', 'type' => 'gif'],
     ];
 
-    if (!isset($allowedMimeTypes[$mimeType]) || @getimagesize($tmpPath) === false) {
+    $imageInfo = @getimagesize($tmpPath);
+    if (!isset($allowedMimeTypes[$mimeType]) || $imageInfo === false) {
         snapix_send_post_action_error('invalid_attachment_type', 422);
+    }
+
+    $attachmentModeration = ['status' => 'published', 'reasons' => []];
+    if ($size > 5 * 1024 * 1024 || (int) ($imageInfo[0] ?? 0) > 5000 || (int) ($imageInfo[1] ?? 0) > 5000) {
+        $attachmentModeration = ['status' => 'pending_review', 'reasons' => ['Подозрительно большое вложение']];
     }
 
     $uploadDirectory = __DIR__ . '/uploads/comment_attachments';
@@ -110,6 +231,7 @@ function uploadUserCommentAttachment(array $file): ?array
         'path' => $publicPath,
         'type' => $allowedMimeTypes[$mimeType]['type'],
         'target_path' => $targetPath,
+        'moderation' => $attachmentModeration,
     ];
 }
 
@@ -344,14 +466,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
             $attachment = uploadUserCommentAttachment($_FILES['attachment'] ?? ['error' => UPLOAD_ERR_NO_FILE]);
             if ($commentText !== '' || $attachment !== null) {
                 $commentValue = mb_substr($commentText, 0, 1000);
-                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text, attachment_url, attachment_type) VALUES (:post_id, :user_id, :comment_text, :attachment_url, :attachment_type)');
+                $moderation = combineUserCommentModerationResults(
+                    moderateUserCommentText($commentValue),
+                    $attachment['moderation'] ?? ['status' => 'published', 'reasons' => []]
+                );
+                $commentStatus = $moderation['status'];
+                $moderationReason = implode('; ', $moderation['reasons']);
+                if ($moderationReason === '') {
+                    $moderationReason = $commentStatus === 'pending_review' ? 'Требуется ручная проверка' : 'Нарушение правил платформы';
+                }
+
+                if ($commentStatus === 'rejected' && $attachment && !empty($attachment['target_path']) && is_file($attachment['target_path'])) {
+                    unlink($attachment['target_path']);
+                    $attachment['path'] = null;
+                    $attachment['type'] = null;
+                    $attachment['target_path'] = null;
+                }
+
+                $insertCommentStmt = $pdo->prepare('INSERT INTO comments (post_id, user_id, comment_text, attachment_url, attachment_type, status) VALUES (:post_id, :user_id, :comment_text, :attachment_url, :attachment_type, :status)');
                 try {
                     $insertCommentStmt->execute([
                         'post_id' => $postId,
                         'user_id' => $currentUser['id'],
                         'comment_text' => $commentValue,
-                        'attachment_url' => $attachment['path'] ?? null,
-                        'attachment_type' => $attachment['type'] ?? null,
+                        'attachment_url' => $commentStatus === 'rejected' ? null : ($attachment['path'] ?? null),
+                        'attachment_type' => $commentStatus === 'rejected' ? null : ($attachment['type'] ?? null),
+                        'status' => $commentStatus,
                     ]);
                 } catch (Throwable $exception) {
                     if ($attachment && !empty($attachment['target_path']) && is_file($attachment['target_path'])) {
@@ -360,9 +500,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                     throw $exception;
                 }
                 $commentId = (int) $pdo->lastInsertId();
-                snapix_notify_post_action($pdo, $postId, (int) $currentUser['id'], 'post_comment', $commentValue, $commentId);
-                $commentsPostId = $postId;
-                $ajaxExtra['comment'] = [
+                if ($commentStatus === 'published') {
+                    snapix_notify_post_action($pdo, $postId, (int) $currentUser['id'], 'post_comment', $commentValue, $commentId);
+                }
+                if ($commentStatus === 'pending_review') {
+                    $queueStmt = $pdo->prepare('INSERT INTO moderation_queue (comment_id, reason) VALUES (:comment_id, :reason)');
+                    $queueStmt->execute([
+                        'comment_id' => $commentId,
+                        'reason' => mb_substr($moderationReason, 0, 255),
+                    ]);
+                }
+                $commentsPostId = $commentStatus === 'published' ? $postId : 0;
+                $ajaxExtra['moderation_status'] = $commentStatus;
+                $ajaxExtra['moderation_message'] = userCommentModerationMessage($commentStatus);
+                $ajaxExtra['comment'] = $commentStatus === 'published' ? [
                     'comment_id' => $commentId,
                     'post_id' => $postId,
                     'post_owner_id' => $postOwnerId,
@@ -375,9 +526,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
                     'attachment_url' => $attachment['path'] ?? null,
                     'attachment_type' => $attachment['type'] ?? null,
                     'created_at' => 'только что',
+                    'status' => $commentStatus,
                     'likes_count' => 0,
                     'is_liked' => false,
-                ];
+                ] : null;
             } elseif ($isAjaxPostAction) {
                 snapix_send_post_action_error('empty_comment');
             }
@@ -631,7 +783,7 @@ if ($profileUser) {
             SELECT posts.*, post_media.media_url, post_media.media_type,
                    users.id AS author_user_id, users.login AS author_login, users.avatar AS author_avatar,
                    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
-                   (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0) AS comments_count,
+                   (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0 AND comments.status = \'published\') AS comments_count,
                    (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
                    (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id AND likes.user_id = :viewer_id) AS is_liked,
                    (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id) AS saves_count,
@@ -652,7 +804,7 @@ if ($profileUser) {
         $posts = $stmt->fetchAll();
         $postStatsSql = "
             (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS likes_count,
-            (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0) AS comments_count,
+            (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.is_deleted = 0 AND comments.status = 'published') AS comments_count,
             (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) AS reposts_count,
             (SELECT COUNT(*) FROM saved_posts WHERE saved_posts.post_id = posts.id) AS saves_count,
             (SELECT COUNT(*) FROM messages WHERE messages.post_id = posts.id) AS shares_count,
@@ -718,6 +870,7 @@ if ($posts || $repostedPosts || $savedPosts) {
         INNER JOIN users ON users.id = comments.user_id
         INNER JOIN posts comment_posts ON comment_posts.id = comments.post_id
         WHERE comments.is_deleted = 0
+          AND comments.status = 'published'
           AND comments.post_id IN ($placeholders)
         ORDER BY comments.post_id ASC, comments.created_at DESC, comments.id DESC
     ");
@@ -1254,6 +1407,23 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 return (commentForm?.querySelector('[name="comment_text"]')?.value || '').trim();
             }
 
+            function showViewerModerationMessage(message, isError) {
+                if (!commentForm || !message) return;
+                let messageNode = commentForm.querySelector('.profile-post-viewer-moderation-message');
+                if (!messageNode) {
+                    messageNode = document.createElement('p');
+                    messageNode.className = 'profile-post-viewer-moderation-message';
+                    commentForm.insertBefore(messageNode, commentForm.firstChild);
+                }
+                messageNode.textContent = message;
+                messageNode.classList.toggle('is-error', !!isError);
+                window.setTimeout(() => {
+                    if (messageNode && messageNode.parentNode) {
+                        messageNode.remove();
+                    }
+                }, 4000);
+            }
+
             emojiButton?.addEventListener('click', () => {
                 if (!emojiPicker) return;
                 emojiPicker.hidden = !emojiPicker.hidden;
@@ -1318,6 +1488,9 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 }).then((response) => response.json()).then((data) => {
                     if (!data || !data.ok) return;
                     const postId = formData.get('post_id') || viewer.dataset.postId || '';
+                    if (data.moderation_status && data.moderation_status !== 'published') {
+                        showViewerModerationMessage(data.moderation_message || 'Комментарий отправлен на модерацию', data.moderation_status === 'rejected');
+                    }
                     if (data.comment) {
                         if (!window.snapixProfileComments[String(postId)]) window.snapixProfileComments[String(postId)] = [];
                         window.snapixProfileComments[String(postId)].unshift(Object.assign({
