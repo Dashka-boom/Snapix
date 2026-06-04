@@ -1471,7 +1471,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 body.className = 'profile-viewer-comment-body';
 
                 const top = document.createElement('div');
-                top.className = 'profile-viewer-comment-top';
+                top.className = 'profile-viewer-comment-header profile-viewer-comment-top';
                 const loginNode = document.createElement('a');
                 loginNode.className = 'profile-viewer-comment-login';
                 loginNode.href = comment.profile_url || '#';
@@ -1500,7 +1500,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 }
 
                 const meta = document.createElement('div');
-                meta.className = 'profile-viewer-comment-meta';
+                meta.className = 'profile-viewer-comment-footer profile-viewer-comment-meta';
                 const date = document.createElement('span');
                 date.className = 'profile-viewer-comment-date';
                 date.textContent = comment.created_at || '';
@@ -1556,7 +1556,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     }
 
                     menu.appendChild(menuPanel);
-                    meta.appendChild(menu);
+                    top.appendChild(menu);
                 }
 
                 body.appendChild(meta);

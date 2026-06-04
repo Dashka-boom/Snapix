@@ -7208,3 +7208,199 @@ html[data-theme="light"] .share-recipient-avatar {
 .share-modal-header .js-close-share-modal img {
     display: none !important;
 }
+
+/* Profile post viewer comments: stable vertical list layout */
+.profile-post-viewer-comments {
+    display: block !important;
+    align-items: initial !important;
+    justify-content: initial !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    min-width: 0 !important;
+}
+
+.profile-post-viewer-comments.has-comments {
+    display: block !important;
+}
+
+.profile-viewer-comment {
+    display: grid !important;
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+    grid-auto-flow: row !important;
+    align-items: start !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 0 16px !important;
+    flex-wrap: initial !important;
+    white-space: normal !important;
+    writing-mode: horizontal-tb !important;
+}
+
+.profile-viewer-comment-avatar {
+    grid-column: 1 !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    border-radius: 50% !important;
+    flex: 0 0 36px !important;
+}
+
+.profile-viewer-comment-body {
+    grid-column: 2 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: initial !important;
+    white-space: normal !important;
+    overflow: visible !important;
+}
+
+.profile-viewer-comment-header,
+.profile-viewer-comment-top {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.profile-viewer-comment-login {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    color: #fff !important;
+    font-weight: 800 !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 !important;
+}
+
+.profile-viewer-comment-text {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 4px 0 0 !important;
+    color: #fff !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    white-space: pre-wrap !important;
+    word-break: normal !important;
+    overflow-wrap: anywhere !important;
+    writing-mode: horizontal-tb !important;
+}
+
+.profile-viewer-comment-footer,
+.profile-viewer-comment-meta {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-top: 6px !important;
+    color: rgba(255,255,255,.55) !important;
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+}
+
+.profile-viewer-comment-date {
+    display: inline-flex !important;
+    color: rgba(255,255,255,.55) !important;
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+    white-space: nowrap !important;
+}
+
+.profile-viewer-comment-reply,
+.profile-viewer-comment-like {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+}
+
+.profile-viewer-comment-menu {
+    position: relative !important;
+    flex: 0 0 auto !important;
+    margin-left: auto !important;
+    align-self: flex-start !important;
+}
+
+.profile-viewer-comment-menu-toggle {
+    width: 28px !important;
+    height: 24px !important;
+    min-width: 28px !important;
+    min-height: 24px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.profile-viewer-comment-menu-panel {
+    top: calc(100% + 4px) !important;
+    right: 0 !important;
+    bottom: auto !important;
+    z-index: 20 !important;
+}
+
+.profile-viewer-comment-attachment {
+    display: inline-block !important;
+    max-width: 220px !important;
+    margin: 8px 0 0 !important;
+}
+
+.profile-viewer-comment-attachment img {
+    display: block !important;
+    max-width: 220px !important;
+    max-height: 220px !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 12px !important;
+    object-fit: cover !important;
+}
+
+.profile-viewer-comment-replies {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    gap: 12px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    margin: 12px 0 0 46px !important;
+    padding-left: 12px !important;
+    border-left: 1px solid rgba(255,255,255,.12) !important;
+}
+
+.profile-viewer-comment-replies .profile-viewer-comment {
+    margin-bottom: 0 !important;
+}
+
+body.light-theme .profile-viewer-comment-login,
+html.theme-light .profile-viewer-comment-login,
+html[data-theme="light"] .profile-viewer-comment-login,
+body.light-theme .profile-viewer-comment-text,
+html.theme-light .profile-viewer-comment-text,
+html[data-theme="light"] .profile-viewer-comment-text {
+    color: #040607 !important;
+}
+
+body.light-theme .profile-viewer-comment-footer,
+body.light-theme .profile-viewer-comment-meta,
+body.light-theme .profile-viewer-comment-date,
+html.theme-light .profile-viewer-comment-footer,
+html.theme-light .profile-viewer-comment-meta,
+html.theme-light .profile-viewer-comment-date,
+html[data-theme="light"] .profile-viewer-comment-footer,
+html[data-theme="light"] .profile-viewer-comment-meta,
+html[data-theme="light"] .profile-viewer-comment-date {
+    color: rgba(4,6,7,.55) !important;
+}
+
+body.light-theme .profile-viewer-comment-replies,
+html.theme-light .profile-viewer-comment-replies,
+html[data-theme="light"] .profile-viewer-comment-replies {
+    border-left-color: rgba(4,6,7,.12) !important;
+}

@@ -1902,11 +1902,14 @@ $showFollowingPanel = $panel === 'following';
                 var body = document.createElement('div');
                 body.className = 'profile-viewer-comment-body';
 
+                var header = document.createElement('div');
+                header.className = 'profile-viewer-comment-header profile-viewer-comment-top';
                 var login = document.createElement('a');
                 login.className = 'profile-viewer-comment-login';
                 login.href = comment.profile_url || 'profile.php';
                 login.textContent = comment.login || '';
-                body.appendChild(login);
+                header.appendChild(login);
+                body.appendChild(header);
 
                 var commentText = typeof comment.comment_text !== 'undefined' ? comment.comment_text : (comment.text || '');
                 if (commentText) {
@@ -1931,7 +1934,7 @@ $showFollowingPanel = $panel === 'following';
                 }
 
                 var meta = document.createElement('div');
-                meta.className = 'profile-viewer-comment-meta';
+                meta.className = 'profile-viewer-comment-footer profile-viewer-comment-meta';
 
                 var date = document.createElement('span');
                 date.className = 'profile-viewer-comment-date';
@@ -1995,7 +1998,7 @@ $showFollowingPanel = $panel === 'following';
                     }
 
                     menu.appendChild(panel);
-                    meta.appendChild(menu);
+                    header.appendChild(menu);
                 }
 
                 body.appendChild(meta);
