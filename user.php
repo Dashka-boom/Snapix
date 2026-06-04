@@ -441,7 +441,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_comment', 'toggle_comment_like', 'add_repost', 'get_post_counts'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_comment', 'report_comment', 'toggle_comment_like', 'add_repost', 'get_post_counts'], true);
     $ajaxExtra = [];
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
     $postExists = false;
@@ -517,13 +517,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
             exit;
         }
 
+        if ($action === 'report_comment') {
+            $commentId = (int) ($_POST['comment_id'] ?? 0);
+            $reportReason = trim((string) ($_POST['reason'] ?? ($_POST['report_reason'] ?? $_POST['custom_reason'] ?? '')));
+            $allowedReasons = ['Спам', 'Оскорбления или ненависть', 'Насилие', 'Ложная информация', 'Нежелательный контент', 'Нарушение авторских прав', 'Другое'];
+
+            if ($commentId <= 0) {
+                snapix_send_post_action_error('invalid_comment', 422);
+            }
+            if ($reportReason === '') {
+                snapix_send_post_action_error('invalid_report_reason', 422);
+            }
+            if (!in_array($reportReason, $allowedReasons, true)) {
+                $reportReason = mb_substr($reportReason, 0, 1000);
+            }
+
+            $commentStmt = $pdo->prepare("SELECT comments.id, comments.post_id, comments.user_id, comments.comment_text, posts.user_id AS post_owner_id FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id AND comments.is_deleted = 0 AND (comments.status = 'published' OR comments.status IS NULL) AND posts.is_deleted = 0 LIMIT 1");
+            $commentStmt->execute(['id' => $commentId]);
+            $comment = $commentStmt->fetch();
+            if (!$comment) {
+                snapix_send_post_action_error('comment_not_found', 404);
+            }
+            if ((int) $comment['user_id'] === (int) $currentUser['id']) {
+                snapix_send_post_action_error('own_comment_report_forbidden', 403);
+            }
+
+            $duplicateReportStmt = $pdo->prepare('SELECT id FROM moderation_reports WHERE reporter_user_id = :reporter_user_id AND target_comment_id = :target_comment_id LIMIT 1');
+            $duplicateReportStmt->execute([
+                'reporter_user_id' => $currentUser['id'],
+                'target_comment_id' => $commentId,
+            ]);
+            if ($duplicateReportStmt->fetchColumn()) {
+                snapix_send_post_action_error('duplicate_comment_report', 409);
+            }
+
+            $insertReportStmt = $pdo->prepare('INSERT INTO moderation_reports (reporter_user_id, target_user_id, target_comment_id, reason_text) VALUES (:reporter_user_id, :target_user_id, :target_comment_id, :reason_text)');
+            $reportReasonText = mb_substr($reportReason, 0, 1000);
+            $insertReportStmt->execute([
+                'reporter_user_id' => $currentUser['id'],
+                'target_user_id' => (int) $comment['user_id'],
+                'target_comment_id' => $commentId,
+                'reason_text' => $reportReasonText,
+            ]);
+            $reportId = (int) $pdo->lastInsertId();
+            snapix_notify_admins($pdo, [
+                'actor_user_id' => (int) $currentUser['id'],
+                'notification_type' => 'report_comment',
+                'post_id' => (int) $comment['post_id'],
+                'comment_id' => $commentId,
+                'report_id' => $reportId,
+                'title' => 'Жалоба на комментарий',
+                'message' => 'Поступила жалоба на комментарий под публикацией',
+                'comment_text' => (string) ($comment['comment_text'] ?? ''),
+                'report_reason' => $reportReasonText,
+                'dedupe_minutes' => 10,
+            ], (int) $currentUser['id']);
+
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => true,
+                'comment_id' => $commentId,
+                'message' => 'Жалоба отправлена',
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
         if ($action === 'delete_comment') {
             $commentId = (int) ($_POST['comment_id'] ?? 0);
             if ($commentId <= 0) {
                 snapix_send_post_action_error('invalid_comment', 422);
             }
 
-            $commentStmt = $pdo->prepare('SELECT comments.id, comments.post_id, comments.user_id, comments.attachment_url FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id AND posts.is_deleted = 0 LIMIT 1');
+            $commentStmt = $pdo->prepare('SELECT comments.id, comments.post_id, comments.user_id, comments.comment_text, comments.attachment_url, posts.user_id AS post_owner_id FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.id = :id AND posts.is_deleted = 0 LIMIT 1');
             $commentStmt->execute(['id' => $commentId]);
             $comment = $commentStmt->fetch();
             if (!$comment) {
@@ -531,7 +596,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
             }
 
             $canModerateComments = in_array((string) ($currentUser['role'] ?? ''), ['admin', 'moderator'], true);
-            if ((int) $comment['user_id'] !== (int) $currentUser['id'] && !$canModerateComments) {
+            $isPostOwner = (int) ($comment['post_owner_id'] ?? 0) === (int) $currentUser['id'];
+            if ((int) $comment['user_id'] !== (int) $currentUser['id'] && !$isPostOwner && !$canModerateComments) {
                 snapix_send_post_action_error('comment_delete_forbidden', 403);
             }
 
@@ -1353,7 +1419,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             function canDeleteViewerComment(comment) {
                 const currentUser = window.snapixCurrentUser || {};
                 const role = currentUser.role || '';
-                return isOwnViewerComment(comment) || role === 'admin' || role === 'moderator';
+                return isOwnViewerComment(comment) || Number(comment.post_owner_id || 0) === Number(currentUser.id || 0) || role === 'admin' || role === 'moderator';
             }
 
             function removeViewerCommentFromCache(postId, commentId) {
@@ -1483,6 +1549,8 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                         const reportButton = document.createElement('button');
                         reportButton.type = 'button';
                         reportButton.className = 'profile-viewer-comment-report';
+                        reportButton.dataset.reportLogin = comment.login || '';
+                        reportButton.dataset.reportUserId = String(comment.user_id || '');
                         reportButton.textContent = 'Пожаловаться';
                         menuPanel.appendChild(reportButton);
                     }
@@ -1671,6 +1739,48 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     }).catch(() => {}).finally(() => {
                         likeButton.dataset.liking = '0';
                     });
+                    return;
+                }
+
+                const reportButton = event.target.closest('.profile-viewer-comment-report');
+                if (reportButton) {
+                    event.preventDefault();
+                    const reportCommentNode = reportButton.closest('.profile-viewer-comment');
+                    const reportCommentId = reportCommentNode?.dataset.commentId || '';
+                    const reportLogin = reportButton.dataset.reportLogin || '';
+                    const reportUserId = reportButton.dataset.reportUserId || '';
+                    const openMenu = reportButton.closest('.profile-viewer-comment-menu');
+                    if (openMenu) openMenu.classList.remove('is-open');
+                    if (reportCommentId && window.SnapixReportModal) {
+                        window.SnapixReportModal.open({
+                            login: reportLogin || 'user',
+                            userId: reportUserId || 0,
+                            onSubmit: (reason, api) => {
+                                const params = new URLSearchParams();
+                                params.set('action', 'report_comment');
+                                params.set('comment_id', reportCommentId);
+                                params.set('post_id', reportCommentNode?.dataset.postId || viewer.dataset.postId || '');
+                                params.set('target_user_id', String(<?php echo (int) $profileUser['id']; ?>));
+                                params.set('reason', reason);
+                                fetch(window.location.pathname + window.location.search, {
+                                    method: 'POST',
+                                    credentials: 'same-origin',
+                                    headers: {
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                        'Accept': 'application/json'
+                                    },
+                                    body: params.toString()
+                                }).then((response) => response.json()).then((data) => {
+                                    if (!data || !data.ok) return;
+                                    api.showSuccess();
+                                    window.setTimeout(() => {
+                                        if (api.close) api.close();
+                                    }, 900);
+                                }).catch(() => {});
+                            }
+                        });
+                    }
                     return;
                 }
 
