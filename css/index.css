@@ -8157,3 +8157,25 @@ body[data-page="home"] .feed-card-media .post-type-badge .home-post-type-icon {
     box-shadow: none !important;
     background: transparent !important;
 }
+
+/* Home light theme hover actions: keep like/repost/save icons white on publication hover. */
+html.theme-light body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-like-icon,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-like-icon,
+body.theme-light[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-like-icon,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-hover-overlay .home-hover-like-icon {
+    content: url("../icon/dark theme/like.png") !important;
+}
+
+html.theme-light body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-repost-icon,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-repost-icon,
+body.theme-light[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-repost-icon,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-hover-overlay .home-hover-repost-icon {
+    content: url("../icon/dark theme/repost.png") !important;
+}
+
+html.theme-light body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-save-icon,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-save-icon,
+body.theme-light[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-save-icon,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-hover-overlay .home-hover-save-icon {
+    content: url("../icon/dark theme/favourites.png") !important;
+}
