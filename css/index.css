@@ -8018,7 +8018,7 @@ body[data-theme="light"][data-page="profile"] .profile-create-btn::after {
     filter: none !important;
 }
 
-/* Unified publication type badge: white circle with dark image/video icon. */
+/* Unified publication type badge: dark in dark theme, white in light theme. */
 body[data-page="home"] .feed-card-media .post-type-badge,
 body[data-page="home"] .feed-card:hover .post-type-badge,
 body[data-page="home"] .feed-card:focus-within .post-type-badge,
@@ -8031,8 +8031,8 @@ body[data-page="profile"] .post-card:focus-within .post-type-badge {
     width: 48px !important;
     height: 48px !important;
     border-radius: 50% !important;
-    background: #ffffff !important;
-    background-color: #ffffff !important;
+    background: rgba(4, 6, 7, 0.72) !important;
+    background-color: rgba(4, 6, 7, 0.72) !important;
     background-image: none !important;
     border: 0 !important;
     box-shadow: none !important;
@@ -8058,7 +8058,46 @@ body[data-page="profile"] .post-type-badge img {
     background-color: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
-    filter: none !important;
+    filter: brightness(0) invert(1) !important;
     opacity: 1 !important;
     visibility: visible !important;
+}
+
+html.theme-light body[data-page="home"] .feed-card-media .post-type-badge,
+html.theme-light body[data-page="home"] .feed-card:hover .post-type-badge,
+html.theme-light body[data-page="home"] .feed-card:focus-within .post-type-badge,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-type-badge,
+html[data-theme="light"] body[data-page="home"] .feed-card:hover .post-type-badge,
+html[data-theme="light"] body[data-page="home"] .feed-card:focus-within .post-type-badge,
+body.theme-light[data-page="home"] .feed-card-media .post-type-badge,
+body.theme-light[data-page="home"] .feed-card:hover .post-type-badge,
+body.theme-light[data-page="home"] .feed-card:focus-within .post-type-badge,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-type-badge,
+body[data-theme="light"][data-page="home"] .feed-card:hover .post-type-badge,
+body[data-theme="light"][data-page="home"] .feed-card:focus-within .post-type-badge,
+html.theme-light body[data-page="profile"] .post-type-badge,
+html.theme-light body[data-page="profile"] .post-card:hover .post-type-badge,
+html.theme-light body[data-page="profile"] .post-card:focus-within .post-type-badge,
+html[data-theme="light"] body[data-page="profile"] .post-type-badge,
+html[data-theme="light"] body[data-page="profile"] .post-card:hover .post-type-badge,
+html[data-theme="light"] body[data-page="profile"] .post-card:focus-within .post-type-badge,
+body.theme-light[data-page="profile"] .post-type-badge,
+body.theme-light[data-page="profile"] .post-card:hover .post-type-badge,
+body.theme-light[data-page="profile"] .post-card:focus-within .post-type-badge,
+body[data-theme="light"][data-page="profile"] .post-type-badge,
+body[data-theme="light"][data-page="profile"] .post-card:hover .post-type-badge,
+body[data-theme="light"][data-page="profile"] .post-card:focus-within .post-type-badge {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+}
+
+html.theme-light body[data-page="home"] .feed-card-media .post-type-badge img,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-type-badge img,
+body.theme-light[data-page="home"] .feed-card-media .post-type-badge img,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-type-badge img,
+html.theme-light body[data-page="profile"] .post-type-badge img,
+html[data-theme="light"] body[data-page="profile"] .post-type-badge img,
+body.theme-light[data-page="profile"] .post-type-badge img,
+body[data-theme="light"][data-page="profile"] .post-type-badge img {
+    filter: none !important;
 }
