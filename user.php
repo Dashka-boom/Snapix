@@ -306,7 +306,7 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                 <?php endif; ?>
 
                 <span class="post-type-badge" aria-label="<?php echo (($post['media_type'] ?? '') === 'video') ? 'Видео' : 'Фото'; ?>">
-                    <img src="icon/dark theme/<?php echo (($post['media_type'] ?? '') === 'video') ? 'video' : 'images'; ?>.png" alt="">
+                    <img src="icon/light theme/<?php echo (($post['media_type'] ?? '') === 'video') ? 'video' : 'images'; ?>.png" alt="">
                 </span>
 
                 <div class="post-hover-overlay" aria-hidden="true">
