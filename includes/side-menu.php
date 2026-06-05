@@ -39,9 +39,11 @@ function snapix_side_fetch_notifications(?array $sideMenuUser): array
 
     $typeMap = [
         'post_like' => 'likes',
+        'comment_like' => 'likes',
         'like' => 'likes',
         'likes' => 'likes',
         'post_comment' => 'comments',
+        'comment_reply' => 'comments',
         'comment' => 'comments',
         'comments' => 'comments',
         'comment_deleted' => 'complaints',
@@ -112,7 +114,7 @@ function snapix_side_notification_context_key(string $type, array $item): string
         return '';
     }
 
-    if ($type === 'post_comment' || $type === 'comment') {
+    if (in_array($type, ['post_comment', 'comment_reply', 'comment_like', 'comment'], true)) {
         return $type . ':' . $actorId . ':' . $postId . ':' . $commentId;
     }
 

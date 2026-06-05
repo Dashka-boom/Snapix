@@ -126,6 +126,9 @@
             if (typeof data.comments_count !== 'undefined') node.dataset.postCommentsCount = String(data.comments_count);
             if (typeof data.reposts_count !== 'undefined') node.dataset.postRepostsCount = String(data.reposts_count);
             if (typeof data.saves_count !== 'undefined') node.dataset.postSavesCount = String(data.saves_count);
+            if (typeof data.liked !== 'undefined') node.dataset.postLiked = data.liked ? '1' : '0';
+            if (typeof data.saved !== 'undefined') node.dataset.postSaved = data.saved ? '1' : '0';
+            if (typeof data.reposted !== 'undefined') node.dataset.postReposted = data.reposted ? '1' : '0';
         });
     }
 
@@ -138,6 +141,22 @@
         setCount(document.getElementById('viewerCommentsCount'), data.comments_count);
         setCount(document.getElementById('viewerRepostsCount'), data.reposts_count);
         setCount(document.getElementById('viewerSavesCount'), data.saves_count);
+
+        var likeButton = viewer.querySelector('[data-post-action="like"]');
+        var repostButton = viewer.querySelector('[data-post-action="repost"]');
+        var saveButton = viewer.querySelector('[data-post-action="save"]');
+        if (likeButton && typeof data.liked !== 'undefined') {
+            likeButton.classList.toggle('is-active', !!data.liked);
+            animateActiveIcon(likeButton, !!data.liked);
+        }
+        if (repostButton && typeof data.reposted !== 'undefined') {
+            repostButton.classList.toggle('is-reposted', !!data.reposted);
+            animateActiveIcon(repostButton, !!data.reposted);
+        }
+        if (saveButton && typeof data.saved !== 'undefined') {
+            saveButton.classList.toggle('is-saved', !!data.saved);
+            animateActiveIcon(saveButton, !!data.saved);
+        }
     }
 
     function syncPostState(postId, data, sourceAction, broadcast) {
@@ -302,4 +321,5 @@
     window.SnapixPostSync = {
         syncPostState: syncPostState
     };
+    window.snapixSyncPostState = syncPostState;
 })();

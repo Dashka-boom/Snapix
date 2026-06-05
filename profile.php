@@ -603,6 +603,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'user_id' => $user['id'],
             ]);
             $liked = true;
+            snapix_notify_comment_like($pdo, $commentId, (int) $user['id']);
         }
 
         $countStmt = $pdo->prepare('SELECT COUNT(*) FROM comment_likes WHERE comment_id = :comment_id');
@@ -790,6 +791,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $commentId = (int) $pdo->lastInsertId();
                 if ($commentStatus === 'published') {
                     snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_comment', $commentValue, $commentId);
+                    if ($parentCommentId > 0) {
+                        snapix_notify_comment_reply($pdo, $parentCommentId, (int) $user['id'], $commentValue, $commentId);
+                    }
                 }
                 if ($commentStatus === 'pending_review') {
                     $queueStmt = $pdo->prepare('INSERT INTO moderation_queue (comment_id, reason) VALUES (:comment_id, :reason)');
@@ -1898,11 +1902,14 @@ $showFollowingPanel = $panel === 'following';
                 var body = document.createElement('div');
                 body.className = 'profile-viewer-comment-body';
 
+                var header = document.createElement('div');
+                header.className = 'profile-viewer-comment-header profile-viewer-comment-top';
                 var login = document.createElement('a');
                 login.className = 'profile-viewer-comment-login';
                 login.href = comment.profile_url || 'profile.php';
                 login.textContent = comment.login || '';
-                body.appendChild(login);
+                header.appendChild(login);
+                body.appendChild(header);
 
                 var commentText = typeof comment.comment_text !== 'undefined' ? comment.comment_text : (comment.text || '');
                 if (commentText) {
@@ -1927,7 +1934,7 @@ $showFollowingPanel = $panel === 'following';
                 }
 
                 var meta = document.createElement('div');
-                meta.className = 'profile-viewer-comment-meta';
+                meta.className = 'profile-viewer-comment-footer profile-viewer-comment-meta';
 
                 var date = document.createElement('span');
                 date.className = 'profile-viewer-comment-date';
@@ -1991,7 +1998,7 @@ $showFollowingPanel = $panel === 'following';
                     }
 
                     menu.appendChild(panel);
-                    meta.appendChild(menu);
+                    header.appendChild(menu);
                 }
 
                 body.appendChild(meta);

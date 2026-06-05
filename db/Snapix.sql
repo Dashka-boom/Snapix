@@ -53,8 +53,12 @@ INSERT INTO `chats` (`id`, `user_one_id`, `user_two_id`, `created_at`, `updated_
 CREATE TABLE `comments` (
   `id` bigint UNSIGNED NOT NULL,
   `post_id` bigint UNSIGNED NOT NULL,
+  `parent_comment_id` bigint UNSIGNED DEFAULT NULL,
   `user_id` bigint UNSIGNED NOT NULL,
   `comment_text` text COLLATE utf8mb4_general_ci NOT NULL,
+  `attachment_url` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `attachment_type` enum('image','gif') COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `status` enum('published','pending_review','rejected') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'published',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -79,6 +83,19 @@ INSERT INTO `comments` (`id`, `post_id`, `user_id`, `comment_text`, `is_deleted`
 (12, 8, 7, 's', 0, '2026-04-23 09:25:25', '2026-04-23 09:25:25'),
 (13, 11, 7, 'ььб', 0, '2026-04-29 15:01:33', '2026-04-29 15:01:33'),
 (14, 12, 5, 'о как', 0, '2026-05-04 13:38:33', '2026-05-04 13:38:33');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `comment_likes`
+--
+
+CREATE TABLE `comment_likes` (
+  `id` bigint UNSIGNED NOT NULL,
+  `comment_id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -392,6 +409,26 @@ INSERT INTO `moderation_reasons` (`id`, `code`, `label`, `created_at`) VALUES
 
 -- --------------------------------------------------------
 
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `moderation_queue`
+--
+
+CREATE TABLE `moderation_queue` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `comment_id` bigint UNSIGNED NOT NULL,
+  `reason` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `status` enum('pending','approved','rejected') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `moderator_id` bigint UNSIGNED DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_moderation_queue_comment` (`comment_id`),
+  KEY `idx_moderation_queue_status` (`status`,`created_at`),
+  CONSTRAINT `fk_moderation_queue_comment` FOREIGN KEY (`comment_id`) REFERENCES `comments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Структура таблицы `moderation_reports`
 --
@@ -682,7 +719,17 @@ ALTER TABLE `chats`
 ALTER TABLE `comments`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_comments_post_id` (`post_id`),
-  ADD KEY `idx_comments_user_id` (`user_id`);
+  ADD KEY `idx_comments_user_id` (`user_id`),
+  ADD KEY `idx_comments_parent` (`parent_comment_id`);
+
+
+--
+-- Индексы таблицы `comment_likes`
+--
+ALTER TABLE `comment_likes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_comment_likes_comment_user` (`comment_id`,`user_id`),
+  ADD KEY `idx_comment_likes_user` (`user_id`);
 
 --
 -- Индексы таблицы `followers`
@@ -870,6 +917,13 @@ ALTER TABLE `chats`
 ALTER TABLE `comments`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
+
+--
+-- AUTO_INCREMENT для таблицы `comment_likes`
+--
+ALTER TABLE `comment_likes`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
 --
 -- AUTO_INCREMENT для таблицы `followers`
 --
@@ -1000,7 +1054,16 @@ ALTER TABLE `chats`
 --
 ALTER TABLE `comments`
   ADD CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `fk_comments_parent` FOREIGN KEY (`parent_comment_id`) REFERENCES `comments` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
+
+
+--
+-- Ограничения внешнего ключа таблицы `comment_likes`
+--
+ALTER TABLE `comment_likes`
+  ADD CONSTRAINT `fk_comment_likes_comment` FOREIGN KEY (`comment_id`) REFERENCES `comments` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_comment_likes_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `followers`

@@ -534,6 +534,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 'user_id' => $user['id'],
             ]);
             $liked = true;
+            snapix_notify_comment_like($pdo, $commentId, (int) $user['id']);
         }
 
         $countStmt = $pdo->prepare('SELECT COUNT(*) FROM comment_likes WHERE comment_id = :comment_id');
@@ -672,6 +673,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
                 $commentId = (int) $pdo->lastInsertId();
                 if ($commentStatus === 'published') {
                     snapix_notify_post_action($pdo, $postId, (int) $user['id'], 'post_comment', $commentValue, $commentId);
+                    if ($parentCommentId > 0) {
+                        snapix_notify_comment_reply($pdo, $parentCommentId, (int) $user['id'], $commentValue, $commentId);
+                    }
                 }
                 if ($commentStatus === 'pending_review') {
                     $queueStmt = $pdo->prepare('INSERT INTO moderation_queue (comment_id, reason) VALUES (:comment_id, :reason)');
