@@ -8101,3 +8101,40 @@ body.theme-light[data-page="profile"] .post-type-badge img,
 body[data-theme="light"][data-page="profile"] .post-type-badge img {
     filter: none !important;
 }
+
+/* Dark theme publication type icons: use native white assets without light filter glow. */
+body[data-page="home"] .home-post-type-image-icon,
+body[data-page="profile"] .post-type-badge img[src*="images.png"] {
+    content: url("../icon/dark theme/images.png") !important;
+    filter: none !important;
+}
+
+body[data-page="home"] .home-post-type-video-icon,
+body[data-page="profile"] .post-type-badge img[src*="video.png"] {
+    content: url("../icon/dark theme/video.png") !important;
+    filter: none !important;
+}
+
+html.theme-light body[data-page="home"] .home-post-type-image-icon,
+html[data-theme="light"] body[data-page="home"] .home-post-type-image-icon,
+body.theme-light[data-page="home"] .home-post-type-image-icon,
+body[data-theme="light"][data-page="home"] .home-post-type-image-icon,
+html.theme-light body[data-page="profile"] .post-type-badge img[src*="images.png"],
+html[data-theme="light"] body[data-page="profile"] .post-type-badge img[src*="images.png"],
+body.theme-light[data-page="profile"] .post-type-badge img[src*="images.png"],
+body[data-theme="light"][data-page="profile"] .post-type-badge img[src*="images.png"] {
+    content: url("../icon/light theme/images.png") !important;
+    filter: none !important;
+}
+
+html.theme-light body[data-page="home"] .home-post-type-video-icon,
+html[data-theme="light"] body[data-page="home"] .home-post-type-video-icon,
+body.theme-light[data-page="home"] .home-post-type-video-icon,
+body[data-theme="light"][data-page="home"] .home-post-type-video-icon,
+html.theme-light body[data-page="profile"] .post-type-badge img[src*="video.png"],
+html[data-theme="light"] body[data-page="profile"] .post-type-badge img[src*="video.png"],
+body.theme-light[data-page="profile"] .post-type-badge img[src*="video.png"],
+body[data-theme="light"][data-page="profile"] .post-type-badge img[src*="video.png"] {
+    content: url("../icon/light theme/video.png") !important;
+    filter: none !important;
+}
