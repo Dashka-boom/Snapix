@@ -4234,10 +4234,10 @@ body[data-theme="light"] .section-heading {
 }
 
 body.theme-light .feed-card,
-body.theme-light .card-surface,
+body.theme-light .card-surface:not(.profile-cover),
 body.theme-light .post-card,
 body[data-theme="light"] .feed-card,
-body[data-theme="light"] .card-surface,
+body[data-theme="light"] .card-surface:not(.profile-cover),
 body[data-theme="light"] .post-card {
     background: #FFFDF8 !important;
     border-color: rgba(31, 41, 55, 0.14) !important;
@@ -7403,4 +7403,662 @@ body.light-theme .profile-viewer-comment-replies,
 html.theme-light .profile-viewer-comment-replies,
 html[data-theme="light"] .profile-viewer-comment-replies {
     border-left-color: rgba(4,6,7,.12) !important;
+}
+
+/* Light theme publication viewer: keep dark theme defaults unchanged. */
+body.theme-light .profile-post-viewer-dialog,
+body[data-theme="light"] .profile-post-viewer-dialog,
+html.theme-light .profile-post-viewer-dialog,
+html[data-theme="light"] .profile-post-viewer-dialog,
+body.light-theme .profile-post-viewer-dialog,
+body.theme-light .profile-post-viewer-side,
+body[data-theme="light"] .profile-post-viewer-side,
+html.theme-light .profile-post-viewer-side,
+html[data-theme="light"] .profile-post-viewer-side,
+body.light-theme .profile-post-viewer-side,
+body.theme-light .profile-post-viewer-comments,
+body[data-theme="light"] .profile-post-viewer-comments,
+html.theme-light .profile-post-viewer-comments,
+html[data-theme="light"] .profile-post-viewer-comments,
+body.light-theme .profile-post-viewer-comments,
+body.theme-light .profile-post-viewer-input-row,
+body[data-theme="light"] .profile-post-viewer-input-row,
+html.theme-light .profile-post-viewer-input-row,
+html[data-theme="light"] .profile-post-viewer-input-row,
+body.light-theme .profile-post-viewer-input-row {
+    background: #FCFBF8 !important;
+    color: #040607 !important;
+}
+
+body.theme-light .profile-post-viewer-head,
+body[data-theme="light"] .profile-post-viewer-head,
+html.theme-light .profile-post-viewer-head,
+html[data-theme="light"] .profile-post-viewer-head,
+body.light-theme .profile-post-viewer-head,
+body.theme-light .profile-post-viewer-metrics,
+body[data-theme="light"] .profile-post-viewer-metrics,
+html.theme-light .profile-post-viewer-metrics,
+html[data-theme="light"] .profile-post-viewer-metrics,
+body.light-theme .profile-post-viewer-metrics {
+    border-color: rgba(4,6,7,.12) !important;
+}
+
+body.theme-light .profile-post-viewer-login-link-name,
+body[data-theme="light"] .profile-post-viewer-login-link-name,
+html.theme-light .profile-post-viewer-login-link-name,
+html[data-theme="light"] .profile-post-viewer-login-link-name,
+body.light-theme .profile-post-viewer-login-link-name,
+body.theme-light .profile-post-viewer-login-link-name strong,
+body[data-theme="light"] .profile-post-viewer-login-link-name strong,
+html.theme-light .profile-post-viewer-login-link-name strong,
+html[data-theme="light"] .profile-post-viewer-login-link-name strong,
+body.light-theme .profile-post-viewer-login-link-name strong,
+body.theme-light .profile-post-viewer-more,
+body[data-theme="light"] .profile-post-viewer-more,
+html.theme-light .profile-post-viewer-more,
+html[data-theme="light"] .profile-post-viewer-more,
+body.light-theme .profile-post-viewer-more,
+body.theme-light .profile-post-viewer-metric,
+body[data-theme="light"] .profile-post-viewer-metric,
+html.theme-light .profile-post-viewer-metric,
+html[data-theme="light"] .profile-post-viewer-metric,
+body.light-theme .profile-post-viewer-metric,
+body.theme-light .profile-post-viewer-metric span,
+body[data-theme="light"] .profile-post-viewer-metric span,
+html.theme-light .profile-post-viewer-metric span,
+html[data-theme="light"] .profile-post-viewer-metric span,
+body.light-theme .profile-post-viewer-metric span,
+body.theme-light .profile-post-viewer-empty,
+body[data-theme="light"] .profile-post-viewer-empty,
+html.theme-light .profile-post-viewer-empty,
+html[data-theme="light"] .profile-post-viewer-empty,
+body.light-theme .profile-post-viewer-empty,
+body.theme-light .profile-post-viewer-comment-author,
+body[data-theme="light"] .profile-post-viewer-comment-author,
+html.theme-light .profile-post-viewer-comment-author,
+html[data-theme="light"] .profile-post-viewer-comment-author,
+body.light-theme .profile-post-viewer-comment-author,
+body.theme-light .profile-post-viewer-comment-item p,
+body[data-theme="light"] .profile-post-viewer-comment-item p,
+html.theme-light .profile-post-viewer-comment-item p,
+html[data-theme="light"] .profile-post-viewer-comment-item p,
+body.light-theme .profile-post-viewer-comment-item p,
+body.theme-light .profile-viewer-comment-login,
+body[data-theme="light"] .profile-viewer-comment-login,
+html.theme-light .profile-viewer-comment-login,
+html[data-theme="light"] .profile-viewer-comment-login,
+body.light-theme .profile-viewer-comment-login,
+body.theme-light .profile-viewer-comment-text,
+body[data-theme="light"] .profile-viewer-comment-text,
+html.theme-light .profile-viewer-comment-text,
+html[data-theme="light"] .profile-viewer-comment-text,
+body.light-theme .profile-viewer-comment-text {
+    color: #040607 !important;
+}
+
+body.theme-light .profile-viewer-comment,
+body[data-theme="light"] .profile-viewer-comment,
+html.theme-light .profile-viewer-comment,
+html[data-theme="light"] .profile-viewer-comment,
+body.light-theme .profile-viewer-comment,
+body.theme-light .profile-post-viewer-comment-item,
+body[data-theme="light"] .profile-post-viewer-comment-item,
+html.theme-light .profile-post-viewer-comment-item,
+html[data-theme="light"] .profile-post-viewer-comment-item,
+body.light-theme .profile-post-viewer-comment-item {
+    background: transparent !important;
+}
+
+body.theme-light .profile-viewer-comment-footer,
+body[data-theme="light"] .profile-viewer-comment-footer,
+html.theme-light .profile-viewer-comment-footer,
+html[data-theme="light"] .profile-viewer-comment-footer,
+body.light-theme .profile-viewer-comment-footer,
+body.theme-light .profile-viewer-comment-meta,
+body[data-theme="light"] .profile-viewer-comment-meta,
+html.theme-light .profile-viewer-comment-meta,
+html[data-theme="light"] .profile-viewer-comment-meta,
+body.light-theme .profile-viewer-comment-meta {
+    color: rgba(4,6,7,.65) !important;
+}
+
+body.theme-light .profile-viewer-comment-date,
+body[data-theme="light"] .profile-viewer-comment-date,
+html.theme-light .profile-viewer-comment-date,
+html[data-theme="light"] .profile-viewer-comment-date,
+body.light-theme .profile-viewer-comment-date {
+    color: rgba(4,6,7,.55) !important;
+}
+
+body.theme-light .profile-viewer-comment-reply,
+body.theme-light .profile-viewer-comment-reply:hover,
+body.theme-light .profile-viewer-comment-reply:focus-visible,
+body[data-theme="light"] .profile-viewer-comment-reply,
+body[data-theme="light"] .profile-viewer-comment-reply:hover,
+body[data-theme="light"] .profile-viewer-comment-reply:focus-visible,
+html.theme-light .profile-viewer-comment-reply,
+html.theme-light .profile-viewer-comment-reply:hover,
+html.theme-light .profile-viewer-comment-reply:focus-visible,
+html[data-theme="light"] .profile-viewer-comment-reply,
+html[data-theme="light"] .profile-viewer-comment-reply:hover,
+html[data-theme="light"] .profile-viewer-comment-reply:focus-visible,
+body.light-theme .profile-viewer-comment-reply,
+body.light-theme .profile-viewer-comment-reply:hover,
+body.light-theme .profile-viewer-comment-reply:focus-visible,
+body.theme-light .profile-viewer-comment-menu-toggle,
+body.theme-light .profile-viewer-comment-menu-toggle:hover,
+body.theme-light .profile-viewer-comment-menu-toggle:focus-visible,
+body[data-theme="light"] .profile-viewer-comment-menu-toggle,
+body[data-theme="light"] .profile-viewer-comment-menu-toggle:hover,
+body[data-theme="light"] .profile-viewer-comment-menu-toggle:focus-visible,
+html.theme-light .profile-viewer-comment-menu-toggle,
+html.theme-light .profile-viewer-comment-menu-toggle:hover,
+html.theme-light .profile-viewer-comment-menu-toggle:focus-visible,
+html[data-theme="light"] .profile-viewer-comment-menu-toggle,
+html[data-theme="light"] .profile-viewer-comment-menu-toggle:hover,
+html[data-theme="light"] .profile-viewer-comment-menu-toggle:focus-visible,
+body.light-theme .profile-viewer-comment-menu-toggle,
+body.light-theme .profile-viewer-comment-menu-toggle:hover,
+body.light-theme .profile-viewer-comment-menu-toggle:focus-visible {
+    color: rgba(4,6,7,.65) !important;
+}
+
+body.theme-light .profile-viewer-comment-like,
+body.theme-light .profile-viewer-comment-like:hover,
+body.theme-light .profile-viewer-comment-like:focus-visible,
+body[data-theme="light"] .profile-viewer-comment-like,
+body[data-theme="light"] .profile-viewer-comment-like:hover,
+body[data-theme="light"] .profile-viewer-comment-like:focus-visible,
+html.theme-light .profile-viewer-comment-like,
+html.theme-light .profile-viewer-comment-like:hover,
+html.theme-light .profile-viewer-comment-like:focus-visible,
+html[data-theme="light"] .profile-viewer-comment-like,
+html[data-theme="light"] .profile-viewer-comment-like:hover,
+html[data-theme="light"] .profile-viewer-comment-like:focus-visible,
+body.light-theme .profile-viewer-comment-like,
+body.light-theme .profile-viewer-comment-like:hover,
+body.light-theme .profile-viewer-comment-like:focus-visible {
+    color: #040607 !important;
+}
+
+body.theme-light .profile-viewer-comment-like.is-active,
+body.theme-light .profile-viewer-comment-like.is-active:hover,
+body.theme-light .profile-viewer-comment-like.is-active:focus-visible,
+body[data-theme="light"] .profile-viewer-comment-like.is-active,
+body[data-theme="light"] .profile-viewer-comment-like.is-active:hover,
+body[data-theme="light"] .profile-viewer-comment-like.is-active:focus-visible,
+html.theme-light .profile-viewer-comment-like.is-active,
+html.theme-light .profile-viewer-comment-like.is-active:hover,
+html.theme-light .profile-viewer-comment-like.is-active:focus-visible,
+html[data-theme="light"] .profile-viewer-comment-like.is-active,
+html[data-theme="light"] .profile-viewer-comment-like.is-active:hover,
+html[data-theme="light"] .profile-viewer-comment-like.is-active:focus-visible,
+body.light-theme .profile-viewer-comment-like.is-active,
+body.light-theme .profile-viewer-comment-like.is-active:hover,
+body.light-theme .profile-viewer-comment-like.is-active:focus-visible {
+    color: #ef4444 !important;
+}
+
+body.theme-light .profile-post-viewer-input-shell,
+body[data-theme="light"] .profile-post-viewer-input-shell,
+html.theme-light .profile-post-viewer-input-shell,
+html[data-theme="light"] .profile-post-viewer-input-shell,
+body.light-theme .profile-post-viewer-input-shell {
+    background: #FFFFFF !important;
+}
+
+body.theme-light .profile-post-viewer-input-shell .profile-post-viewer-input,
+body[data-theme="light"] .profile-post-viewer-input-shell .profile-post-viewer-input,
+html.theme-light .profile-post-viewer-input-shell .profile-post-viewer-input,
+html[data-theme="light"] .profile-post-viewer-input-shell .profile-post-viewer-input,
+body.light-theme .profile-post-viewer-input-shell .profile-post-viewer-input {
+    color: #040607 !important;
+}
+
+body.theme-light .profile-post-viewer-input-shell .profile-post-viewer-input::placeholder,
+body[data-theme="light"] .profile-post-viewer-input-shell .profile-post-viewer-input::placeholder,
+html.theme-light .profile-post-viewer-input-shell .profile-post-viewer-input::placeholder,
+html[data-theme="light"] .profile-post-viewer-input-shell .profile-post-viewer-input::placeholder,
+body.light-theme .profile-post-viewer-input-shell .profile-post-viewer-input::placeholder {
+    color: rgba(4,6,7,.45) !important;
+}
+
+body.theme-light .profile-post-viewer-round-btn,
+body[data-theme="light"] .profile-post-viewer-round-btn,
+html.theme-light .profile-post-viewer-round-btn,
+html[data-theme="light"] .profile-post-viewer-round-btn,
+body.light-theme .profile-post-viewer-round-btn {
+    background: #68C5DB !important;
+}
+
+body.theme-light .profile-post-viewer-action:not(.is-active):not(.is-reposted):not(.is-saved) img,
+body[data-theme="light"] .profile-post-viewer-action:not(.is-active):not(.is-reposted):not(.is-saved) img,
+html.theme-light .profile-post-viewer-action:not(.is-active):not(.is-reposted):not(.is-saved) img,
+html[data-theme="light"] .profile-post-viewer-action:not(.is-active):not(.is-reposted):not(.is-saved) img,
+body.light-theme .profile-post-viewer-action:not(.is-active):not(.is-reposted):not(.is-saved) img,
+body.theme-light .profile-viewer-comment-like:not(.is-active) img,
+body[data-theme="light"] .profile-viewer-comment-like:not(.is-active) img,
+html.theme-light .profile-viewer-comment-like:not(.is-active) img,
+html[data-theme="light"] .profile-viewer-comment-like:not(.is-active) img,
+body.light-theme .profile-viewer-comment-like:not(.is-active) img {
+    filter: none !important;
+}
+
+body.theme-light .profile-viewer-comment-replies,
+body[data-theme="light"] .profile-viewer-comment-replies,
+html.theme-light .profile-viewer-comment-replies,
+html[data-theme="light"] .profile-viewer-comment-replies,
+body.light-theme .profile-viewer-comment-replies {
+    border-left-color: rgba(4,6,7,.12) !important;
+}
+
+body.theme-light .profile-viewer-comment-menu-panel,
+body[data-theme="light"] .profile-viewer-comment-menu-panel,
+html.theme-light .profile-viewer-comment-menu-panel,
+html[data-theme="light"] .profile-viewer-comment-menu-panel,
+body.light-theme .profile-viewer-comment-menu-panel,
+body.theme-light .profile-post-viewer-emoji-picker,
+body[data-theme="light"] .profile-post-viewer-emoji-picker,
+html.theme-light .profile-post-viewer-emoji-picker,
+html[data-theme="light"] .profile-post-viewer-emoji-picker,
+body.light-theme .profile-post-viewer-emoji-picker {
+    border-color: rgba(4,6,7,.12) !important;
+    background: rgba(252,251,248,.98) !important;
+    box-shadow: 0 12px 28px rgba(4,6,7,.14) !important;
+    color: #040607 !important;
+}
+
+body.theme-light .profile-viewer-comment-edit,
+body.theme-light .profile-viewer-comment-edit:hover,
+body.theme-light .profile-viewer-comment-edit:focus-visible,
+body.theme-light .profile-viewer-comment-report,
+body.theme-light .profile-viewer-comment-report:hover,
+body.theme-light .profile-viewer-comment-report:focus-visible,
+body[data-theme="light"] .profile-viewer-comment-edit,
+body[data-theme="light"] .profile-viewer-comment-edit:hover,
+body[data-theme="light"] .profile-viewer-comment-edit:focus-visible,
+body[data-theme="light"] .profile-viewer-comment-report,
+body[data-theme="light"] .profile-viewer-comment-report:hover,
+body[data-theme="light"] .profile-viewer-comment-report:focus-visible,
+html.theme-light .profile-viewer-comment-edit,
+html.theme-light .profile-viewer-comment-edit:hover,
+html.theme-light .profile-viewer-comment-edit:focus-visible,
+html.theme-light .profile-viewer-comment-report,
+html.theme-light .profile-viewer-comment-report:hover,
+html.theme-light .profile-viewer-comment-report:focus-visible,
+html[data-theme="light"] .profile-viewer-comment-edit,
+html[data-theme="light"] .profile-viewer-comment-edit:hover,
+html[data-theme="light"] .profile-viewer-comment-edit:focus-visible,
+html[data-theme="light"] .profile-viewer-comment-report,
+html[data-theme="light"] .profile-viewer-comment-report:hover,
+html[data-theme="light"] .profile-viewer-comment-report:focus-visible,
+body.light-theme .profile-viewer-comment-edit,
+body.light-theme .profile-viewer-comment-edit:hover,
+body.light-theme .profile-viewer-comment-edit:focus-visible,
+body.light-theme .profile-viewer-comment-report,
+body.light-theme .profile-viewer-comment-report:hover,
+body.light-theme .profile-viewer-comment-report:focus-visible {
+    color: #040607 !important;
+}
+
+body.theme-light .profile-post-viewer-emoji-picker button:hover,
+body.theme-light .profile-post-viewer-emoji-picker button:focus-visible,
+body[data-theme="light"] .profile-post-viewer-emoji-picker button:hover,
+body[data-theme="light"] .profile-post-viewer-emoji-picker button:focus-visible,
+html.theme-light .profile-post-viewer-emoji-picker button:hover,
+html.theme-light .profile-post-viewer-emoji-picker button:focus-visible,
+html[data-theme="light"] .profile-post-viewer-emoji-picker button:hover,
+html[data-theme="light"] .profile-post-viewer-emoji-picker button:focus-visible,
+body.light-theme .profile-post-viewer-emoji-picker button:hover,
+body.light-theme .profile-post-viewer-emoji-picker button:focus-visible {
+    background: rgba(4,6,7,.08) !important;
+}
+
+body.theme-light .profile-post-viewer-attachment-preview,
+body[data-theme="light"] .profile-post-viewer-attachment-preview,
+html.theme-light .profile-post-viewer-attachment-preview,
+html[data-theme="light"] .profile-post-viewer-attachment-preview,
+body.light-theme .profile-post-viewer-attachment-preview {
+    background: rgba(4,6,7,.06) !important;
+    box-shadow: 0 0 0 1px rgba(4,6,7,.12) !important;
+}
+
+body.theme-light .profile-post-viewer-attachment-preview button,
+body[data-theme="light"] .profile-post-viewer-attachment-preview button,
+html.theme-light .profile-post-viewer-attachment-preview button,
+html[data-theme="light"] .profile-post-viewer-attachment-preview button,
+body.light-theme .profile-post-viewer-attachment-preview button {
+    background: rgba(252,251,248,.92) !important;
+    color: #040607 !important;
+}
+
+/* Publication modal attachment/emoji icons: support every active theme marker. */
+.profile-post-viewer-round-btn .icon-dark {
+    display: block !important;
+}
+
+.profile-post-viewer-round-btn .icon-light {
+    display: none !important;
+}
+
+body.theme-light .profile-post-viewer-round-btn .icon-dark,
+body[data-theme="light"] .profile-post-viewer-round-btn .icon-dark,
+html.theme-light .profile-post-viewer-round-btn .icon-dark,
+html[data-theme="light"] .profile-post-viewer-round-btn .icon-dark,
+body.light-theme .profile-post-viewer-round-btn .icon-dark {
+    display: none !important;
+}
+
+body.theme-light .profile-post-viewer-round-btn .icon-light,
+body[data-theme="light"] .profile-post-viewer-round-btn .icon-light,
+html.theme-light .profile-post-viewer-round-btn .icon-light,
+html[data-theme="light"] .profile-post-viewer-round-btn .icon-light,
+body.light-theme .profile-post-viewer-round-btn .icon-light {
+    display: block !important;
+}
+
+.profile-post-viewer-round-btn img.icon-dark,
+.profile-post-viewer-round-btn img.icon-light {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    flex: 0 0 20px !important;
+    object-fit: contain !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Light theme profile pages: keep dark profile styling untouched. */
+html.theme-light body[data-page="profile"],
+html[data-theme="light"] body[data-page="profile"],
+body.theme-light[data-page="profile"],
+body[data-theme="light"][data-page="profile"] {
+    background: #FCFBF8 !important;
+    background-color: #FCFBF8 !important;
+    color: #040607 !important;
+}
+
+html.theme-light body[data-page="profile"] main,
+html.theme-light body[data-page="profile"] .profile-page,
+html.theme-light body[data-page="profile"] .profile-hero,
+html.theme-light body[data-page="profile"] .profile-summary,
+html.theme-light body[data-page="profile"] .profile-tabs-line,
+html.theme-light body[data-page="profile"] .profile-post-tabs.home-feed-tabs,
+html.theme-light body[data-page="profile"] .profile-posts,
+html.theme-light body[data-page="profile"] .profile-posts-stream,
+html.theme-light body[data-page="profile"] .profile-media-grid,
+html.theme-light body[data-page="profile"] [data-profile-tab-panel],
+html[data-theme="light"] body[data-page="profile"] main,
+html[data-theme="light"] body[data-page="profile"] .profile-page,
+html[data-theme="light"] body[data-page="profile"] .profile-hero,
+html[data-theme="light"] body[data-page="profile"] .profile-summary,
+html[data-theme="light"] body[data-page="profile"] .profile-tabs-line,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tabs.home-feed-tabs,
+html[data-theme="light"] body[data-page="profile"] .profile-posts,
+html[data-theme="light"] body[data-page="profile"] .profile-posts-stream,
+html[data-theme="light"] body[data-page="profile"] .profile-media-grid,
+html[data-theme="light"] body[data-page="profile"] [data-profile-tab-panel],
+body.theme-light[data-page="profile"] main,
+body.theme-light[data-page="profile"] .profile-page,
+body.theme-light[data-page="profile"] .profile-hero,
+body.theme-light[data-page="profile"] .profile-summary,
+body.theme-light[data-page="profile"] .profile-tabs-line,
+body.theme-light[data-page="profile"] .profile-post-tabs.home-feed-tabs,
+body.theme-light[data-page="profile"] .profile-posts,
+body.theme-light[data-page="profile"] .profile-posts-stream,
+body.theme-light[data-page="profile"] .profile-media-grid,
+body.theme-light[data-page="profile"] [data-profile-tab-panel],
+body[data-theme="light"][data-page="profile"] main,
+body[data-theme="light"][data-page="profile"] .profile-page,
+body[data-theme="light"][data-page="profile"] .profile-hero,
+body[data-theme="light"][data-page="profile"] .profile-summary,
+body[data-theme="light"][data-page="profile"] .profile-tabs-line,
+body[data-theme="light"][data-page="profile"] .profile-post-tabs.home-feed-tabs,
+body[data-theme="light"][data-page="profile"] .profile-posts,
+body[data-theme="light"][data-page="profile"] .profile-posts-stream,
+body[data-theme="light"][data-page="profile"] .profile-media-grid,
+body[data-theme="light"][data-page="profile"] [data-profile-tab-panel] {
+    background: #FCFBF8 !important;
+    background-color: #FCFBF8 !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    color: #040607 !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-cover,
+html[data-theme="light"] body[data-page="profile"] .profile-cover,
+body.theme-light[data-page="profile"] .profile-cover,
+body[data-theme="light"][data-page="profile"] .profile-cover {
+    background-color: #FCFBF8 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-cover:not(.has-image),
+html[data-theme="light"] body[data-page="profile"] .profile-cover:not(.has-image),
+body.theme-light[data-page="profile"] .profile-cover:not(.has-image),
+body[data-theme="light"][data-page="profile"] .profile-cover:not(.has-image) {
+    background-image: linear-gradient(160deg, #EAF8FB 0%, #FCFBF8 100%);
+}
+
+html.theme-light body[data-page="profile"] .profile-cover.has-image,
+html[data-theme="light"] body[data-page="profile"] .profile-cover.has-image,
+body.theme-light[data-page="profile"] .profile-cover.has-image,
+body[data-theme="light"][data-page="profile"] .profile-cover.has-image {
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-cover::after,
+html[data-theme="light"] body[data-page="profile"] .profile-cover::after,
+body.theme-light[data-page="profile"] .profile-cover::after,
+body[data-theme="light"][data-page="profile"] .profile-cover::after {
+    background: linear-gradient(to bottom, rgba(252,251,248,0), #FCFBF8) !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-header,
+html[data-theme="light"] body[data-page="profile"] .profile-header,
+body.theme-light[data-page="profile"] .profile-header,
+body[data-theme="light"][data-page="profile"] .profile-header {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #040607 !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-avatar,
+html[data-theme="light"] body[data-page="profile"] .profile-avatar,
+body.theme-light[data-page="profile"] .profile-avatar,
+body[data-theme="light"][data-page="profile"] .profile-avatar {
+    border-color: #FCFBF8 !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-username,
+html.theme-light body[data-page="profile"] .profile-bio,
+html.theme-light body[data-page="profile"] .profile-metrics,
+html.theme-light body[data-page="profile"] .profile-metrics strong,
+html.theme-light body[data-page="profile"] .profile-metrics span,
+html.theme-light body[data-page="profile"] .profile-metric-inline-link,
+html[data-theme="light"] body[data-page="profile"] .profile-username,
+html[data-theme="light"] body[data-page="profile"] .profile-bio,
+html[data-theme="light"] body[data-page="profile"] .profile-metrics,
+html[data-theme="light"] body[data-page="profile"] .profile-metrics strong,
+html[data-theme="light"] body[data-page="profile"] .profile-metrics span,
+html[data-theme="light"] body[data-page="profile"] .profile-metric-inline-link,
+body.theme-light[data-page="profile"] .profile-username,
+body.theme-light[data-page="profile"] .profile-bio,
+body.theme-light[data-page="profile"] .profile-metrics,
+body.theme-light[data-page="profile"] .profile-metrics strong,
+body.theme-light[data-page="profile"] .profile-metrics span,
+body.theme-light[data-page="profile"] .profile-metric-inline-link,
+body[data-theme="light"][data-page="profile"] .profile-username,
+body[data-theme="light"][data-page="profile"] .profile-bio,
+body[data-theme="light"][data-page="profile"] .profile-metrics,
+body[data-theme="light"][data-page="profile"] .profile-metrics strong,
+body[data-theme="light"][data-page="profile"] .profile-metrics span,
+body[data-theme="light"][data-page="profile"] .profile-metric-inline-link {
+    color: #040607 !important;
+    text-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-post-tab.home-feed-tab,
+html.theme-light body[data-page="profile"] .profile-post-tab.home-feed-tab:hover,
+html.theme-light body[data-page="profile"] .profile-post-tab.home-feed-tab:focus-visible,
+html.theme-light body[data-page="profile"] .profile-post-tab.home-feed-tab.is-active,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tab.home-feed-tab,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tab.home-feed-tab:hover,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tab.home-feed-tab:focus-visible,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tab.home-feed-tab.is-active,
+body.theme-light[data-page="profile"] .profile-post-tab.home-feed-tab,
+body.theme-light[data-page="profile"] .profile-post-tab.home-feed-tab:hover,
+body.theme-light[data-page="profile"] .profile-post-tab.home-feed-tab:focus-visible,
+body.theme-light[data-page="profile"] .profile-post-tab.home-feed-tab.is-active,
+body[data-theme="light"][data-page="profile"] .profile-post-tab.home-feed-tab,
+body[data-theme="light"][data-page="profile"] .profile-post-tab.home-feed-tab:hover,
+body[data-theme="light"][data-page="profile"] .profile-post-tab.home-feed-tab:focus-visible,
+body[data-theme="light"][data-page="profile"] .profile-post-tab.home-feed-tab.is-active {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #040607 !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-post-tab.is-active::before,
+html[data-theme="light"] body[data-page="profile"] .profile-post-tab.is-active::before,
+body.theme-light[data-page="profile"] .profile-post-tab.is-active::before,
+body[data-theme="light"][data-page="profile"] .profile-post-tab.is-active::before {
+    background: #68C5DB !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-media-grid .post-card,
+html.theme-light body[data-page="profile"] [data-profile-tab-panel] .post-card,
+html[data-theme="light"] body[data-page="profile"] .profile-media-grid .post-card,
+html[data-theme="light"] body[data-page="profile"] [data-profile-tab-panel] .post-card,
+body.theme-light[data-page="profile"] .profile-media-grid .post-card,
+body.theme-light[data-page="profile"] [data-profile-tab-panel] .post-card,
+body[data-theme="light"][data-page="profile"] .profile-media-grid .post-card,
+body[data-theme="light"][data-page="profile"] [data-profile-tab-panel] .post-card {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-media-grid .post-card-media,
+html.theme-light body[data-page="profile"] [data-profile-tab-panel] .post-card-media,
+html[data-theme="light"] body[data-page="profile"] .profile-media-grid .post-card-media,
+html[data-theme="light"] body[data-page="profile"] [data-profile-tab-panel] .post-card-media,
+body.theme-light[data-page="profile"] .profile-media-grid .post-card-media,
+body.theme-light[data-page="profile"] [data-profile-tab-panel] .post-card-media,
+body[data-theme="light"][data-page="profile"] .profile-media-grid .post-card-media,
+body[data-theme="light"][data-page="profile"] [data-profile-tab-panel] .post-card-media {
+    background-color: #FCFBF8 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .post-type-badge,
+html[data-theme="light"] body[data-page="profile"] .post-type-badge,
+body.theme-light[data-page="profile"] .post-type-badge,
+body[data-theme="light"][data-page="profile"] .post-type-badge {
+    background: rgba(252,251,248,.92) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .post-type-badge img,
+html[data-theme="light"] body[data-page="profile"] .post-type-badge img,
+body.theme-light[data-page="profile"] .post-type-badge img,
+body[data-theme="light"][data-page="profile"] .post-type-badge img {
+    filter: none !important;
+}
+
+/* Light theme own-profile plus button: remove the extra outer ring only. */
+html.theme-light body[data-page="profile"] .profile-create-btn,
+html[data-theme="light"] body[data-page="profile"] .profile-create-btn,
+body.theme-light[data-page="profile"] .profile-create-btn,
+body[data-theme="light"][data-page="profile"] .profile-create-btn {
+    background: #68C5DB !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-create-btn:hover,
+html.theme-light body[data-page="profile"] .profile-create-btn:focus-visible,
+html[data-theme="light"] body[data-page="profile"] .profile-create-btn:hover,
+html[data-theme="light"] body[data-page="profile"] .profile-create-btn:focus-visible,
+body.theme-light[data-page="profile"] .profile-create-btn:hover,
+body.theme-light[data-page="profile"] .profile-create-btn:focus-visible,
+body[data-theme="light"][data-page="profile"] .profile-create-btn:hover,
+body[data-theme="light"][data-page="profile"] .profile-create-btn:focus-visible {
+    box-shadow: none !important;
+    outline: 0 !important;
+    filter: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-create-btn::before,
+html.theme-light body[data-page="profile"] .profile-create-btn::after,
+html[data-theme="light"] body[data-page="profile"] .profile-create-btn::before,
+html[data-theme="light"] body[data-page="profile"] .profile-create-btn::after,
+body.theme-light[data-page="profile"] .profile-create-btn::before,
+body.theme-light[data-page="profile"] .profile-create-btn::after,
+body[data-theme="light"][data-page="profile"] .profile-create-btn::before,
+body[data-theme="light"][data-page="profile"] .profile-create-btn::after {
+    background: #040607 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    filter: none !important;
+}
+
+/* Unified publication type badge: white circle with dark image/video icon. */
+body[data-page="home"] .feed-card-media .post-type-badge,
+body[data-page="home"] .feed-card:hover .post-type-badge,
+body[data-page="home"] .feed-card:focus-within .post-type-badge,
+body[data-page="profile"] .post-type-badge,
+body[data-page="profile"] .post-card:hover .post-type-badge,
+body[data-page="profile"] .post-card:focus-within .post-type-badge {
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 8 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+}
+
+body[data-page="home"] .feed-card-media .post-type-badge img,
+body[data-page="profile"] .post-type-badge img {
+    display: block !important;
+    width: 24px !important;
+    height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+    object-fit: contain !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }

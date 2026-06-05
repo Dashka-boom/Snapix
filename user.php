@@ -306,7 +306,7 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                 <?php endif; ?>
 
                 <span class="post-type-badge" aria-label="<?php echo (($post['media_type'] ?? '') === 'video') ? 'Видео' : 'Фото'; ?>">
-                    <img src="icon/dark theme/<?php echo (($post['media_type'] ?? '') === 'video') ? 'video' : 'images'; ?>.png" alt="">
+                    <img src="icon/light theme/<?php echo (($post['media_type'] ?? '') === 'video') ? 'video' : 'images'; ?>.png" alt="">
                 </span>
 
                 <div class="post-hover-overlay" aria-hidden="true">
@@ -1219,9 +1219,6 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                 <a href="connections.php?view=followers&user_id=<?php echo (int) $profileUser['id']; ?>" class="profile-metric-inline-link"><strong><?php echo $followersCount; ?></strong> смотрители</a>
                                 <a href="connections.php?view=following&user_id=<?php echo (int) $profileUser['id']; ?>" class="profile-metric-inline-link"><strong><?php echo $followingCount; ?></strong> смотримые</a>
                             </div>
-                            <?php if ($currentUser): ?>
-                                <a href="chat.php?user_id=<?php echo (int) $profileUser['id']; ?>" class="profile-create-btn" aria-label="Написать сообщение">+</a>
-                            <?php endif; ?>
                         </div>
 
                         <div class="profile-actions">
