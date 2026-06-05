@@ -1,6 +1,7 @@
 <?php
 session_start();
 require './config/config.php';
+require_once './includes/side-menu.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -108,15 +109,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/index.css">
+    <link rel="icon" href="icon/light theme/logo.png" type="image/png">
     <title>Snapix</title>
 </head>
-<body data-page="create-post">
-    <header class="profile-sticky-nav">
-        <div class="profile-nav-inner">
-            <a href="profile.php" class="profile-nav-back" aria-label="Назад в профиль">←</a>
-            <div class="profile-nav-title">Новая публикация</div>
-        </div>
-    </header>
+<body data-page="create-post" class="has-side-menu">
+    <?php render_side_menu($user); ?>
+
+    <div class="page-glass-nav" aria-hidden="true"></div>
 
     <main class="create-post-page">
         <section class="create-post-card card-surface">

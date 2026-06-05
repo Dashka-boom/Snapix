@@ -1,8 +1,19 @@
 <?php
 session_start();
 require './config/config.php';
+require_once './includes/side-menu.php';
 
 if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+$viewerStmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id LIMIT 1');
+$viewerStmt->execute(['id' => $_SESSION['user_id']]);
+$viewer = $viewerStmt->fetch();
+
+if (!$viewer) {
+    session_destroy();
     header('Location: login.php');
     exit;
 }
@@ -54,9 +65,14 @@ $reposts = $repostsStmt->fetchAll();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/index.css">
+    <link rel="icon" href="icon/light theme/logo.png" type="image/png">
     <title>Snapix</title>
 </head>
-<body>
+<body class="has-side-menu">
+    <?php render_side_menu($viewer); ?>
+
+    <div class="page-glass-nav" aria-hidden="true"></div>
+
     <main class="profile-page">
         <section class="profile-posts card-surface">
             <div class="section-heading">

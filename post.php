@@ -1,6 +1,7 @@
 <?php
 session_start();
 require './config/config.php';
+require_once './includes/side-menu.php';
 
 $currentUser = null;
 if (isset($_SESSION['user_id'])) {
@@ -45,29 +46,13 @@ if (!$post) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/index.css">
+    <link rel="icon" href="icon/light theme/logo.png" type="image/png">
     <title>Snapix</title>
 </head>
-<body data-page="post">
-    <header class="header">
-        <nav class="nav">
-            <a href="index.php" class="logo">Snapix</a>
-            <input type="text" class="search" placeholder="Поиск" disabled>
-            <div class="menu">
-                <a href="index.php">Лента</a>
-                <?php if ($currentUser): ?>
-                    <a href="profile.php" class="user-avatar-link" aria-label="Открыть профиль">
-                        <?php if (!empty($currentUser['avatar'])): ?>
-                            <span class="user-avatar" style="background-image: url('<?php echo htmlspecialchars($currentUser['avatar']); ?>');"></span>
-                        <?php else: ?>
-                            <span class="user-avatar"><?php echo htmlspecialchars(mb_substr($currentUser['login'], 0, 1)); ?></span>
-                        <?php endif; ?>
-                    </a>
-                <?php else: ?>
-                    <a href="login.php">Войти</a>
-                <?php endif; ?>
-            </div>
-        </nav>
-    </header>
+<body data-page="post" class="has-side-menu">
+    <?php render_side_menu($currentUser); ?>
+
+    <div class="page-glass-nav" aria-hidden="true"></div>
 
     <main>
         <section class="feed-wrap">
