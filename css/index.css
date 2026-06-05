@@ -8138,3 +8138,15 @@ body[data-theme="light"][data-page="profile"] .post-type-badge img[src*="video.p
     content: url("../icon/light theme/video.png") !important;
     filter: none !important;
 }
+
+/* Home page dark theme hover icons: remove the extra light filter glow. */
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img {
+    filter: none !important;
+}
+
+html.theme-light body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img,
+body.theme-light[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img {
+    filter: none !important;
+}
