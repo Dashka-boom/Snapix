@@ -4234,10 +4234,10 @@ body[data-theme="light"] .section-heading {
 }
 
 body.theme-light .feed-card,
-body.theme-light .card-surface,
+body.theme-light .card-surface:not(.profile-cover),
 body.theme-light .post-card,
 body[data-theme="light"] .feed-card,
-body[data-theme="light"] .card-surface,
+body[data-theme="light"] .card-surface:not(.profile-cover),
 body[data-theme="light"] .post-card {
     background: #FFFDF8 !important;
     border-color: rgba(31, 41, 55, 0.14) !important;
@@ -7835,9 +7835,15 @@ html[data-theme="light"] body[data-page="profile"] .profile-cover,
 body.theme-light[data-page="profile"] .profile-cover,
 body[data-theme="light"][data-page="profile"] .profile-cover {
     background-color: #FCFBF8 !important;
-    background-image: linear-gradient(160deg, #EAF8FB 0%, #FCFBF8 100%);
     border: 0 !important;
     box-shadow: none !important;
+}
+
+html.theme-light body[data-page="profile"] .profile-cover:not(.has-image),
+html[data-theme="light"] body[data-page="profile"] .profile-cover:not(.has-image),
+body.theme-light[data-page="profile"] .profile-cover:not(.has-image),
+body[data-theme="light"][data-page="profile"] .profile-cover:not(.has-image) {
+    background-image: linear-gradient(160deg, #EAF8FB 0%, #FCFBF8 100%);
 }
 
 html.theme-light body[data-page="profile"] .profile-cover.has-image,
@@ -8012,7 +8018,7 @@ body[data-theme="light"][data-page="profile"] .profile-create-btn::after {
     filter: none !important;
 }
 
-/* Unified publication type badge: white circle with dark image/video icon. */
+/* Unified publication type badge: dark in dark theme, white in light theme. */
 body[data-page="home"] .feed-card-media .post-type-badge,
 body[data-page="home"] .feed-card:hover .post-type-badge,
 body[data-page="home"] .feed-card:focus-within .post-type-badge,
@@ -8025,8 +8031,8 @@ body[data-page="profile"] .post-card:focus-within .post-type-badge {
     width: 48px !important;
     height: 48px !important;
     border-radius: 50% !important;
-    background: #ffffff !important;
-    background-color: #ffffff !important;
+    background: rgba(4, 6, 7, 0.72) !important;
+    background-color: rgba(4, 6, 7, 0.72) !important;
     background-image: none !important;
     border: 0 !important;
     box-shadow: none !important;
@@ -8052,7 +8058,386 @@ body[data-page="profile"] .post-type-badge img {
     background-color: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
-    filter: none !important;
+    filter: brightness(0) invert(1) !important;
     opacity: 1 !important;
     visibility: visible !important;
+}
+
+html.theme-light body[data-page="home"] .feed-card-media .post-type-badge,
+html.theme-light body[data-page="home"] .feed-card:hover .post-type-badge,
+html.theme-light body[data-page="home"] .feed-card:focus-within .post-type-badge,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-type-badge,
+html[data-theme="light"] body[data-page="home"] .feed-card:hover .post-type-badge,
+html[data-theme="light"] body[data-page="home"] .feed-card:focus-within .post-type-badge,
+body.theme-light[data-page="home"] .feed-card-media .post-type-badge,
+body.theme-light[data-page="home"] .feed-card:hover .post-type-badge,
+body.theme-light[data-page="home"] .feed-card:focus-within .post-type-badge,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-type-badge,
+body[data-theme="light"][data-page="home"] .feed-card:hover .post-type-badge,
+body[data-theme="light"][data-page="home"] .feed-card:focus-within .post-type-badge,
+html.theme-light body[data-page="profile"] .post-type-badge,
+html.theme-light body[data-page="profile"] .post-card:hover .post-type-badge,
+html.theme-light body[data-page="profile"] .post-card:focus-within .post-type-badge,
+html[data-theme="light"] body[data-page="profile"] .post-type-badge,
+html[data-theme="light"] body[data-page="profile"] .post-card:hover .post-type-badge,
+html[data-theme="light"] body[data-page="profile"] .post-card:focus-within .post-type-badge,
+body.theme-light[data-page="profile"] .post-type-badge,
+body.theme-light[data-page="profile"] .post-card:hover .post-type-badge,
+body.theme-light[data-page="profile"] .post-card:focus-within .post-type-badge,
+body[data-theme="light"][data-page="profile"] .post-type-badge,
+body[data-theme="light"][data-page="profile"] .post-card:hover .post-type-badge,
+body[data-theme="light"][data-page="profile"] .post-card:focus-within .post-type-badge {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+}
+
+html.theme-light body[data-page="home"] .feed-card-media .post-type-badge img,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-type-badge img,
+body.theme-light[data-page="home"] .feed-card-media .post-type-badge img,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-type-badge img,
+html.theme-light body[data-page="profile"] .post-type-badge img,
+html[data-theme="light"] body[data-page="profile"] .post-type-badge img,
+body.theme-light[data-page="profile"] .post-type-badge img,
+body[data-theme="light"][data-page="profile"] .post-type-badge img {
+    filter: none !important;
+}
+
+/* Dark theme publication type icons: use native white assets without light filter glow. */
+body[data-page="home"] .home-post-type-image-icon,
+body[data-page="profile"] .post-type-badge img[src*="images.png"] {
+    content: url("../icon/dark theme/images.png") !important;
+    filter: none !important;
+}
+
+body[data-page="home"] .home-post-type-video-icon,
+body[data-page="profile"] .post-type-badge img[src*="video.png"] {
+    content: url("../icon/dark theme/video.png") !important;
+    filter: none !important;
+}
+
+html.theme-light body[data-page="home"] .home-post-type-image-icon,
+html[data-theme="light"] body[data-page="home"] .home-post-type-image-icon,
+body.theme-light[data-page="home"] .home-post-type-image-icon,
+body[data-theme="light"][data-page="home"] .home-post-type-image-icon,
+html.theme-light body[data-page="profile"] .post-type-badge img[src*="images.png"],
+html[data-theme="light"] body[data-page="profile"] .post-type-badge img[src*="images.png"],
+body.theme-light[data-page="profile"] .post-type-badge img[src*="images.png"],
+body[data-theme="light"][data-page="profile"] .post-type-badge img[src*="images.png"] {
+    content: url("../icon/light theme/images.png") !important;
+    filter: none !important;
+}
+
+html.theme-light body[data-page="home"] .home-post-type-video-icon,
+html[data-theme="light"] body[data-page="home"] .home-post-type-video-icon,
+body.theme-light[data-page="home"] .home-post-type-video-icon,
+body[data-theme="light"][data-page="home"] .home-post-type-video-icon,
+html.theme-light body[data-page="profile"] .post-type-badge img[src*="video.png"],
+html[data-theme="light"] body[data-page="profile"] .post-type-badge img[src*="video.png"],
+body.theme-light[data-page="profile"] .post-type-badge img[src*="video.png"],
+body[data-theme="light"][data-page="profile"] .post-type-badge img[src*="video.png"] {
+    content: url("../icon/light theme/video.png") !important;
+    filter: none !important;
+}
+
+/* Home page dark theme hover icons: remove the extra light filter glow. */
+body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img {
+    filter: none !important;
+}
+
+html.theme-light body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img,
+body.theme-light[data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img {
+    filter: none !important;
+}
+
+/* Home dark theme post-type badge icons: no light-theme glow or inversion. */
+body[data-page="home"] .feed-card-media .post-type-badge .home-post-type-icon {
+    filter: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* Home light theme hover actions: keep like/repost/save icons white on publication hover. */
+html.theme-light body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-like-icon,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-like-icon,
+body.theme-light[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-like-icon,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-hover-overlay .home-hover-like-icon {
+    content: url("../icon/dark theme/like.png") !important;
+}
+
+html.theme-light body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-repost-icon,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-repost-icon,
+body.theme-light[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-repost-icon,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-hover-overlay .home-hover-repost-icon {
+    content: url("../icon/dark theme/repost.png") !important;
+}
+
+html.theme-light body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-save-icon,
+html[data-theme="light"] body[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-save-icon,
+body.theme-light[data-page="home"] .feed-card-media .post-hover-overlay .home-hover-save-icon,
+body[data-theme="light"][data-page="home"] .feed-card-media .post-hover-overlay .home-hover-save-icon {
+    content: url("../icon/dark theme/favourites.png") !important;
+}
+
+/* Light theme notifications drawer: keep dark theme defaults unchanged. */
+html.theme-light .notifications-drawer,
+html[data-theme="light"] .notifications-drawer,
+body.theme-light .notifications-drawer,
+body[data-theme="light"] .notifications-drawer,
+body.light-theme .notifications-drawer,
+html.theme-light .notifications-drawer-tabs,
+html[data-theme="light"] .notifications-drawer-tabs,
+body.theme-light .notifications-drawer-tabs,
+body[data-theme="light"] .notifications-drawer-tabs,
+body.light-theme .notifications-drawer-tabs,
+html.theme-light .notifications-drawer-body,
+html[data-theme="light"] .notifications-drawer-body,
+body.theme-light .notifications-drawer-body,
+body[data-theme="light"] .notifications-drawer-body,
+body.light-theme .notifications-drawer-body,
+html.theme-light .notifications-drawer-panel,
+html[data-theme="light"] .notifications-drawer-panel,
+body.theme-light .notifications-drawer-panel,
+body[data-theme="light"] .notifications-drawer-panel,
+body.light-theme .notifications-drawer-panel,
+html.theme-light .notifications-drawer-list,
+html[data-theme="light"] .notifications-drawer-list,
+body.theme-light .notifications-drawer-list,
+body[data-theme="light"] .notifications-drawer-list,
+body.light-theme .notifications-drawer-list {
+    background: #FCFBF8 !important;
+    background-color: #FCFBF8 !important;
+    color: #040607 !important;
+}
+
+html.theme-light .notifications-drawer,
+html[data-theme="light"] .notifications-drawer,
+body.theme-light .notifications-drawer,
+body[data-theme="light"] .notifications-drawer,
+body.light-theme .notifications-drawer {
+    border-color: rgba(4,6,7,.08) !important;
+    box-shadow: 26px 0 70px rgba(4,6,7,.14) !important;
+}
+
+html.theme-light .notifications-drawer-header h2,
+html[data-theme="light"] .notifications-drawer-header h2,
+body.theme-light .notifications-drawer-header h2,
+body[data-theme="light"] .notifications-drawer-header h2,
+body.light-theme .notifications-drawer-header h2,
+html.theme-light .notifications-drawer-title,
+html[data-theme="light"] .notifications-drawer-title,
+body.theme-light .notifications-drawer-title,
+body[data-theme="light"] .notifications-drawer-title,
+body.light-theme .notifications-drawer-title,
+html.theme-light .notifications-drawer-login,
+html[data-theme="light"] .notifications-drawer-login,
+body.theme-light .notifications-drawer-login,
+body[data-theme="light"] .notifications-drawer-login,
+body.light-theme .notifications-drawer-login {
+    color: #040607 !important;
+}
+
+html.theme-light .notifications-drawer-tabs,
+html[data-theme="light"] .notifications-drawer-tabs,
+body.theme-light .notifications-drawer-tabs,
+body[data-theme="light"] .notifications-drawer-tabs,
+body.light-theme .notifications-drawer-tabs {
+    border-bottom-color: rgba(4,6,7,.12) !important;
+}
+
+html.theme-light .notifications-drawer-tab,
+html.theme-light .notifications-drawer-tab:hover,
+html.theme-light .notifications-drawer-tab:focus-visible,
+html.theme-light .notifications-drawer-tab.is-active,
+html[data-theme="light"] .notifications-drawer-tab,
+html[data-theme="light"] .notifications-drawer-tab:hover,
+html[data-theme="light"] .notifications-drawer-tab:focus-visible,
+html[data-theme="light"] .notifications-drawer-tab.is-active,
+body.theme-light .notifications-drawer-tab,
+body.theme-light .notifications-drawer-tab:hover,
+body.theme-light .notifications-drawer-tab:focus-visible,
+body.theme-light .notifications-drawer-tab.is-active,
+body[data-theme="light"] .notifications-drawer-tab,
+body[data-theme="light"] .notifications-drawer-tab:hover,
+body[data-theme="light"] .notifications-drawer-tab:focus-visible,
+body[data-theme="light"] .notifications-drawer-tab.is-active,
+body.light-theme .notifications-drawer-tab,
+body.light-theme .notifications-drawer-tab:hover,
+body.light-theme .notifications-drawer-tab:focus-visible,
+body.light-theme .notifications-drawer-tab.is-active {
+    background: transparent !important;
+    color: #040607 !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
+html.theme-light .notifications-drawer-tab-indicator,
+html[data-theme="light"] .notifications-drawer-tab-indicator,
+body.theme-light .notifications-drawer-tab-indicator,
+body[data-theme="light"] .notifications-drawer-tab-indicator,
+body.light-theme .notifications-drawer-tab-indicator {
+    background: #68C5DB !important;
+}
+
+html.theme-light .notifications-drawer-item,
+html[data-theme="light"] .notifications-drawer-item,
+body.theme-light .notifications-drawer-item,
+body[data-theme="light"] .notifications-drawer-item,
+body.light-theme .notifications-drawer-item,
+html.theme-light .notifications-drawer-empty,
+html[data-theme="light"] .notifications-drawer-empty,
+body.theme-light .notifications-drawer-empty,
+body[data-theme="light"] .notifications-drawer-empty,
+body.light-theme .notifications-drawer-empty {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    border: 1px solid rgba(4,6,7,.08) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06) !important;
+    color: #040607 !important;
+}
+
+html.theme-light .notifications-drawer-copy p,
+html[data-theme="light"] .notifications-drawer-copy p,
+body.theme-light .notifications-drawer-copy p,
+body[data-theme="light"] .notifications-drawer-copy p,
+body.light-theme .notifications-drawer-copy p,
+html.theme-light .notifications-drawer-context,
+html[data-theme="light"] .notifications-drawer-context,
+body.theme-light .notifications-drawer-context,
+body[data-theme="light"] .notifications-drawer-context,
+body.light-theme .notifications-drawer-context {
+    color: rgba(4,6,7,.65) !important;
+}
+
+html.theme-light .notifications-drawer-empty,
+html[data-theme="light"] .notifications-drawer-empty,
+body.theme-light .notifications-drawer-empty,
+body[data-theme="light"] .notifications-drawer-empty,
+body.light-theme .notifications-drawer-empty {
+    color: #040607 !important;
+}
+
+html.theme-light .notifications-drawer-date,
+html[data-theme="light"] .notifications-drawer-date,
+body.theme-light .notifications-drawer-date,
+body[data-theme="light"] .notifications-drawer-date,
+body.light-theme .notifications-drawer-date {
+    color: rgba(4,6,7,.55) !important;
+}
+
+html.theme-light .notifications-drawer-link,
+html.theme-light .notifications-drawer-login:hover,
+html.theme-light .notifications-drawer-login:focus-visible,
+html[data-theme="light"] .notifications-drawer-link,
+html[data-theme="light"] .notifications-drawer-login:hover,
+html[data-theme="light"] .notifications-drawer-login:focus-visible,
+body.theme-light .notifications-drawer-link,
+body.theme-light .notifications-drawer-login:hover,
+body.theme-light .notifications-drawer-login:focus-visible,
+body[data-theme="light"] .notifications-drawer-link,
+body[data-theme="light"] .notifications-drawer-login:hover,
+body[data-theme="light"] .notifications-drawer-login:focus-visible,
+body.light-theme .notifications-drawer-link,
+body.light-theme .notifications-drawer-login:hover,
+body.light-theme .notifications-drawer-login:focus-visible {
+    color: #68C5DB !important;
+}
+
+html.theme-light .notifications-drawer-context,
+html[data-theme="light"] .notifications-drawer-context,
+body.theme-light .notifications-drawer-context,
+body[data-theme="light"] .notifications-drawer-context,
+body.light-theme .notifications-drawer-context {
+    background: rgba(104,197,219,.10) !important;
+    border-left-color: #68C5DB !important;
+}
+
+html.theme-light .notifications-drawer-close,
+html.theme-light .notifications-drawer-close:hover,
+html.theme-light .notifications-drawer-close:focus-visible,
+html[data-theme="light"] .notifications-drawer-close,
+html[data-theme="light"] .notifications-drawer-close:hover,
+html[data-theme="light"] .notifications-drawer-close:focus-visible,
+body.theme-light .notifications-drawer-close,
+body.theme-light .notifications-drawer-close:hover,
+body.theme-light .notifications-drawer-close:focus-visible,
+body[data-theme="light"] .notifications-drawer-close,
+body[data-theme="light"] .notifications-drawer-close:hover,
+body[data-theme="light"] .notifications-drawer-close:focus-visible,
+body.light-theme .notifications-drawer-close,
+body.light-theme .notifications-drawer-close:hover,
+body.light-theme .notifications-drawer-close:focus-visible {
+    background: #68C5DB !important;
+    border-color: #68C5DB !important;
+    color: #040607 !important;
+    filter: none !important;
+    box-shadow: none !important;
+}
+
+html.theme-light .notifications-drawer-avatar,
+html[data-theme="light"] .notifications-drawer-avatar,
+body.theme-light .notifications-drawer-avatar,
+body[data-theme="light"] .notifications-drawer-avatar,
+body.light-theme .notifications-drawer-avatar {
+    border-color: rgba(4,6,7,.08) !important;
+    color: #040607 !important;
+}
+
+/* Light theme account menu in the side navigation. */
+html.theme-light .side-menu-account-modal,
+html[data-theme="light"] .side-menu-account-modal,
+body.theme-light .side-menu-account-modal,
+body[data-theme="light"] .side-menu-account-modal,
+body.light-theme .side-menu-account-modal {
+    background: #FCFBF8 !important;
+    background-color: #FCFBF8 !important;
+    border: 1px solid rgba(4, 6, 7, 0.12) !important;
+    box-shadow: 0 16px 36px rgba(4, 6, 7, 0.12) !important;
+    color: #040607 !important;
+}
+
+html.theme-light .side-menu-account-modal a,
+html[data-theme="light"] .side-menu-account-modal a,
+body.theme-light .side-menu-account-modal a,
+body[data-theme="light"] .side-menu-account-modal a,
+body.light-theme .side-menu-account-modal a {
+    color: #040607 !important;
+}
+
+html.theme-light .side-menu-account-modal a:hover,
+html.theme-light .side-menu-account-modal a:focus-visible,
+html[data-theme="light"] .side-menu-account-modal a:hover,
+html[data-theme="light"] .side-menu-account-modal a:focus-visible,
+body.theme-light .side-menu-account-modal a:hover,
+body.theme-light .side-menu-account-modal a:focus-visible,
+body[data-theme="light"] .side-menu-account-modal a:hover,
+body[data-theme="light"] .side-menu-account-modal a:focus-visible,
+body.light-theme .side-menu-account-modal a:hover,
+body.light-theme .side-menu-account-modal a:focus-visible {
+    background: rgba(104, 197, 219, 0.14) !important;
+    color: #040607 !important;
+    outline: none;
+}
+
+html.theme-light .side-menu-account-toggle,
+html[data-theme="light"] .side-menu-account-toggle,
+body.theme-light .side-menu-account-toggle,
+body[data-theme="light"] .side-menu-account-toggle,
+body.light-theme .side-menu-account-toggle {
+    color: #040607 !important;
+}
+
+html.theme-light .side-menu-account-toggle:hover,
+html.theme-light .side-menu-account-toggle:focus-visible,
+html[data-theme="light"] .side-menu-account-toggle:hover,
+html[data-theme="light"] .side-menu-account-toggle:focus-visible,
+body.theme-light .side-menu-account-toggle:hover,
+body.theme-light .side-menu-account-toggle:focus-visible,
+body[data-theme="light"] .side-menu-account-toggle:hover,
+body[data-theme="light"] .side-menu-account-toggle:focus-visible,
+body.light-theme .side-menu-account-toggle:hover,
+body.light-theme .side-menu-account-toggle:focus-visible {
+    background: rgba(104, 197, 219, 0.14) !important;
+    color: #040607 !important;
 }
