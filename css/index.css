@@ -8383,3 +8383,61 @@ body.light-theme .notifications-drawer-avatar {
     border-color: rgba(4,6,7,.08) !important;
     color: #040607 !important;
 }
+
+/* Light theme account menu in the side navigation. */
+html.theme-light .side-menu-account-modal,
+html[data-theme="light"] .side-menu-account-modal,
+body.theme-light .side-menu-account-modal,
+body[data-theme="light"] .side-menu-account-modal,
+body.light-theme .side-menu-account-modal {
+    background: #FCFBF8 !important;
+    background-color: #FCFBF8 !important;
+    border: 1px solid rgba(4, 6, 7, 0.12) !important;
+    box-shadow: 0 16px 36px rgba(4, 6, 7, 0.12) !important;
+    color: #040607 !important;
+}
+
+html.theme-light .side-menu-account-modal a,
+html[data-theme="light"] .side-menu-account-modal a,
+body.theme-light .side-menu-account-modal a,
+body[data-theme="light"] .side-menu-account-modal a,
+body.light-theme .side-menu-account-modal a {
+    color: #040607 !important;
+}
+
+html.theme-light .side-menu-account-modal a:hover,
+html.theme-light .side-menu-account-modal a:focus-visible,
+html[data-theme="light"] .side-menu-account-modal a:hover,
+html[data-theme="light"] .side-menu-account-modal a:focus-visible,
+body.theme-light .side-menu-account-modal a:hover,
+body.theme-light .side-menu-account-modal a:focus-visible,
+body[data-theme="light"] .side-menu-account-modal a:hover,
+body[data-theme="light"] .side-menu-account-modal a:focus-visible,
+body.light-theme .side-menu-account-modal a:hover,
+body.light-theme .side-menu-account-modal a:focus-visible {
+    background: rgba(104, 197, 219, 0.14) !important;
+    color: #040607 !important;
+    outline: none;
+}
+
+html.theme-light .side-menu-account-toggle,
+html[data-theme="light"] .side-menu-account-toggle,
+body.theme-light .side-menu-account-toggle,
+body[data-theme="light"] .side-menu-account-toggle,
+body.light-theme .side-menu-account-toggle {
+    color: #040607 !important;
+}
+
+html.theme-light .side-menu-account-toggle:hover,
+html.theme-light .side-menu-account-toggle:focus-visible,
+html[data-theme="light"] .side-menu-account-toggle:hover,
+html[data-theme="light"] .side-menu-account-toggle:focus-visible,
+body.theme-light .side-menu-account-toggle:hover,
+body.theme-light .side-menu-account-toggle:focus-visible,
+body[data-theme="light"] .side-menu-account-toggle:hover,
+body[data-theme="light"] .side-menu-account-toggle:focus-visible,
+body.light-theme .side-menu-account-toggle:hover,
+body.light-theme .side-menu-account-toggle:focus-visible {
+    background: rgba(104, 197, 219, 0.14) !important;
+    color: #040607 !important;
+}
