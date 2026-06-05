@@ -1128,7 +1128,7 @@ if ($feedPosts) {
 
                             <div class="feed-card-media">
                                 <span class="post-type-badge" aria-hidden="true">
-                                    <img class="home-post-type-icon <?php echo (($post['media_type'] ?? '') === 'video') ? 'home-post-type-video-icon' : 'home-post-type-image-icon'; ?>" src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/light theme/video.png' : 'icon/light theme/images.png'; ?>" alt="">
+                                    <img class="home-post-type-icon <?php echo (($post['media_type'] ?? '') === 'video') ? 'home-post-type-video-icon' : 'home-post-type-image-icon'; ?>" src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
                                 </span>
                                 <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                     <video controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>

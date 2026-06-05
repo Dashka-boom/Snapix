@@ -8150,3 +8150,10 @@ body.theme-light[data-page="home"] .feed-card-media .post-hover-overlay .profile
 body[data-theme="light"][data-page="home"] .feed-card-media .post-hover-overlay .profile-hover-action-btn:not(.is-active):not(.is-reposted):not(.is-saved) img {
     filter: none !important;
 }
+
+/* Home dark theme post-type badge icons: no light-theme glow or inversion. */
+body[data-page="home"] .feed-card-media .post-type-badge .home-post-type-icon {
+    filter: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
