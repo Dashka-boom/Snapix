@@ -1128,7 +1128,7 @@ if ($feedPosts) {
 
                             <div class="feed-card-media">
                                 <span class="post-type-badge" aria-hidden="true">
-                                    <img class="home-post-type-icon <?php echo (($post['media_type'] ?? '') === 'video') ? 'home-post-type-video-icon' : 'home-post-type-image-icon'; ?>" src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/dark theme/video.png' : 'icon/dark theme/images.png'; ?>" alt="">
+                                    <img class="home-post-type-icon <?php echo (($post['media_type'] ?? '') === 'video') ? 'home-post-type-video-icon' : 'home-post-type-image-icon'; ?>" src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/light theme/video.png' : 'icon/light theme/images.png'; ?>" alt="">
                                 </span>
                                 <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                                     <video controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
@@ -1349,7 +1349,7 @@ if ($feedPosts) {
                     <input type="hidden" name="action" value="add_comment">
                     <input type="hidden" name="post_id" value="">
                     <input type="hidden" name="parent_comment_id" value="">
-                    <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerAttachmentButton" aria-label="Прикрепить фото"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt=""><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
+                    <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerAttachmentButton" aria-label="Прикрепить фото"><img class="icon-dark" src="icon/dark theme/paper clip.png" alt="Скрепка"><img class="icon-light" src="icon/light theme/paper clip.png" alt=""></button>
                     <input class="profile-post-viewer-file-input" id="profilePostViewerAttachmentInput" type="file" accept="image/gif,image/jpeg,image/png,image/webp" hidden>
                     <div class="profile-post-viewer-emoji-wrap">
                         <button type="button" class="profile-post-viewer-round-btn" id="profilePostViewerEmojiButton" aria-label="Выбрать эмодзи" aria-expanded="false" aria-controls="profilePostViewerEmojiPicker"><img class="icon-dark" src="icon/dark theme/add stickers.png" alt=""><img class="icon-light" src="icon/light theme/add stickers.png" alt=""></button>
