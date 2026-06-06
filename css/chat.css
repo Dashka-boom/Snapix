@@ -221,6 +221,8 @@ body[data-page="chat"] .snapix-icon {
 
 .chat-search {
     min-height: 44px;
+    margin-left: 34px;
+    margin-right: 34px;
     margin-bottom: 10px;
     padding: 0 15px;
     border-radius: 999px;
@@ -986,6 +988,11 @@ body[data-page="chat"] .snapix-icon {
     .chat-empty {
         margin-left: 16px;
         margin-right: 16px;
+    }
+
+    .chat-search {
+        margin-left: 24px;
+        margin-right: 24px;
     }
 
     .chat-account-line {
