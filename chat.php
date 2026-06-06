@@ -467,12 +467,15 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 
             var reactionsHtml = '<div class="chat-message-reactions" data-reactions-for="' + Number(item.id) + '"></div>';
             return '<div class="chat-message-row ' + sideClass + '" data-message-row-id="' + Number(item.id) + '">' +
-                actionsHtml + menuHtml +
-                '<div class="chat-message ' + sideClass + sharedMessageClass + '" data-message-id="' + Number(item.id) + '">' +
-                replyHtml + forwardedHtml + bodyHtml +
-                editedHtml + (sharedMessageClass ? messageTimeHtml : '') + reactionsHtml +
+                '<div class="chat-message-group">' +
+                    '<div class="chat-message ' + sideClass + sharedMessageClass + '" data-message-id="' + Number(item.id) + '">' +
+                        replyHtml + forwardedHtml + bodyHtml +
+                        editedHtml + reactionsHtml +
+                    '</div>' +
+                    actionsHtml +
+                    menuHtml +
                 '</div>' +
-                '</div>';
+            '</div>';
     }
 
     function appendMessage(item) {
