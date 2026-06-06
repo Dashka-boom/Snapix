@@ -589,6 +589,7 @@ body[data-page="chat"] .snapix-icon {
 
 .chat-message time {
     justify-self: end;
+    align-self: end;
     color: rgba(4, 6, 7, 0.31) !important;
     font-size: 11px;
     line-height: 1;

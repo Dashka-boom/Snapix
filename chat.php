@@ -398,6 +398,22 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         }).join('');
     }
 
+    function formatMessageTime(item) {
+        var humanTime = String((item && item.created_at_human) || '').trim();
+        var humanMatch = humanTime.match(/(\d{2}:\d{2})(?::\d{2})?$/);
+        if (humanMatch) {
+            return humanMatch[1];
+        }
+
+        var rawTime = String((item && item.created_at) || '').trim();
+        var rawMatch = rawTime.match(/(?:^|[ T])(\d{2}:\d{2})(?::\d{2})?/);
+        if (rawMatch) {
+            return rawMatch[1];
+        }
+
+        return humanTime;
+    }
+
     function buildMessageRowHtml(item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
             var messageBody = escapeHtml(item.message_text);
@@ -453,7 +469,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 actionsHtml + menuHtml +
                 '<div class="chat-message ' + sideClass + sharedMessageClass + '" data-message-id="' + Number(item.id) + '">' +
                 replyHtml + forwardedHtml + bodyHtml +
-                editedHtml + '<time>' + escapeHtml(item.created_at_human) + '</time>' + reactionsHtml +
+                editedHtml + '<time>' + escapeHtml(formatMessageTime(item)) + '</time>' + reactionsHtml +
                 '</div>' +
                 '</div>';
     }
