@@ -404,14 +404,14 @@ body[data-page="chat"] .snapix-icon {
     background-position: center;
     filter: blur(18px);
     transform: scale(1.06);
-    opacity: .32;
+    opacity: .12;
 }
 
 .chat-thread-header::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, rgba(4, 6, 7, .58), rgba(4, 6, 7, .32));
+    background: linear-gradient(90deg, rgba(4, 6, 7, .24), rgba(4, 6, 7, .08));
 }
 
 .chat-thread-user,
@@ -424,22 +424,22 @@ body[data-page="chat"] .snapix-icon {
     min-width: 0;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 8px;
 }
 
 .chat-thread-avatar {
-    width: 76px;
-    height: 76px;
-    flex: 0 0 76px;
-    border: 2px solid rgba(255, 255, 255, .72);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, .32);
-    font-size: 26px;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border: 1px solid rgba(255, 255, 255, .72);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .24);
+    font-size: 13px;
 }
 
 .chat-thread-more {
-    width: 60px;
-    height: 60px;
-    flex: 0 0 60px;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
     border-radius: 50%;
     background: var(--chat-accent) !important;
     color: #040607 !important;
@@ -459,17 +459,17 @@ body[data-page="chat"] .snapix-icon {
 .chat-thread-more::before {
     content: '•••';
     color: #040607;
-    font-size: 28px;
+    font-size: 14px;
     font-weight: 800;
     line-height: 1;
-    letter-spacing: 2px;
-    transform: translateX(1px) translateY(-2px);
+    letter-spacing: 1px;
+    transform: translateX(.5px) translateY(-1px);
 }
 
 .chat-thread-user h2 {
     margin: 0;
     color: var(--chat-text);
-    font-size: 20px;
+    font-size: 10px;
     line-height: 1.15;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1097,23 +1097,23 @@ body[data-page="chat"] .snapix-icon {
     }
 
     .chat-thread-avatar {
-        width: 64px;
-        height: 64px;
-        flex-basis: 64px;
+        width: 32px;
+        height: 32px;
+        flex-basis: 32px;
     }
 
     .chat-thread-user h2 {
-        font-size: 18px;
+        font-size: 10px;
     }
 
     .chat-thread-more {
-        width: 54px;
-        height: 54px;
-        flex-basis: 54px;
+        width: 28px;
+        height: 28px;
+        flex-basis: 28px;
     }
 
     .chat-thread-more::before {
-        font-size: 24px;
+        font-size: 12px;
     }
 
     .chat-messages {
