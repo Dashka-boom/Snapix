@@ -469,7 +469,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 actionsHtml + menuHtml +
                 '<div class="chat-message ' + sideClass + sharedMessageClass + '" data-message-id="' + Number(item.id) + '">' +
                 replyHtml + forwardedHtml + bodyHtml +
-                editedHtml + '<time>' + escapeHtml(formatMessageTime(item)) + '</time>' + reactionsHtml +
+                editedHtml + '<span class="chat-message-meta"><time>' + escapeHtml(formatMessageTime(item)) + '</time></span>' + reactionsHtml +
                 '</div>' +
                 '</div>';
     }

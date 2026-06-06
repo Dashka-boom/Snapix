@@ -587,9 +587,15 @@ body[data-page="chat"] .snapix-icon {
     border-bottom-left-radius: 8px;
 }
 
+.chat-message-meta {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    width: 100%;
+}
+
 .chat-message time {
-    justify-self: end;
-    align-self: end;
+    display: block;
     color: rgba(4, 6, 7, 0.31) !important;
     font-size: 11px;
     line-height: 1;
