@@ -160,7 +160,7 @@ body[data-page="chat"] .snapix-icon {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 18px;
 }
 
 .chat-filter-button {
@@ -181,6 +181,9 @@ body[data-page="chat"] .snapix-icon {
 .chat-filter-button span {
     font-size: 11px;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    transform: translateY(-1px);
 }
 
 .chat-filter-button.is-active {
@@ -970,7 +973,7 @@ body[data-page="chat"] .snapix-icon {
     }
 
     .chat-dialogs-head-actions {
-        gap: 8px;
+        gap: 14px;
     }
 
     .chat-new-button {
