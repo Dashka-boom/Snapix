@@ -168,7 +168,7 @@ body[data-page="chat"] .snapix-icon {
     padding: 0 10px;
     border-radius: 999px;
     border: 0;
-    background: rgba(104, 197, 219, .41);
+    background: rgba(104, 197, 219, 0.41) !important;
     color: var(--chat-text);
     font-size: 12px;
     font-weight: 800;
@@ -187,7 +187,7 @@ body[data-page="chat"] .snapix-icon {
 }
 
 .chat-filter-button.is-active {
-    background: rgba(104, 197, 219, .41);
+    background: rgba(104, 197, 219, 0.41) !important;
 }
 
 .chat-new-button {
