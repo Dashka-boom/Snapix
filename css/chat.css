@@ -273,7 +273,13 @@ body[data-page="chat"] .snapix-icon {
 .dialog-list {
     min-height: 0;
     overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     padding: 0 0 18px;
+}
+
+.dialog-list::-webkit-scrollbar {
+    display: none;
 }
 
 .dialog-item {
@@ -472,11 +478,17 @@ body[data-page="chat"] .snapix-icon {
     height: 100%;
     min-height: 0;
     overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     padding: 24px clamp(18px, 6vw, 92px) 22px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     scroll-behavior: smooth;
+}
+
+.chat-messages::-webkit-scrollbar {
+    display: none;
 }
 
 .chat-date-separator {
@@ -925,8 +937,14 @@ body[data-page="chat"] .snapix-icon {
 .chat-forward-list {
     max-height: 45vh;
     overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     display: grid;
     gap: 8px;
+}
+
+.chat-forward-list::-webkit-scrollbar {
+    display: none;
 }
 
 .chat-forward-user {
