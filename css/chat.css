@@ -429,18 +429,18 @@ body[data-page="chat"] .snapix-icon {
 }
 
 .chat-thread-avatar {
-    width: 56px;
-    height: 56px;
-    flex: 0 0 56px;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
     border: 0;
     box-shadow: 0 8px 18px rgba(0, 0, 0, .24);
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .chat-thread-more {
-    width: 52px;
-    height: 52px;
-    flex: 0 0 52px;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
     border-radius: 50%;
     background: var(--chat-accent) !important;
     color: #040607 !important;
@@ -460,7 +460,7 @@ body[data-page="chat"] .snapix-icon {
 .chat-thread-more::before {
     content: '•••';
     color: #040607;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 800;
     line-height: 1;
     letter-spacing: 1px;
@@ -470,7 +470,7 @@ body[data-page="chat"] .snapix-icon {
 .chat-thread-user h2 {
     margin: 0;
     color: var(--chat-text);
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     line-height: 1.15;
     overflow: hidden;
@@ -1101,23 +1101,23 @@ body[data-page="chat"] .snapix-icon {
     }
 
     .chat-thread-avatar {
-        width: 48px;
-        height: 48px;
-        flex-basis: 48px;
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
     }
 
     .chat-thread-user h2 {
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .chat-thread-more {
-        width: 46px;
-        height: 46px;
-        flex-basis: 46px;
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
     }
 
     .chat-thread-more::before {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     .chat-messages {
