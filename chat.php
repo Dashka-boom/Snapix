@@ -86,6 +86,7 @@ $dialogsStmt = $pdo->prepare('
         partner.id AS partner_id,
         partner.login AS partner_login,
         partner.avatar AS partner_avatar,
+        partner.background_image AS partner_background_image,
         latest.message_text AS last_message,
         latest.created_at AS last_message_created_at,
         (
@@ -154,14 +155,27 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     <main class="chat-page">
         <section class="chat-shell card-surface">
             <aside class="chat-dialogs">
-                <h1>Сообщения</h1>
+                <div class="chat-dialogs-head">
+                    <div class="chat-account-line">
+                        <strong><?php echo htmlspecialchars($currentUser['login']); ?></strong>
+                        <span class="chat-account-arrow" aria-hidden="true">⌄</span>
+                    </div>
+                    <button type="button" class="chat-new-button" aria-label="Создать новый чат"><?php echo snapix_icon('edit'); ?></button>
+                </div>
+                <div class="chat-dialogs-filter-row">
+                    <button type="button" class="chat-filter-button is-active">Все</button>
+                </div>
                 <?php if ($error !== ''): ?><p class="chat-error"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
+                <label class="chat-search" for="chat-dialog-search">
+                    <img src="icon/dark theme/search.png" alt="" aria-hidden="true">
+                    <input type="search" id="chat-dialog-search" placeholder="Поиск" autocomplete="off">
+                </label>
                 <?php if (!$dialogs): ?>
                     <p class="chat-empty">Диалогов пока нет. Откройте профиль пользователя и начните чат.</p>
                 <?php else: ?>
                     <div class="dialog-list" id="dialog-list">
                         <?php foreach ($dialogs as $dialog): ?>
-                            <a href="chat.php?chat_id=<?php echo (int) $dialog['id']; ?>" class="dialog-item<?php echo (int) $dialog['id'] === $activeChatId ? ' is-active' : ''; ?>" data-chat-id="<?php echo (int) $dialog['id']; ?>">
+                            <a href="chat.php?chat_id=<?php echo (int) $dialog['id']; ?>" class="dialog-item<?php echo (int) $dialog['id'] === $activeChatId ? ' is-active' : ''; ?>" data-chat-id="<?php echo (int) $dialog['id']; ?>" data-dialog-login="<?php echo htmlspecialchars(mb_strtolower($dialog['partner_login'])); ?>">
                                 <span class="dialog-avatar"<?php if (!empty($dialog['partner_avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($dialog['partner_avatar']); ?>');"<?php endif; ?>>
                                     <?php if (empty($dialog['partner_avatar'])): ?><?php echo htmlspecialchars(mb_substr($dialog['partner_login'], 0, 1)); ?><?php endif; ?>
                                 </span>
@@ -182,11 +196,21 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 <?php if (!$activeDialog): ?>
                     <div class="chat-placeholder">Выберите диалог слева.</div>
                 <?php else: ?>
-                    <div class="chat-thread-header">
-                        <h2><?php echo htmlspecialchars($activeDialog['partner_login']); ?></h2>
+                    <div class="chat-thread-header"<?php if (!empty($activeDialog['partner_background_image'])): ?> style="--chat-cover: url('<?php echo htmlspecialchars($activeDialog['partner_background_image']); ?>');"<?php endif; ?>>
+                        <div class="chat-thread-header-bg" aria-hidden="true"></div>
+                        <div class="chat-thread-user">
+                            <span class="chat-thread-avatar"<?php if (!empty($activeDialog['partner_avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($activeDialog['partner_avatar']); ?>');"<?php endif; ?>>
+                                <?php if (empty($activeDialog['partner_avatar'])): ?><?php echo htmlspecialchars(mb_substr($activeDialog['partner_login'], 0, 1)); ?><?php endif; ?>
+                            </span>
+                            <h2><?php echo htmlspecialchars($activeDialog['partner_login']); ?></h2>
+                        </div>
+                        <button type="button" class="chat-thread-more" aria-label="Действия диалога"><?php echo snapix_icon('more-horizontal'); ?></button>
                     </div>
                     <div class="chat-pinned" id="chat-pinned"></div>
-                    <div class="chat-messages" id="chat-messages"></div>
+                    <div class="chat-messages-wrap">
+                        <div class="chat-messages" id="chat-messages"></div>
+                        <button type="button" class="chat-scroll-bottom is-hidden" id="chat-scroll-bottom" aria-label="Перейти к последнему сообщению">⌄</button>
+                    </div>
                     <form class="chat-send-form" id="chat-send-form">
                         <div class="chat-reply-box is-hidden" id="chat-reply-box">
                             <div class="chat-reply-box-content">
@@ -195,8 +219,15 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                             </div>
                             <button type="button" class="chat-reply-close" id="chat-reply-close" aria-label="Отменить ответ"><?php echo snapix_icon('x'); ?></button>
                         </div>
-                        <input type="text" id="chat-message-input" maxlength="1000" placeholder="Введите сообщение" autocomplete="off">
-                        <button type="submit" aria-label="Отправить сообщение"><?php echo snapix_icon('send'); ?></button>
+                        <div class="chat-composer-row">
+                            <button type="button" class="chat-tool-button" aria-label="Прикрепить файл"><img src="icon/dark theme/paper clip.png" alt=""></button>
+                            <button type="button" class="chat-tool-button" aria-label="Стикеры и эмодзи"><img src="icon/dark theme/add stickers.png" alt=""></button>
+                            <button type="button" class="chat-tool-button" aria-label="Голосовое сообщение"><img src="icon/dark theme/microphone.png" alt=""></button>
+                            <label class="chat-input-shell" for="chat-message-input">
+                                <input type="text" id="chat-message-input" maxlength="1000" placeholder="Сообщение" autocomplete="off">
+                                <button type="submit" class="chat-submit-button" aria-label="Отправить сообщение"><?php echo snapix_icon('send'); ?></button>
+                            </label>
+                        </div>
                     </form>
                 <?php endif; ?>
             </section>
@@ -235,6 +266,8 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var dialogList = document.getElementById('dialog-list');
     var sendForm = document.getElementById('chat-send-form');
     var messageInput = document.getElementById('chat-message-input');
+    var dialogSearch = document.getElementById('chat-dialog-search');
+    var scrollBottomButton = document.getElementById('chat-scroll-bottom');
     var pinnedBox = document.getElementById('chat-pinned');
     var replyBox = document.getElementById('chat-reply-box');
     var replyText = document.getElementById('chat-reply-text');
@@ -256,6 +289,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var reactionEmojis = ['❤️', '😂', '👍', '🔥', '😢', '😮'];
     var activeReactionMessageId = 0;
     var lastMessageRenderHash = '';
+    var lastRenderedDateLabel = '';
 
     var iconSmile = <?php echo json_encode(snapix_icon('smile')); ?>;
     var iconMoreVertical = <?php echo json_encode(snapix_icon('more-vertical')); ?>;
@@ -265,6 +299,28 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var iconReply = <?php echo json_encode(snapix_icon('reply')); ?>;
     var iconForward = <?php echo json_encode(snapix_icon('forward')); ?>;
     var iconCopy = <?php echo json_encode(snapix_icon('copy')); ?>;
+
+    function isNearBottom() {
+        if (!messageList) {
+            return true;
+        }
+        return messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight < 120;
+    }
+
+    function scrollMessagesToBottom(behavior) {
+        if (!messageList) {
+            return;
+        }
+        messageList.scrollTo({ top: messageList.scrollHeight, behavior: behavior || 'auto' });
+        updateScrollBottomButton();
+    }
+
+    function updateScrollBottomButton() {
+        if (!scrollBottomButton || !messageList) {
+            return;
+        }
+        scrollBottomButton.classList.toggle('is-hidden', isNearBottom());
+    }
 
 
     function escapeHtml(value) {
@@ -378,9 +434,19 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         if (messageList.querySelector('.chat-empty')) {
             messageList.innerHTML = '';
         }
-        messageList.insertAdjacentHTML('beforeend', buildMessageRowHtml(item));
+        var shouldStick = isNearBottom() || item.is_mine;
+        var itemDateLabel = getMessageDateLabel(item);
+        var dateSeparator = itemDateLabel && itemDateLabel !== lastRenderedDateLabel ? '<div class="chat-date-separator">' + escapeHtml(itemDateLabel) + '</div>' : '';
+        if (itemDateLabel) {
+            lastRenderedDateLabel = itemDateLabel;
+        }
+        messageList.insertAdjacentHTML('beforeend', dateSeparator + buildMessageRowHtml(item));
         renderReactionBadges(item);
-        messageList.scrollTop = messageList.scrollHeight;
+        if (shouldStick) {
+            scrollMessagesToBottom('smooth');
+        } else {
+            updateScrollBottomButton();
+        }
     }
 
     function renderMessages(items) {
@@ -389,12 +455,49 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         }
         if (!items.length) {
             messageList.innerHTML = '<p class="chat-empty">Сообщений пока нет.</p>';
+            lastRenderedDateLabel = '';
+            updateScrollBottomButton();
             return;
         }
-        messageList.innerHTML = items.map(buildMessageRowHtml).join('');
+        messageList.innerHTML = buildMessagesWithDates(items);
 
         updateReactionsFromPayload(items);
-        messageList.scrollTop = messageList.scrollHeight;
+        scrollMessagesToBottom('auto');
+    }
+
+    function getMessageDateLabel(item) {
+        var raw = item.created_at || '';
+        var match = String(raw).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!match && item.created_at_human) {
+            var human = String(item.created_at_human).match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+            if (human) {
+                match = [human[0], human[3], human[2], human[1]];
+            }
+        }
+        if (!match) {
+            return '';
+        }
+        var date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        var today = new Date();
+        var startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        if (date.getTime() === startToday.getTime()) {
+            return 'Сегодня';
+        }
+        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function buildMessagesWithDates(items) {
+        var lastLabel = '';
+        lastRenderedDateLabel = '';
+        return (items || []).map(function (item) {
+            var label = getMessageDateLabel(item);
+            var separator = label && label !== lastLabel ? '<div class="chat-date-separator">' + escapeHtml(label) + '</div>' : '';
+            if (label) {
+                lastLabel = label;
+                lastRenderedDateLabel = label;
+            }
+            return separator + buildMessageRowHtml(item);
+        }).join('');
     }
 
     function renderReactionBadges(message) {
@@ -438,12 +541,13 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             var unread = dialog.unread_count > 0 ? '<span class="dialog-unread">' + dialog.unread_count + '</span>' : '';
             var activeClass = Number(dialog.id) === activeChatId ? ' is-active' : '';
 
-            return '<a href="chat.php?chat_id=' + Number(dialog.id) + '" class="dialog-item' + activeClass + '" data-chat-id="' + Number(dialog.id) + '">' +
+            return '<a href="chat.php?chat_id=' + Number(dialog.id) + '" class="dialog-item' + activeClass + '" data-chat-id="' + Number(dialog.id) + '" data-dialog-login="' + escapeHtml((dialog.partner_login || '').toLowerCase()) + '">' +
                 avatar +
                 '<span class="dialog-content"><strong>' + escapeHtml(dialog.partner_login) + '</strong><small>' + escapeHtml(dialog.last_message || 'Нет сообщений') + '</small></span>' +
                 unread +
                 '</a>';
         }).join('');
+        applyDialogSearch();
     }
 
     function updateBadge(count) {
@@ -486,6 +590,31 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 lastError = 'poll_request_failed';
                 console.error('Chat poll request failed:', error);
             });
+    }
+
+    if (messageList) {
+        messageList.addEventListener('scroll', updateScrollBottomButton);
+    }
+
+    if (scrollBottomButton) {
+        scrollBottomButton.addEventListener('click', function () {
+            scrollMessagesToBottom('smooth');
+        });
+    }
+
+    function applyDialogSearch() {
+        if (!dialogSearch || !dialogList) {
+            return;
+        }
+        var query = dialogSearch.value.trim().toLowerCase();
+        Array.prototype.forEach.call(dialogList.querySelectorAll('.dialog-item'), function (item) {
+            var login = (item.getAttribute('data-dialog-login') || '').toLowerCase();
+            item.hidden = query !== '' && login.indexOf(query) === -1;
+        });
+    }
+
+    if (dialogSearch && dialogList) {
+        dialogSearch.addEventListener('input', applyDialogSearch);
     }
 
     if (sendForm && messageInput) {

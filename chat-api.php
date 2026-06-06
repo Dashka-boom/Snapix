@@ -82,6 +82,7 @@ function getDialogs(PDO $pdo, int $userId): array
             partner.id AS partner_id,
             partner.login AS partner_login,
             partner.avatar AS partner_avatar,
+            partner.background_image AS partner_background_image,
             latest.message_text AS last_message,
             latest.created_at AS last_message_created_at,
             (
