@@ -183,22 +183,25 @@ body[data-page="chat"] .snapix-icon {
 }
 
 .chat-new-button {
-    width: 38px;
-    height: 38px;
-    flex: 0 0 38px;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
     padding: 0;
+    border: 0 !important;
     border-radius: 0;
-    background: transparent;
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
 .chat-new-button:hover {
-    background: transparent;
+    background: transparent !important;
+    box-shadow: none !important;
     transform: scale(1.04);
 }
 
 .chat-new-button img {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     object-fit: contain;
     filter: brightness(0) invert(1);
     pointer-events: none;
@@ -966,14 +969,14 @@ body[data-page="chat"] .snapix-icon {
     }
 
     .chat-new-button {
-        width: 34px;
-        height: 34px;
-        flex-basis: 34px;
+        width: 28px;
+        height: 28px;
+        flex-basis: 28px;
     }
 
     .chat-new-button img {
-        width: 32px;
-        height: 32px;
+        width: 26px;
+        height: 26px;
     }
 }
 
