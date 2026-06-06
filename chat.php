@@ -44,6 +44,33 @@ function getOrCreateChat(PDO $pdo, int $firstUserId, int $secondUserId): int
     return (int) $pdo->lastInsertId();
 }
 
+function formatDialogLastMessage(array $dialog, int $currentUserId): string
+{
+    $rawText = trim((string) ($dialog['last_message'] ?? ''));
+    if ($rawText === '') {
+        return 'Нет сообщений';
+    }
+
+    $isMine = (int) ($dialog['last_message_sender_id'] ?? 0) === $currentUserId;
+    $prefix = $isMine ? 'Вы' : (string) ($dialog['last_message_sender_login'] ?? $dialog['partner_login'] ?? 'Пользователь');
+    $lowerText = mb_strtolower($rawText);
+    $postId = (int) ($dialog['last_message_post_id'] ?? 0);
+
+    if ($postId > 0 || str_starts_with($rawText, '[post_share]|')) {
+        $preview = $isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
+    } elseif (str_starts_with($lowerText, '[photo]') || str_starts_with($lowerText, '[image]')) {
+        $preview = $isMine ? 'отправили фото' : 'отправил(а) фото';
+    } elseif (str_starts_with($lowerText, '[gif]')) {
+        $preview = $isMine ? 'отправили GIF' : 'отправил(а) GIF';
+    } elseif (str_starts_with($lowerText, '[voice]') || str_starts_with($lowerText, '[audio]')) {
+        $preview = 'голосовое сообщение';
+    } else {
+        $preview = $rawText;
+    }
+
+    return $prefix . ': ' . $preview;
+}
+
 $targetUserId = (int) ($_GET['user_id'] ?? 0);
 $activeChatId = (int) ($_GET['chat_id'] ?? 0);
 $error = '';
@@ -87,7 +114,10 @@ $dialogsStmt = $pdo->prepare('
         partner.login AS partner_login,
         partner.avatar AS partner_avatar,
         partner.background_image AS partner_background_image,
+        latest.sender_id AS last_message_sender_id,
+        sender.login AS last_message_sender_login,
         latest.message_text AS last_message,
+        latest.post_id AS last_message_post_id,
         latest.created_at AS last_message_created_at,
         (
             SELECT COUNT(*)
@@ -105,6 +135,7 @@ $dialogsStmt = $pdo->prepare('
         ORDER BY m2.created_at DESC, m2.id DESC
         LIMIT 1
     )
+    LEFT JOIN users AS sender ON sender.id = latest.sender_id
     WHERE chats.user_one_id = :current_user_id OR chats.user_two_id = :current_user_id
     ORDER BY COALESCE(latest.created_at, chats.created_at) DESC
 ');
@@ -181,7 +212,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                                 </span>
                                 <span class="dialog-content">
                                     <strong><?php echo htmlspecialchars($dialog['partner_login']); ?></strong>
-                                    <small><?php echo htmlspecialchars($dialog['last_message'] ?? 'Нет сообщений'); ?></small>
+                                    <small><?php echo htmlspecialchars(formatDialogLastMessage($dialog, (int) $currentUser['id'])); ?></small>
                                 </span>
                                 <?php if ((int) $dialog['unread_count'] > 0): ?>
                                     <span class="dialog-unread"><?php echo (int) $dialog['unread_count']; ?></span>
@@ -262,6 +293,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 <script>
 (function () {
     var activeChatId = Number(document.body.getAttribute('data-active-chat-id') || 0);
+    var currentUserId = Number(document.body.getAttribute('data-user-id') || 0);
     var messageList = document.getElementById('chat-messages');
     var dialogList = document.getElementById('dialog-list');
     var sendForm = document.getElementById('chat-send-form');
@@ -529,6 +561,34 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         }).join('|');
     }
 
+    function formatDialogLastMessage(dialog) {
+        var rawText = String(dialog.last_message || '').trim();
+        if (!rawText) {
+            return 'Нет сообщений';
+        }
+        if (dialog.last_message_preview) {
+            return dialog.last_message_preview;
+        }
+
+        var isMine = Number(dialog.last_message_sender_id || 0) === currentUserId;
+        var prefix = isMine ? 'Вы' : String(dialog.last_message_sender_login || dialog.partner_login || 'Пользователь');
+        var lowerText = rawText.toLowerCase();
+        var postId = Number(dialog.last_message_post_id || 0);
+        var preview = rawText;
+
+        if (postId > 0 || rawText.indexOf('[post_share]|') === 0) {
+            preview = isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
+        } else if (lowerText.indexOf('[photo]') === 0 || lowerText.indexOf('[image]') === 0) {
+            preview = isMine ? 'отправили фото' : 'отправил(а) фото';
+        } else if (lowerText.indexOf('[gif]') === 0) {
+            preview = isMine ? 'отправили GIF' : 'отправил(а) GIF';
+        } else if (lowerText.indexOf('[voice]') === 0 || lowerText.indexOf('[audio]') === 0) {
+            preview = 'голосовое сообщение';
+        }
+
+        return prefix + ': ' + preview;
+    }
+
     function renderDialogs(items) {
         if (!dialogList) {
             return;
@@ -543,7 +603,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 
             return '<a href="chat.php?chat_id=' + Number(dialog.id) + '" class="dialog-item' + activeClass + '" data-chat-id="' + Number(dialog.id) + '" data-dialog-login="' + escapeHtml((dialog.partner_login || '').toLowerCase()) + '">' +
                 avatar +
-                '<span class="dialog-content"><strong>' + escapeHtml(dialog.partner_login) + '</strong><small>' + escapeHtml(dialog.last_message || 'Нет сообщений') + '</small></span>' +
+                '<span class="dialog-content"><strong>' + escapeHtml(dialog.partner_login) + '</strong><small>' + escapeHtml(formatDialogLastMessage(dialog)) + '</small></span>' +
                 unread +
                 '</a>';
         }).join('');
@@ -1019,6 +1079,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 
             if (data.type === 'new_message' && Number(data.chat_id) === activeChatId && data.message) {
                 appendMessage(data.message);
+                refreshChatState();
                 return;
             }
 
