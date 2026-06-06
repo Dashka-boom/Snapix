@@ -375,15 +375,16 @@ body[data-page="chat"] .snapix-icon {
     min-height: 0;
     background: var(--chat-bg);
     display: grid;
-    grid-template-rows: 140px auto minmax(0, 1fr) auto;
+    grid-template-rows: 90px auto minmax(0, 1fr) auto;
     overflow: hidden;
 }
 
 .chat-thread-header {
     position: relative;
-    height: 140px;
-    min-height: 0;
-    padding: 22px 34px;
+    min-height: 80px;
+    max-height: 90px;
+    height: 90px;
+    padding: 12px 24px;
     border-bottom: 1px solid rgba(255, 255, 255, .12);
     display: flex;
     align-items: center;
@@ -428,18 +429,18 @@ body[data-page="chat"] .snapix-icon {
 }
 
 .chat-thread-avatar {
-    width: 52px;
-    height: 52px;
-    flex: 0 0 52px;
+    width: 56px;
+    height: 56px;
+    flex: 0 0 56px;
     border: 0;
     box-shadow: 0 8px 18px rgba(0, 0, 0, .24);
     font-size: 18px;
 }
 
 .chat-thread-more {
-    width: 30px;
-    height: 30px;
-    flex: 0 0 30px;
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
     border-radius: 50%;
     background: var(--chat-accent) !important;
     color: #040607 !important;
@@ -459,7 +460,7 @@ body[data-page="chat"] .snapix-icon {
 .chat-thread-more::before {
     content: '•••';
     color: #040607;
-    font-size: 14px;
+    font-size: 24px;
     font-weight: 800;
     line-height: 1;
     letter-spacing: 1px;
@@ -470,6 +471,7 @@ body[data-page="chat"] .snapix-icon {
     margin: 0;
     color: var(--chat-text);
     font-size: 16px;
+    font-weight: 700;
     line-height: 1.15;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -514,7 +516,7 @@ body[data-page="chat"] .snapix-icon {
     overflow-y: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding: 24px clamp(18px, 6vw, 92px) 22px;
+    padding: 12px clamp(18px, 6vw, 92px) 22px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1088,18 +1090,20 @@ body[data-page="chat"] .snapix-icon {
     }
 
     .chat-thread {
-        grid-template-rows: 128px auto minmax(0, 1fr) auto;
+        grid-template-rows: 84px auto minmax(0, 1fr) auto;
     }
 
     .chat-thread-header {
-        height: 128px;
-        padding: 20px 18px;
+        min-height: 80px;
+        max-height: 84px;
+        height: 84px;
+        padding: 12px 14px;
     }
 
     .chat-thread-avatar {
-        width: 44px;
-        height: 44px;
-        flex-basis: 44px;
+        width: 48px;
+        height: 48px;
+        flex-basis: 48px;
     }
 
     .chat-thread-user h2 {
@@ -1107,17 +1111,17 @@ body[data-page="chat"] .snapix-icon {
     }
 
     .chat-thread-more {
-        width: 28px;
-        height: 28px;
-        flex-basis: 28px;
+        width: 46px;
+        height: 46px;
+        flex-basis: 46px;
     }
 
     .chat-thread-more::before {
-        font-size: 12px;
+        font-size: 20px;
     }
 
     .chat-messages {
-        padding: 18px 14px;
+        padding: 10px 14px 18px;
     }
 
     .chat-message {
