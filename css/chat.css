@@ -109,9 +109,9 @@ body[data-page="chat"] .snapix-icon {
 .chat-account-arrow {
     color: var(--chat-text);
     font-size: 16px;
-    font-weight: 800;
+    font-weight: 500;
     line-height: .8;
-    transform: translateY(-5px) scaleX(1.45);
+    transform: translateY(-5px) scaleX(1.8);
     transform-origin: center;
 }
 
@@ -183,10 +183,11 @@ body[data-page="chat"] .snapix-icon {
 .chat-filter-button span {
     color: #fff !important;
     font-size: 11px;
+    font-weight: 500;
     line-height: 1;
     display: inline-flex;
     align-items: center;
-    transform: translateY(-1px);
+    transform: translateY(-1px) scaleX(1.8);
 }
 
 .chat-filter-button.is-active {
