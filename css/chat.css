@@ -271,7 +271,7 @@ body[data-page="chat"] .snapix-icon {
 
 .dialog-content strong {
     color: var(--chat-text);
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 800;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -280,7 +280,7 @@ body[data-page="chat"] .snapix-icon {
 
 .dialog-content small {
     color: var(--chat-muted);
-    font-size: 14px;
+    font-size: 12px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -365,7 +365,7 @@ body[data-page="chat"] .snapix-icon {
 .chat-thread-user h2 {
     margin: 0;
     color: var(--chat-text);
-    font-size: 24px;
+    font-size: 20px;
     line-height: 1.15;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -972,7 +972,7 @@ body[data-page="chat"] .snapix-icon {
     }
 
     .chat-thread-user h2 {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     .chat-messages {
