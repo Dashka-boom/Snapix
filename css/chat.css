@@ -375,50 +375,52 @@ body[data-page="chat"] .snapix-icon {
     min-height: 0;
     background: var(--chat-bg);
     display: grid;
-    grid-template-rows: 90px auto minmax(0, 1fr) auto;
+    grid-template-rows: 78px auto minmax(0, 1fr) auto;
     overflow: hidden;
 }
 
 .chat-thread-header {
     position: relative;
-    min-height: 80px;
-    max-height: 90px;
-    height: 90px;
-    padding: 12px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, .12);
+    min-height: 70px;
+    max-height: 78px;
+    height: 78px;
+    padding: 10px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, .10);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20px;
     overflow: hidden;
-    background: rgba(4, 6, 7, 0.45);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 16px 36px rgba(4, 6, 7, 0.18);
+    background: rgba(4, 6, 7, 0.28) !important;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: 0 16px 36px rgba(4, 6, 7, 0.12);
 }
 
 .chat-thread-header-bg {
     position: absolute;
     inset: -22px;
-    background-image: var(--chat-cover), linear-gradient(135deg, rgba(104, 197, 219, .34), rgba(4, 6, 7, .92));
+    background-image: var(--chat-cover);
     background-size: cover;
     background-position: center;
     filter: blur(18px);
     transform: scale(1.06);
-    opacity: .12;
+    opacity: .18;
+    pointer-events: none;
 }
 
 .chat-thread-header::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, rgba(4, 6, 7, .24), rgba(4, 6, 7, .08));
+    background: linear-gradient(90deg, rgba(4, 6, 7, .10), rgba(4, 6, 7, .03));
+    pointer-events: none;
 }
 
 .chat-thread-user,
 .chat-thread-more {
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
 .chat-thread-user {
@@ -1090,14 +1092,14 @@ body[data-page="chat"] .snapix-icon {
     }
 
     .chat-thread {
-        grid-template-rows: 84px auto minmax(0, 1fr) auto;
+        grid-template-rows: 78px auto minmax(0, 1fr) auto;
     }
 
     .chat-thread-header {
-        min-height: 80px;
-        max-height: 84px;
-        height: 84px;
-        padding: 12px 14px;
+        min-height: 70px;
+        max-height: 78px;
+        height: 78px;
+        padding: 10px 14px;
     }
 
     .chat-thread-avatar {
