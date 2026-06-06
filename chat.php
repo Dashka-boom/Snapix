@@ -160,10 +160,10 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                         <strong><?php echo htmlspecialchars($currentUser['login']); ?></strong>
                         <span class="chat-account-arrow" aria-hidden="true">⌄</span>
                     </div>
-                    <button type="button" class="chat-new-button" aria-label="Создать новый чат"><?php echo snapix_icon('edit'); ?></button>
-                </div>
-                <div class="chat-dialogs-filter-row">
-                    <button type="button" class="chat-filter-button is-active">Все</button>
+                    <div class="chat-dialogs-head-actions">
+                        <button type="button" class="chat-filter-button is-active">Все <span aria-hidden="true">⌄</span></button>
+                        <button type="button" class="chat-new-button" aria-label="Создать новый чат"><img src="icon/dark theme/addcommunication.png" alt=""></button>
+                    </div>
                 </div>
                 <?php if ($error !== ''): ?><p class="chat-error"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
                 <label class="chat-search" for="chat-dialog-search">
