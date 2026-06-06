@@ -647,8 +647,8 @@ body[data-page="chat"] .snapix-icon {
 .chat-message-menu-trigger,
 .chat-reaction-trigger {
     border: 0;
-    background: var(--chat-control);
-    color: var(--chat-text);
+    background: var(--chat-accent);
+    color: #040607;
     width: 30px;
     height: 30px;
     border-radius: 50%;
@@ -660,7 +660,24 @@ body[data-page="chat"] .snapix-icon {
 
 .chat-message-menu-trigger:hover,
 .chat-reaction-trigger:hover {
-    background: #232b2e;
+    background: var(--chat-accent);
+}
+
+.chat-reaction-trigger img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.chat-menu-dots {
+    color: #040607;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 1px;
+    pointer-events: none;
+    transform: translateY(-1px);
 }
 
 .chat-message-menu {

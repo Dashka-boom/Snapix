@@ -323,8 +323,6 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var lastMessageRenderHash = '';
     var lastRenderedDateLabel = '';
 
-    var iconSmile = <?php echo json_encode(snapix_icon('smile')); ?>;
-    var iconMoreVertical = <?php echo json_encode(snapix_icon('more-vertical')); ?>;
     var iconEdit = <?php echo json_encode(snapix_icon('edit')); ?>;
     var iconTrash = <?php echo json_encode(snapix_icon('trash')); ?>;
     var iconPin = <?php echo json_encode(snapix_icon('pin')); ?>;
@@ -460,8 +458,12 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 ? '<div class="chat-forwarded-label">Переслано</div>'
                 : '';
             var editedHtml = item.is_edited ? '<em class="chat-edited-label">изменено</em>' : '';
-            var reactionTrigger = '<button type="button" class="chat-reaction-trigger" data-message-id="' + Number(item.id) + '" aria-label="Выбрать реакцию">' + iconSmile + '</button>';
-            var menuButton = '<button type="button" class="chat-message-menu-trigger" data-message-id="' + Number(item.id) + '" aria-label="Действия с сообщением">' + iconMoreVertical + '</button>';
+            var reactionTrigger = '<button type="button" class="chat-reaction-trigger" data-message-id="' + Number(item.id) + '" aria-label="Выбрать реакцию">' +
+                '<img src="icon/dark theme/add stickers.png" alt="">' +
+                '</button>';
+            var menuButton = '<button type="button" class="chat-message-menu-trigger" data-message-id="' + Number(item.id) + '" aria-label="Действия с сообщением">' +
+                '<span class="chat-menu-dots">•••</span>' +
+                '</button>';
             var menuHtml = '<div class="chat-message-menu" data-menu-for="' + Number(item.id) + '"></div>';
             var actionsHtml = '<div class="chat-message-actions">' + reactionTrigger + menuButton + '</div>';
 
