@@ -549,8 +549,7 @@ body[data-page="chat"] .snapix-icon {
     min-width: 0;
     padding: 11px 14px 8px;
     border-radius: 20px;
-    display: grid;
-    gap: 7px;
+    display: block;
     background: var(--chat-accent);
     color: #040607 !important;
     overflow-wrap: anywhere;
@@ -588,17 +587,18 @@ body[data-page="chat"] .snapix-icon {
 }
 
 .chat-message-meta {
-    display: flex;
-    justify-content: flex-end;
+    display: inline-flex;
     align-items: flex-end;
-    width: 100%;
+    margin-left: 6px;
+    vertical-align: baseline;
 }
 
 .chat-message time {
-    display: block;
+    display: inline-block;
     color: rgba(4, 6, 7, 0.31) !important;
     font-size: 11px;
     line-height: 1;
+    white-space: nowrap;
 }
 
 .chat-message.has-shared-post {

@@ -420,7 +420,8 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             if (messageBody.indexOf('[post_share]|') === 0) {
                 messageBody = 'Пересланная публикация недоступна';
             }
-            var bodyHtml = '<p>' + messageBody + '</p>';
+            var messageTimeHtml = '<span class="chat-message-meta"><time>' + escapeHtml(formatMessageTime(item)) + '</time></span>';
+            var bodyHtml = '<p class="chat-message-text">' + messageBody + messageTimeHtml + '</p>';
             var sharedMessageClass = '';
             if (item.shared_post) {
                 sharedMessageClass = ' has-shared-post';
@@ -469,7 +470,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 actionsHtml + menuHtml +
                 '<div class="chat-message ' + sideClass + sharedMessageClass + '" data-message-id="' + Number(item.id) + '">' +
                 replyHtml + forwardedHtml + bodyHtml +
-                editedHtml + '<span class="chat-message-meta"><time>' + escapeHtml(formatMessageTime(item)) + '</time></span>' + reactionsHtml +
+                editedHtml + (sharedMessageClass ? messageTimeHtml : '') + reactionsHtml +
                 '</div>' +
                 '</div>';
     }
