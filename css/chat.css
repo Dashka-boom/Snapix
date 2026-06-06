@@ -362,7 +362,7 @@ body[data-page="chat"] .snapix-icon {
     padding: 0 7px;
     border-radius: 999px;
     background: var(--chat-accent);
-    color: var(--chat-bubble-text);
+    color: #040607;
     font-size: 12px;
     font-weight: 800;
     display: inline-flex;
@@ -532,7 +532,7 @@ body[data-page="chat"] .snapix-icon {
 .chat-date-separator {
     align-self: center;
     margin: 10px 0;
-    color: var(--chat-muted);
+    color: rgba(255, 255, 255, 0.57);
     font-size: 13px;
     font-weight: 600;
 }
@@ -552,7 +552,7 @@ body[data-page="chat"] .snapix-icon {
     display: grid;
     gap: 7px;
     background: var(--chat-accent);
-    color: var(--chat-bubble-text);
+    color: #040607;
     overflow-wrap: anywhere;
     word-break: break-word;
     box-shadow: none;
@@ -561,6 +561,7 @@ body[data-page="chat"] .snapix-icon {
 
 .chat-message p {
     margin: 0;
+    color: #040607;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -581,9 +582,20 @@ body[data-page="chat"] .snapix-icon {
 
 .chat-message time {
     justify-self: end;
-    color: rgba(4, 6, 7, .72);
+    color: rgba(4, 6, 7, 0.31);
     font-size: 11px;
     line-height: 1;
+}
+
+.chat-message.has-shared-post {
+    background: transparent;
+    padding: 0;
+    gap: 6px;
+    box-shadow: none;
+}
+
+.chat-message.has-shared-post time {
+    padding: 0 8px;
 }
 
 .chat-message.is-highlighted {
@@ -790,11 +802,11 @@ body[data-page="chat"] .snapix-icon {
     display: grid;
     gap: 8px;
     text-decoration: none;
-    color: var(--chat-bubble-text);
+    color: #040607;
     padding: 9px;
-    border: 1px solid rgba(4, 6, 7, .16);
+    border: 1px solid rgba(255, 255, 255, .14);
     border-radius: 14px;
-    background: rgba(255, 255, 255, .26);
+    background: rgba(255, 255, 255, .92);
 }
 
 .chat-shared-head {
@@ -809,9 +821,11 @@ body[data-page="chat"] .snapix-icon {
     font-size: 12px;
 }
 
+.chat-shared-card,
+.chat-shared-card *,
 .chat-shared-author,
 .chat-shared-caption {
-    color: var(--chat-bubble-text);
+    color: #040607;
 }
 
 .chat-shared-media {
@@ -821,7 +835,7 @@ body[data-page="chat"] .snapix-icon {
     border-radius: 12px;
     display: block;
     object-fit: cover;
-    background: rgba(4, 6, 7, .12);
+    background: rgba(4, 6, 7, .08);
 }
 
 .chat-scroll-bottom {

@@ -405,7 +405,9 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 messageBody = 'Пересланная публикация недоступна';
             }
             var bodyHtml = '<p>' + messageBody + '</p>';
+            var sharedMessageClass = '';
             if (item.shared_post) {
+                sharedMessageClass = ' has-shared-post';
                 var post = item.shared_post;
                 var mediaHtml = '';
                 if (post.media_url) {
@@ -449,9 +451,9 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             var reactionsHtml = '<div class="chat-message-reactions" data-reactions-for="' + Number(item.id) + '"></div>';
             return '<div class="chat-message-row ' + sideClass + '" data-message-row-id="' + Number(item.id) + '">' +
                 actionsHtml + menuHtml +
-                '<div class="chat-message ' + sideClass + '" data-message-id="' + Number(item.id) + '">' +
+                '<div class="chat-message ' + sideClass + sharedMessageClass + '" data-message-id="' + Number(item.id) + '">' +
                 replyHtml + forwardedHtml + bodyHtml +
-                '<time>' + escapeHtml(item.created_at_human) + ' ' + editedHtml + '</time>' + reactionsHtml +
+                editedHtml + '<time>' + escapeHtml(item.created_at_human) + '</time>' + reactionsHtml +
                 '</div>' +
                 '</div>';
     }

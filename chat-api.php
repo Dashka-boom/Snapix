@@ -254,7 +254,7 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
             'message_text' => $text,
             'post_id' => $sharedPostId > 0 ? $sharedPostId : null,
             'created_at' => $message['created_at'],
-            'created_at_human' => date('d.m.Y H:i', strtotime((string) $message['created_at'])),
+            'created_at_human' => date('H:i', strtotime((string) $message['created_at'])),
             'is_mine' => (int) $message['sender_id'] === $userId,
             'is_post_share' => $isPostShare,
             'shared_post' => $sharedPost,
