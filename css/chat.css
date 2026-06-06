@@ -552,7 +552,7 @@ body[data-page="chat"] .snapix-icon {
     display: grid;
     gap: 7px;
     background: var(--chat-accent);
-    color: #040607;
+    color: #040607 !important;
     overflow-wrap: anywhere;
     word-break: break-word;
     box-shadow: none;
@@ -561,10 +561,17 @@ body[data-page="chat"] .snapix-icon {
 
 .chat-message p {
     margin: 0;
-    color: #040607;
+    color: #040607 !important;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     word-break: break-word;
+}
+
+.chat-message .chat-message-body,
+.chat-message .chat-message-body-card,
+.chat-message .chat-shared-card,
+.chat-message .chat-shared-card * {
+    color: #040607 !important;
 }
 
 .chat-message-row.is-mine .chat-message,
@@ -582,7 +589,7 @@ body[data-page="chat"] .snapix-icon {
 
 .chat-message time {
     justify-self: end;
-    color: rgba(4, 6, 7, 0.31);
+    color: rgba(4, 6, 7, 0.31) !important;
     font-size: 11px;
     line-height: 1;
 }
@@ -802,7 +809,7 @@ body[data-page="chat"] .snapix-icon {
     display: grid;
     gap: 8px;
     text-decoration: none;
-    color: #040607;
+    color: #040607 !important;
     padding: 9px;
     border: 1px solid rgba(255, 255, 255, .14);
     border-radius: 14px;
@@ -825,7 +832,7 @@ body[data-page="chat"] .snapix-icon {
 .chat-shared-card *,
 .chat-shared-author,
 .chat-shared-caption {
-    color: #040607;
+    color: #040607 !important;
 }
 
 .chat-shared-media {
