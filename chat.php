@@ -19,6 +19,16 @@ if (!$currentUser) {
     exit;
 }
 
+
+function buildChatProfileUrl(int $profileUserId, ?int $currentUserId): string
+{
+    if ($currentUserId !== null && $profileUserId === $currentUserId) {
+        return 'profile.php';
+    }
+
+    return 'user.php?id=' . $profileUserId;
+}
+
 function getOrCreateChat(PDO $pdo, int $firstUserId, int $secondUserId): int
 {
     $userOne = min($firstUserId, $secondUserId);
@@ -286,12 +296,12 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 <?php else: ?>
                     <div class="chat-thread-header"<?php if (!empty($activeDialog['partner_background_image'])): ?> style="--chat-cover: url('<?php echo htmlspecialchars($activeDialog['partner_background_image']); ?>');"<?php endif; ?>>
                         <div class="chat-thread-header-bg" aria-hidden="true"></div>
-                        <div class="chat-thread-user">
+                        <a class="chat-thread-user" href="<?php echo htmlspecialchars(buildChatProfileUrl((int) $activeDialog['partner_id'], (int) $currentUser['id'])); ?>" aria-label="Открыть профиль <?php echo htmlspecialchars($activeDialog['partner_login']); ?>">
                             <span class="chat-thread-avatar"<?php if (!empty($activeDialog['partner_avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($activeDialog['partner_avatar']); ?>');"<?php endif; ?>>
                                 <?php if (empty($activeDialog['partner_avatar'])): ?><?php echo htmlspecialchars(mb_substr($activeDialog['partner_login'], 0, 1)); ?><?php endif; ?>
                             </span>
                             <h2><?php echo htmlspecialchars($activeDialog['partner_login']); ?></h2>
-                        </div>
+                        </a>
                     </div>
                     <div class="chat-pinned is-hidden" id="chat-pinned"></div>
                     <div class="chat-messages-wrap">
@@ -507,15 +517,24 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         return '<a class="chat-message-file" href="' + escapeHtml(attachmentUrl) + '" target="_blank" rel="noopener">Файл</a>';
     }
 
+    function buildMessageProfileUrl(item) {
+        var senderId = Number((item && (item.sender_id || item.user_id)) || 0);
+        if (!senderId) {
+            return '#';
+        }
+        return senderId === currentUserId ? 'profile.php' : 'user.php?id=' + senderId;
+    }
+
     function buildMessageRowHtml(item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
             var senderLogin = item.sender_login || (item.is_mine ? 'Вы' : 'Пользователь');
             var senderAvatar = item.sender_avatar || item.avatar_url || '';
             var senderInitial = senderLogin ? senderLogin.slice(0, 1) : '?';
+            var senderProfileUrl = buildMessageProfileUrl(item);
             var avatarHtml = senderAvatar
-                ? '<span class="chat-message-avatar" style="background-image: url(\'' + escapeHtml(senderAvatar) + '\');"></span>'
-                : '<span class="chat-message-avatar">' + escapeHtml(senderInitial) + '</span>';
-            var authorHtml = '<span class="chat-message-author">' + escapeHtml(senderLogin) + '</span>';
+                ? '<a class="chat-message-avatar" href="' + escapeHtml(senderProfileUrl) + '" aria-label="Открыть профиль ' + escapeHtml(senderLogin) + '" style="background-image: url(\'' + escapeHtml(senderAvatar) + '\');"></a>'
+                : '<a class="chat-message-avatar" href="' + escapeHtml(senderProfileUrl) + '" aria-label="Открыть профиль ' + escapeHtml(senderLogin) + '">' + escapeHtml(senderInitial) + '</a>';
+            var authorHtml = '<a class="chat-message-author" href="' + escapeHtml(senderProfileUrl) + '">' + escapeHtml(senderLogin) + '</a>';
             var messageBody = escapeHtml(item.message_text || '');
             if (messageBody.indexOf('[post_share]|') === 0) {
                 messageBody = 'Пересланная публикация недоступна';

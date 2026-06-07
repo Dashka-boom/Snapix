@@ -432,6 +432,7 @@ html[data-theme="light"] .chat-emoji-picker button:focus-visible {
     display: flex;
     align-items: center;
     gap: 12px;
+    text-decoration: none;
 }
 
 .chat-thread-avatar {
@@ -592,6 +593,7 @@ html[data-theme="light"] .chat-emoji-picker button:focus-visible {
 
 .chat-message-author {
     color: rgba(255, 255, 255, .72);
+    text-decoration: none;
     font-size: 12px;
     font-weight: 700;
     line-height: 1;
