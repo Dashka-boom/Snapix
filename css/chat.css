@@ -374,12 +374,13 @@ body[data-page="chat"] .snapix-icon {
     height: 100%;
     min-height: 0;
     background: var(--chat-bg);
-    display: grid;
-    grid-template-rows: 78px auto minmax(0, 1fr) auto;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
 
 .chat-thread-header {
+    flex: 0 0 78px;
     position: relative;
     min-height: 70px;
     max-height: 78px;
@@ -481,6 +482,7 @@ body[data-page="chat"] .snapix-icon {
 }
 
 .chat-pinned {
+    flex: 0 0 auto;
     width: 100%;
     padding: 8px 14px;
     display: flex;
@@ -535,6 +537,7 @@ body[data-page="chat"] .snapix-icon {
 }
 
 .chat-messages-wrap {
+    flex: 1 1 auto;
     position: relative;
     min-height: 0;
     overflow: hidden;
@@ -981,6 +984,7 @@ body[data-page="chat"] .snapix-icon {
 }
 
 .chat-send-form {
+    flex: 0 0 auto;
     padding: 13px 24px 18px;
     border-top: 1px solid var(--chat-border);
     background: rgba(4, 6, 7, .96);
@@ -1225,7 +1229,8 @@ body[data-page="chat"] .snapix-icon {
     }
 
     .chat-thread {
-        grid-template-rows: 78px auto minmax(0, 1fr) auto;
+        display: flex;
+        flex-direction: column;
     }
 
     .chat-thread-header {
