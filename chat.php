@@ -252,10 +252,6 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                         <strong><?php echo htmlspecialchars($currentUser['login']); ?></strong>
                         <span class="chat-account-arrow" aria-hidden="true">⌄</span>
                     </div>
-                    <div class="chat-dialogs-head-actions">
-                        <button type="button" class="chat-filter-button is-active">Все <span aria-hidden="true">⌄</span></button>
-                        <button type="button" class="chat-new-button" aria-label="Создать новый чат"><img src="icon/dark theme/addcommunication.png" alt=""></button>
-                    </div>
                 </div>
                 <?php if ($error !== ''): ?><p class="chat-error"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
                 <label class="chat-search" for="chat-dialog-search">
@@ -296,7 +292,6 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                             </span>
                             <h2><?php echo htmlspecialchars($activeDialog['partner_login']); ?></h2>
                         </div>
-                        <button type="button" class="chat-thread-more" aria-label="Действия диалога"><?php echo snapix_icon('more-horizontal'); ?></button>
                     </div>
                     <div class="chat-pinned is-hidden" id="chat-pinned"></div>
                     <div class="chat-messages-wrap">
