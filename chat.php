@@ -816,7 +816,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             items.push({ action: 'edit', label: 'Редактировать', icon: iconEdit });
         }
         items.push({ action: 'delete', label: 'Удалить', icon: '<img class="chat-menu-icon" src="icon/trash.png" alt="">' });
-        items.push({ action: 'pin', label: 'Закрепить', icon: '<img class="chat-menu-icon" src="icon/dark theme/pinn.png" alt="">' });
+        items.push({ action: 'pin', label: 'Закрепить', icon: '<img class="chat-menu-icon" src="icon/light theme/pinn.png" alt="">' });
         items.push({ action: 'reply', label: 'Ответить', icon: iconReply });
         items.push({ action: 'forward', label: 'Переслать', icon: iconForward });
         items.push({ action: 'copy', label: 'Копировать', icon: iconCopy });
