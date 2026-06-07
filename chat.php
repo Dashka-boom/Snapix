@@ -47,16 +47,20 @@ function getOrCreateChat(PDO $pdo, int $firstUserId, int $secondUserId): int
 function formatDialogLastMessage(array $dialog, int $currentUserId): string
 {
     $rawText = trim((string) ($dialog['last_message'] ?? ''));
-    if ($rawText === '') {
+    $attachmentType = (string) ($dialog['last_message_attachment_type'] ?? '');
+    $isMine = (int) ($dialog['last_message_sender_id'] ?? 0) === $currentUserId;
+
+    if ($rawText === '' && $attachmentType === '') {
         return 'Нет сообщений';
     }
 
-    $isMine = (int) ($dialog['last_message_sender_id'] ?? 0) === $currentUserId;
     $prefix = $isMine ? 'Вы' : (string) ($dialog['last_message_sender_login'] ?? $dialog['partner_login'] ?? 'Пользователь');
     $lowerText = mb_strtolower($rawText);
     $postId = (int) ($dialog['last_message_post_id'] ?? 0);
 
-    if ($postId > 0 || str_starts_with($rawText, '[post_share]|')) {
+    if ($rawText === '' && $attachmentType !== '') {
+        $preview = $attachmentType === 'gif' ? ($isMine ? 'отправили GIF' : 'отправил(а) GIF') : ($attachmentType === 'image' ? ($isMine ? 'отправили фото' : 'отправил(а) фото') : ($isMine ? 'отправили файл' : 'отправил(а) файл'));
+    } elseif ($postId > 0 || str_starts_with($rawText, '[post_share]|')) {
         $preview = $isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
     } elseif (str_starts_with($lowerText, '[photo]') || str_starts_with($lowerText, '[image]')) {
         $preview = $isMine ? 'отправили фото' : 'отправил(а) фото';
@@ -73,6 +77,18 @@ function formatDialogLastMessage(array $dialog, int $currentUserId): string
 
 function ensureChatPinnedMessagesSchema(PDO $pdo): void
 {
+    $messageColumns = [];
+    $messageColumnsStmt = $pdo->query('SHOW COLUMNS FROM messages');
+    foreach ($messageColumnsStmt->fetchAll() as $column) {
+        $messageColumns[(string) $column['Field']] = true;
+    }
+    if (!isset($messageColumns['attachment_url'])) {
+        $pdo->exec('ALTER TABLE messages ADD COLUMN attachment_url VARCHAR(255) NULL AFTER message_text');
+    }
+    if (!isset($messageColumns['attachment_type'])) {
+        $pdo->exec('ALTER TABLE messages ADD COLUMN attachment_type VARCHAR(32) NULL AFTER attachment_url');
+    }
+
     $pdo->exec('CREATE TABLE IF NOT EXISTS pinned_messages (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         chat_id BIGINT UNSIGNED NOT NULL,
@@ -178,7 +194,7 @@ if (!$activeDialog && !empty($dialogs)) {
 $activePinnedMessage = null;
 if ($activeChatId > 0) {
     $activePinnedStmt = $pdo->prepare('
-        SELECT m.id, m.message_text, m.post_id, m.deleted_for_all
+        SELECT m.id, m.message_text, m.attachment_url, m.attachment_type, m.post_id, m.deleted_for_all
         FROM pinned_messages pm
         INNER JOIN messages m ON m.id = pm.message_id
         LEFT JOIN message_hidden mh ON mh.message_id = m.id AND mh.user_id = :user_id
@@ -196,6 +212,8 @@ if ($activeChatId > 0) {
         $activePinnedMessage = [
             'id' => (int) $activePinnedRow['id'],
             'message_text' => (int) $activePinnedRow['deleted_for_all'] === 1 ? 'Сообщение удалено' : (string) ($activePinnedRow['message_text'] ?? ''),
+            'attachment_url' => (string) ($activePinnedRow['attachment_url'] ?? ''),
+            'attachment_type' => (string) ($activePinnedRow['attachment_type'] ?? ''),
             'post_id' => (int) ($activePinnedRow['post_id'] ?? 0),
             'deleted_for_all' => (int) ($activePinnedRow['deleted_for_all'] ?? 0) === 1,
             'shared_post' => (int) ($activePinnedRow['post_id'] ?? 0) > 0,
@@ -297,7 +315,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                         </div>
                         <div class="chat-composer-row">
                             <button type="button" class="chat-tool-button" id="chat-attach-button" aria-label="Прикрепить файл"><img src="icon/dark theme/paper clip.png" alt=""></button>
-                            <input type="file" class="chat-attachment-input" id="chat-attachment-input" accept="image/gif,image/jpeg,image/png,image/webp,.gif,.jpg,.jpeg,.png,.webp" hidden>
+                            <input type="file" class="chat-attachment-input" id="chat-attachment-input" accept=".txt,.gif,.jpg,.jpeg,.png,.webp,.mp4,.mp3,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mkv,.zip,.rar,image/gif,image/jpeg,image/png,image/webp,video/mp4,audio/mpeg,application/pdf" hidden>
                             <div class="chat-emoji-tool">
                                 <button type="button" class="chat-tool-button" id="chat-emoji-button" aria-label="Стикеры и эмодзи" aria-expanded="false" aria-controls="chat-emoji-picker"><img src="icon/dark theme/add stickers.png" alt=""></button>
                                 <div class="chat-emoji-picker" id="chat-emoji-picker" hidden>
@@ -307,7 +325,8 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                             <button type="button" class="chat-tool-button" aria-label="Голосовое сообщение"><img src="icon/dark theme/microphone.png" alt=""></button>
                             <label class="chat-input-shell" for="chat-message-input">
                                 <span class="chat-attachment-preview" id="chat-attachment-preview" hidden>
-                                    <img src="" alt="Предпросмотр фото">
+                                    <img src="" alt="Предпросмотр вложения">
+                                    <span class="chat-attachment-name"></span>
                                     <button type="button" id="chat-attachment-remove" aria-label="Удалить вложение">×</button>
                                 </span>
                                 <textarea id="chat-message-input" maxlength="1000" rows="1" placeholder="Сообщение" autocomplete="off"></textarea>
@@ -484,14 +503,34 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         return humanTime;
     }
 
+    function buildMessageAttachmentHtml(item) {
+        var attachmentUrl = String((item && item.attachment_url) || '');
+        if (!attachmentUrl) {
+            return '';
+        }
+        var attachmentType = String((item && item.attachment_type) || '');
+        if (attachmentType === 'image' || attachmentType === 'gif') {
+            return '<img class="chat-message-attachment" src="' + escapeHtml(attachmentUrl) + '" alt="Вложение">';
+        }
+        return '<a class="chat-message-file" href="' + escapeHtml(attachmentUrl) + '" target="_blank" rel="noopener">Файл</a>';
+    }
+
     function buildMessageRowHtml(item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
-            var messageBody = escapeHtml(item.message_text);
+            var senderLogin = item.sender_login || (item.is_mine ? 'Вы' : 'Пользователь');
+            var senderAvatar = item.sender_avatar || item.avatar_url || '';
+            var senderInitial = senderLogin ? senderLogin.slice(0, 1) : '?';
+            var avatarHtml = senderAvatar
+                ? '<span class="chat-message-avatar" style="background-image: url(\'' + escapeHtml(senderAvatar) + '\');"></span>'
+                : '<span class="chat-message-avatar">' + escapeHtml(senderInitial) + '</span>';
+            var authorHtml = '<span class="chat-message-author">' + escapeHtml(senderLogin) + '</span>';
+            var messageBody = escapeHtml(item.message_text || '');
             if (messageBody.indexOf('[post_share]|') === 0) {
                 messageBody = 'Пересланная публикация недоступна';
             }
+            var attachmentHtml = buildMessageAttachmentHtml(item);
             var messageTimeHtml = '<span class="chat-message-meta"><time>' + escapeHtml(formatMessageTime(item)) + '</time></span>';
-            var bodyHtml = '<p class="chat-message-text">' + messageBody + messageTimeHtml + '</p>';
+            var bodyHtml = '<p class="chat-message-text">' + messageBody + messageTimeHtml + '</p>' + attachmentHtml;
             var sharedMessageClass = '';
             if (item.shared_post) {
                 sharedMessageClass = ' has-shared-post';
@@ -506,13 +545,13 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 }
                 var caption = post.caption ? '<p class=\"chat-shared-caption\">' + escapeHtml(post.caption) + '</p>' : '';
                 var authorLogin = post.author_login || '?';
-                var avatarHtml = post.author_avatar
+                var sharedAvatarHtml = post.author_avatar
                     ? '<span class="chat-shared-avatar" style="background-image: url(\'' + escapeHtml(post.author_avatar) + '\');"></span>'
                     : '<span class=\"chat-shared-avatar\">' + escapeHtml(authorLogin.slice(0, 1)) + '</span>';
                 messageBody = '' +
                     '<a class=\"chat-shared-card\" href=\"' + escapeHtml(post.post_url) + '\">' +
                         '<span class=\"chat-shared-head\">' +
-                            avatarHtml +
+                            sharedAvatarHtml +
                             '<strong class=\"chat-shared-author\">' + escapeHtml(authorLogin) + '</strong>' +
                         '</span>' +
                         mediaHtml +
@@ -542,9 +581,13 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             var reactionsHtml = '<div class="chat-message-reactions" data-reactions-for="' + Number(item.id) + '"></div>';
             return '<div class="chat-message-row ' + sideClass + '" data-message-row-id="' + Number(item.id) + '">' +
                 '<div class="chat-message-group">' +
-                    '<div class="chat-message ' + sideClass + sharedMessageClass + '" data-message-id="' + Number(item.id) + '">' +
-                        replyHtml + forwardedHtml + bodyHtml +
-                        editedHtml + reactionsHtml +
+                    avatarHtml +
+                    '<div class="chat-message-stack">' +
+                        authorHtml +
+                        '<div class="chat-message ' + sideClass + sharedMessageClass + '" data-message-id="' + Number(item.id) + '">' +
+                            replyHtml + forwardedHtml + bodyHtml +
+                            editedHtml + reactionsHtml +
+                        '</div>' +
                     '</div>' +
                     actionsHtml +
                     menuHtml +
@@ -653,13 +696,14 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 
     function buildMessageRenderHash(items) {
         return (items || []).map(function (item) {
-            return [item.id, item.message_text, item.deleted_for_all ? 1 : 0, item.is_edited ? 1 : 0, item.is_pinned ? 1 : 0, item.reply_to_message_id, item.forwarded_from_message_id].join(':');
+            return [item.id, item.message_text, item.deleted_for_all ? 1 : 0, item.is_edited ? 1 : 0, item.is_pinned ? 1 : 0, item.attachment_url || '', item.attachment_type || '', item.reply_to_message_id, item.forwarded_from_message_id].join(':');
         }).join('|');
     }
 
     function formatDialogLastMessage(dialog) {
         var rawText = String(dialog.last_message || '').trim();
-        if (!rawText) {
+        var attachmentType = String(dialog.last_message_attachment_type || '');
+        if (!rawText && !attachmentType) {
             return 'Нет сообщений';
         }
         if (dialog.last_message_preview) {
@@ -672,7 +716,9 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         var postId = Number(dialog.last_message_post_id || 0);
         var preview = rawText;
 
-        if (postId > 0 || rawText.indexOf('[post_share]|') === 0) {
+        if (!rawText && attachmentType) {
+            preview = attachmentType === 'gif' ? (isMine ? 'отправили GIF' : 'отправил(а) GIF') : (attachmentType === 'image' ? (isMine ? 'отправили фото' : 'отправил(а) фото') : (isMine ? 'отправили файл' : 'отправил(а) файл'));
+        } else if (postId > 0 || rawText.indexOf('[post_share]|') === 0) {
             preview = isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
         } else if (lowerText.indexOf('[photo]') === 0 || lowerText.indexOf('[image]') === 0) {
             preview = isMine ? 'отправили фото' : 'отправил(а) фото';
@@ -828,18 +874,26 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 
     if (attachButton && attachmentInput && attachmentPreview) {
         var selectedAttachmentUrl = '';
-        var allowedAttachmentTypes = ['image/gif', 'image/jpeg', 'image/png', 'image/webp'];
-        var allowedAttachmentExtensions = ['gif', 'jpg', 'jpeg', 'png', 'webp'];
+        var selectedAttachmentFile = null;
+        var allowedAttachmentTypes = ['text/plain', 'image/gif', 'image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/x-matroska', 'audio/mpeg', 'audio/mp3', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/zip', 'application/x-zip-compressed', 'application/vnd.rar', 'application/x-rar', 'application/x-rar-compressed'];
+        var allowedAttachmentExtensions = ['txt', 'gif', 'jpg', 'jpeg', 'png', 'webp', 'mp4', 'mp3', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'mkv', 'zip', 'rar'];
 
         clearChatAttachment = function () {
             attachmentInput.value = '';
+            selectedAttachmentFile = null;
             if (selectedAttachmentUrl) {
                 URL.revokeObjectURL(selectedAttachmentUrl);
                 selectedAttachmentUrl = '';
             }
             var previewImage = attachmentPreview.querySelector('img');
+            var previewName = attachmentPreview.querySelector('.chat-attachment-name');
             if (previewImage) {
                 previewImage.removeAttribute('src');
+                previewImage.hidden = false;
+            }
+            if (previewName) {
+                previewName.textContent = '';
+                previewName.hidden = true;
             }
             attachmentPreview.hidden = true;
             if (messageInput) {
@@ -865,13 +919,25 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 return;
             }
 
+            selectedAttachmentFile = file;
             if (selectedAttachmentUrl) {
                 URL.revokeObjectURL(selectedAttachmentUrl);
             }
             selectedAttachmentUrl = URL.createObjectURL(file);
             var previewImage = attachmentPreview.querySelector('img');
+            var previewName = attachmentPreview.querySelector('.chat-attachment-name');
+            var isImagePreview = ['gif', 'jpg', 'jpeg', 'png', 'webp'].indexOf(extension) !== -1;
             if (previewImage) {
-                previewImage.src = selectedAttachmentUrl;
+                previewImage.hidden = !isImagePreview;
+                if (isImagePreview) {
+                    previewImage.src = selectedAttachmentUrl;
+                } else {
+                    previewImage.removeAttribute('src');
+                }
+            }
+            if (previewName) {
+                previewName.hidden = isImagePreview;
+                previewName.textContent = file.name;
             }
             attachmentPreview.hidden = false;
             if (messageInput) {
@@ -891,15 +957,19 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     if (sendForm && messageInput) {
         function submitChatMessage() {
             var messageText = messageInput.value.trim();
+            var attachmentFile = attachmentInput && attachmentInput.files && attachmentInput.files[0] ? attachmentInput.files[0] : selectedAttachmentFile;
 
-            if (messageText === '' || !activeChatId) {
+            if ((messageText === '' && !attachmentFile) || !activeChatId) {
                 return;
             }
 
-            var body = new URLSearchParams();
+            var body = new FormData();
             body.set('action', 'send');
             body.set('chat_id', String(activeChatId));
             body.set('message_text', messageText);
+            if (attachmentFile) {
+                body.set('attachment', attachmentFile);
+            }
             if (replyingToMessage) {
                 body.set('reply_to_message_id', String(replyingToMessage.id));
             }
@@ -907,10 +977,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             fetch('chat-api.php', {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: body.toString()
+                body: body
             })
                 .then(function (response) { return response.json(); })
                 .then(function (data) {
