@@ -315,7 +315,6 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                                     <button type="button" data-chat-emoji="😀">😀</button><button type="button" data-chat-emoji="😂">😂</button><button type="button" data-chat-emoji="😍">😍</button><button type="button" data-chat-emoji="🥰">🥰</button><button type="button" data-chat-emoji="😎">😎</button><button type="button" data-chat-emoji="👍">👍</button><button type="button" data-chat-emoji="🔥">🔥</button><button type="button" data-chat-emoji="❤️">❤️</button><button type="button" data-chat-emoji="🎉">🎉</button><button type="button" data-chat-emoji="🙏">🙏</button><button type="button" data-chat-emoji="😢">😢</button><button type="button" data-chat-emoji="😮">😮</button>
                                 </div>
                             </div>
-                            <button type="button" class="chat-tool-button" aria-label="Микрофон"><img src="icon/dark theme/microphone.png" alt=""></button>
                             <label class="chat-input-shell" for="chat-message-input">
                                 <span class="chat-attachment-preview" id="chat-attachment-preview" hidden>
                                     <img src="" alt="Предпросмотр вложения">

@@ -1034,7 +1034,7 @@ html[data-theme="light"] .chat-emoji-picker button:focus-visible {
 
 .chat-composer-row {
     display: grid;
-    grid-template-columns: repeat(3, 44px) minmax(0, 1fr);
+    grid-template-columns: repeat(2, 44px) minmax(0, 1fr);
     gap: 10px;
     align-items: center;
 }
@@ -1369,7 +1369,7 @@ html[data-theme="light"] .chat-attachment-preview {
     }
 
     .chat-composer-row {
-        grid-template-columns: repeat(3, 38px) minmax(0, 1fr);
+        grid-template-columns: repeat(2, 38px) minmax(0, 1fr);
         gap: 7px;
     }
 
