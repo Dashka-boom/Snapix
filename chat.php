@@ -328,7 +328,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                                     <button type="button" id="chat-attachment-remove" aria-label="Удалить вложение">×</button>
                                 </span>
                                 <textarea id="chat-message-input" maxlength="1000" rows="1" placeholder="Сообщение" autocomplete="off"></textarea>
-                                <button type="submit" class="chat-submit-button" aria-label="Отправить сообщение"><?php echo snapix_icon('send'); ?></button>
+                                <button type="submit" class="chat-submit-button" aria-label="Отправить сообщение"><img src="icon/message.png" alt="Отправить"></button>
                             </label>
                         </div>
                     </form>

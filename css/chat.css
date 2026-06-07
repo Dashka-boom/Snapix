@@ -1247,6 +1247,17 @@ html[data-theme="light"] .chat-attachment-preview {
     background: var(--chat-accent-strong);
 }
 
+.chat-submit-button img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.chat-submit-button svg {
+    display: none;
+}
+
 .chat-reply-box {
     border: 1px solid var(--chat-border);
     border-radius: 16px;
