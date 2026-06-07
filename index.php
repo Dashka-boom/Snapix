@@ -2199,20 +2199,53 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     var emojiButton = document.getElementById('profilePostViewerEmojiButton');
     var emojiPicker = document.getElementById('profilePostViewerEmojiPicker');
     if (emojiButton && emojiPicker && commentForm) {
+        var emojiWrap = emojiButton.closest('.profile-post-viewer-emoji-wrap');
+
+        function setEmojiPickerOpen(isOpen) {
+            emojiPicker.hidden = !isOpen;
+            emojiButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        function insertEmojiAtCursor(input, emoji) {
+            if (!input || !emoji) {
+                return;
+            }
+
+            input.focus();
+            var start = typeof input.selectionStart === 'number' ? input.selectionStart : input.value.length;
+            var end = typeof input.selectionEnd === 'number' ? input.selectionEnd : start;
+
+            if (typeof input.setRangeText === 'function') {
+                input.setRangeText(emoji, start, end, 'end');
+            } else {
+                input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+                input.selectionStart = input.selectionEnd = start + emoji.length;
+            }
+
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
         emojiButton.addEventListener('click', function (event) {
+            event.preventDefault();
             event.stopPropagation();
-            emojiPicker.hidden = !emojiPicker.hidden;
-            emojiButton.setAttribute('aria-expanded', emojiPicker.hidden ? 'false' : 'true');
+            setEmojiPickerOpen(emojiPicker.hidden);
+        });
+        emojiPicker.addEventListener('mousedown', function (event) {
+            event.preventDefault();
         });
         emojiPicker.querySelectorAll('[data-emoji]').forEach(function (button) {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
                 var input = commentForm.querySelector('[name="comment_text"]');
-                if (input) {
-                    input.value += button.getAttribute('data-emoji') || '';
-                    input.focus();
-                }
-                emojiPicker.hidden = true;
+                insertEmojiAtCursor(input, button.getAttribute('data-emoji') || '');
+                setEmojiPickerOpen(false);
             });
+        });
+        document.addEventListener('click', function (event) {
+            if (emojiPicker.hidden || (emojiWrap && emojiWrap.contains(event.target))) {
+                return;
+            }
+            setEmojiPickerOpen(false);
         });
     }
 })();
