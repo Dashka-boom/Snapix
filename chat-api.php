@@ -186,6 +186,82 @@ function uploadChatAttachment(array $file): ?array
     ];
 }
 
+function voiceExtensionFromMime(string $mimeType): string
+{
+    if (str_contains($mimeType, 'ogg')) {
+        return 'ogg';
+    }
+    if (str_contains($mimeType, 'mpeg') || str_contains($mimeType, 'mp3')) {
+        return 'mp3';
+    }
+    if (str_contains($mimeType, 'wav')) {
+        return 'wav';
+    }
+    if (str_contains($mimeType, 'mp4')) {
+        return 'm4a';
+    }
+
+    return 'webm';
+}
+
+function uploadVoiceMessage(array $file): ?array
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK || !is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'voice_upload_failed']);
+        exit;
+    }
+
+    $maxSize = 10 * 1024 * 1024;
+    if ((int) ($file['size'] ?? 0) <= 0 || (int) $file['size'] > $maxSize) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'voice_size_invalid']);
+        exit;
+    }
+
+    $originalName = (string) ($file['name'] ?? '');
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $allowedExtensions = ['webm', 'ogg', 'mp3', 'wav', 'm4a', 'mp4'];
+    if (!in_array($extension, $allowedExtensions, true)) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'voice_extension_forbidden']);
+        exit;
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = (string) ($finfo->file((string) $file['tmp_name']) ?: 'application/octet-stream');
+    $allowedMimeTypes = ['audio/webm', 'video/webm', 'audio/ogg', 'application/ogg', 'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'video/mp4'];
+    if (!in_array($mimeType, $allowedMimeTypes, true)) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'voice_mime_forbidden']);
+        exit;
+    }
+
+    $storedExtension = $extension !== '' ? $extension : voiceExtensionFromMime($mimeType);
+    $uploadDir = __DIR__ . '/uploads/voice_messages';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'voice_directory_failed']);
+        exit;
+    }
+
+    $filename = 'voice_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . $storedExtension;
+    $destination = $uploadDir . '/' . $filename;
+    if (!move_uploaded_file((string) $file['tmp_name'], $destination)) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'voice_save_failed']);
+        exit;
+    }
+
+    return [
+        'url' => 'uploads/voice_messages/' . $filename,
+        'type' => 'voice',
+    ];
+}
+
 function formatDialogLastMessagePreview(array $dialog, int $currentUserId): string
 {
     $rawText = trim((string) ($dialog['last_message'] ?? ''));
@@ -201,7 +277,7 @@ function formatDialogLastMessagePreview(array $dialog, int $currentUserId): stri
     $postId = (int) ($dialog['last_message_post_id'] ?? 0);
 
     if ($rawText === '' && $attachmentType !== '') {
-        $preview = $attachmentType === 'gif' ? ($isMine ? 'отправили GIF' : 'отправил(а) GIF') : ($attachmentType === 'image' ? ($isMine ? 'отправили фото' : 'отправил(а) фото') : ($isMine ? 'отправили файл' : 'отправил(а) файл'));
+        $preview = $attachmentType === 'voice' ? 'голосовое сообщение' : ($attachmentType === 'gif' ? ($isMine ? 'отправили GIF' : 'отправил(а) GIF') : ($attachmentType === 'image' ? ($isMine ? 'отправили фото' : 'отправил(а) фото') : ($isMine ? 'отправили файл' : 'отправил(а) файл')));
     } elseif ($postId > 0 || str_starts_with($rawText, '[post_share]|')) {
         $preview = $isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
     } elseif (str_starts_with($lowerText, '[photo]') || str_starts_with($lowerText, '[image]')) {
@@ -502,7 +578,7 @@ if ($chatId > 0) {
     $chatBelongsToUser = (bool) $membershipStmt->fetchColumn();
 }
 
-if ($action === 'send') {
+if ($action === 'send' || $action === 'send_voice') {
     if (!$chatBelongsToUser) {
         http_response_code(403);
         echo json_encode(['ok' => false, 'error' => 'chat_forbidden', 'chat_id' => $chatId]);
@@ -511,7 +587,17 @@ if ($action === 'send') {
 
     $messageText = trim((string) ($_POST['message_text'] ?? ''));
     $replyToMessageId = (int) ($_POST['reply_to_message_id'] ?? 0);
-    $attachment = uploadChatAttachment($_FILES['attachment'] ?? ['error' => UPLOAD_ERR_NO_FILE]);
+    $attachment = $action === 'send_voice'
+        ? uploadVoiceMessage($_FILES['voice_message'] ?? ['error' => UPLOAD_ERR_NO_FILE])
+        : uploadChatAttachment($_FILES['attachment'] ?? ['error' => UPLOAD_ERR_NO_FILE]);
+    if ($action === 'send_voice' && $attachment === null) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'voice_required']);
+        exit;
+    }
+    if ($action === 'send_voice' && $messageText === '') {
+        $messageText = 'Голосовое сообщение';
+    }
 
     if ($messageText === '' && $attachment === null) {
         http_response_code(422);
@@ -761,14 +847,14 @@ $unreadTotal = (int) $unreadTotalStmt->fetchColumn();
 
 echo json_encode([
     'ok' => true,
-    'message_id' => $action === 'send' ? ($createdMessageId ?? 0) : 0,
+    'message_id' => ($action === 'send' || $action === 'send_voice') ? ($createdMessageId ?? 0) : 0,
     'user_id' => $currentUserId,
     'login' => (string) ($currentUser['login'] ?? ''),
     'avatar_url' => (string) ($currentUser['avatar'] ?? ''),
-    'message_text' => $action === 'send' ? $messageText ?? '' : '',
-    'attachment_url' => $action === 'send' ? (string) ($attachment['url'] ?? '') : '',
-    'attachment_type' => $action === 'send' ? (string) ($attachment['type'] ?? '') : '',
-    'created_at' => $action === 'send' && $createdMessageId > 0 ? date('Y-m-d H:i:s') : '',
+    'message_text' => ($action === 'send' || $action === 'send_voice') ? $messageText ?? '' : '',
+    'attachment_url' => ($action === 'send' || $action === 'send_voice') ? (string) ($attachment['url'] ?? '') : '',
+    'attachment_type' => ($action === 'send' || $action === 'send_voice') ? (string) ($attachment['type'] ?? '') : '',
+    'created_at' => ($action === 'send' || $action === 'send_voice') && $createdMessageId > 0 ? date('Y-m-d H:i:s') : '',
     'messages_count' => $messagesCount,
     'messages' => $messages,
     'dialogs' => $dialogs,
