@@ -516,6 +516,7 @@ body[data-page="chat"] .snapix-icon {
     height: 100%;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
     padding: 12px clamp(18px, 6vw, 92px) 22px;
@@ -539,9 +540,10 @@ body[data-page="chat"] .snapix-icon {
 
 .chat-message-row {
     width: 100%;
-    position: relative;
-    min-height: 32px;
     display: flex;
+    margin: 2px 0;
+    position: relative;
+    clear: both;
 }
 
 .chat-message-row.is-mine {
@@ -553,11 +555,12 @@ body[data-page="chat"] .snapix-icon {
 }
 
 .chat-message-group {
-    position: relative;
     display: inline-flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 8px;
     max-width: min(560px, 74%);
+    min-width: 0;
+    flex-shrink: 1;
 }
 
 .chat-message {
@@ -568,18 +571,20 @@ body[data-page="chat"] .snapix-icon {
     display: block;
     background: var(--chat-accent);
     color: #040607 !important;
+    overflow: hidden;
     overflow-wrap: anywhere;
     word-break: break-word;
-    box-shadow: none;
-    transition: box-shadow .15s ease;
+    white-space: pre-wrap;
+    box-sizing: border-box;
+    flex-shrink: 1;
 }
 
 .chat-message p {
     margin: 0;
     color: #040607 !important;
     white-space: pre-wrap;
-    overflow-wrap: anywhere;
     word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .chat-message .chat-message-body,
@@ -638,6 +643,7 @@ body[data-page="chat"] .snapix-icon {
     opacity: 0;
     transition: opacity .15s ease;
     flex: 0 0 auto;
+    align-self: center;
 }
 
 .chat-message-row:hover .chat-message-actions {
