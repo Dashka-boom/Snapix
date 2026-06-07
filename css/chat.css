@@ -1128,18 +1128,24 @@ html[data-theme="light"] .chat-attachment-preview {
     background: rgba(4, 6, 7, .08);
 }
 
-.chat-input-shell input {
+.chat-input-shell input,
+.chat-input-shell textarea {
     min-width: 0;
     width: 100%;
     min-height: 38px;
+    max-height: 86px;
     border: 0;
     outline: 0;
     background: transparent;
     color: var(--chat-text);
     font: inherit;
+    line-height: 38px;
+    resize: none;
+    overflow-y: auto;
 }
 
-.chat-input-shell input::placeholder {
+.chat-input-shell input::placeholder,
+.chat-input-shell textarea::placeholder {
     color: var(--chat-muted);
 }
 

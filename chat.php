@@ -310,7 +310,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                                     <img src="" alt="Предпросмотр фото">
                                     <button type="button" id="chat-attachment-remove" aria-label="Удалить вложение">×</button>
                                 </span>
-                                <input type="text" id="chat-message-input" maxlength="1000" placeholder="Сообщение" autocomplete="off">
+                                <textarea id="chat-message-input" maxlength="1000" rows="1" placeholder="Сообщение" autocomplete="off"></textarea>
                                 <button type="submit" class="chat-submit-button" aria-label="Отправить сообщение"><?php echo snapix_icon('send'); ?></button>
                             </label>
                         </div>
@@ -889,8 +889,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     }
 
     if (sendForm && messageInput) {
-        sendForm.addEventListener('submit', function (event) {
-            event.preventDefault();
+        function submitChatMessage() {
             var messageText = messageInput.value.trim();
 
             if (messageText === '' || !activeChatId) {
@@ -915,17 +914,16 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             })
                 .then(function (response) { return response.json(); })
                 .then(function (data) {
-                console.log('SEND RESPONSE:', data);
+                    console.log('SEND RESPONSE:', data);
                     if (data.ok) {
                         messageInput.value = '';
                         if (clearChatAttachment) {
                             clearChatAttachment();
                         }
                         clearReply();
+                        refreshChatState();
                         if (Number(data.message_id || 0) > 0) {
                             notifySocketAboutNewMessage(Number(data.message_id));
-                        } else {
-                            refreshChatState();
                         }
                     } else {
                         lastError = data.error || 'send_failed';
@@ -936,6 +934,19 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                     lastError = 'send_request_failed';
                     console.error('Chat send request failed:', error);
                 });
+        }
+
+        sendForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            submitChatMessage();
+        });
+
+        messageInput.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter' || event.shiftKey || event.isComposing) {
+                return;
+            }
+            event.preventDefault();
+            submitChatMessage();
         });
     }
 
