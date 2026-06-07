@@ -1522,13 +1522,18 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         });
 
         if (clipsMenuToggle && clipsMenu) {
-            clipsMenuToggle.addEventListener('click', function () {
-                clipsMenu.classList.toggle('is-open');
+            clipsMenuToggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                var isOpen = clipsMenu.classList.toggle('is-open');
+                clipsMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
             });
         }
 
         document.querySelectorAll('[data-clips-menu-action]').forEach(function (button) {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
                 var action = button.getAttribute('data-clips-menu-action');
                 var clip = clips[currentIndex];
 
@@ -1536,6 +1541,9 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                     openStatsModal(button.getAttribute('data-post-id') || (clip ? clip.id : ''));
                     if (clipsMenu) {
                         clipsMenu.classList.remove('is-open');
+                    }
+                    if (clipsMenuToggle) {
+                        clipsMenuToggle.setAttribute('aria-expanded', 'false');
                     }
                     return;
                 }
@@ -1554,6 +1562,9 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                     if (clipsMenu) {
                         clipsMenu.classList.remove('is-open');
                     }
+                    if (clipsMenuToggle) {
+                        clipsMenuToggle.setAttribute('aria-expanded', 'false');
+                    }
                     return;
                 }
 
@@ -1565,6 +1576,9 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
                         if (clipsMenu) {
                             clipsMenu.classList.remove('is-open');
+                        }
+                        if (clipsMenuToggle) {
+                            clipsMenuToggle.setAttribute('aria-expanded', 'false');
                         }
 
                         if (action === 'hide_post' || action === 'delete_post') {
@@ -1603,6 +1617,9 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
             if (!wrap && clipsMenu) {
                 clipsMenu.classList.remove('is-open');
+                if (clipsMenuToggle) {
+                    clipsMenuToggle.setAttribute('aria-expanded', 'false');
+                }
             }
         });
 

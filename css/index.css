@@ -8582,3 +8582,28 @@ body.light-theme .side-menu-account-toggle:focus-visible {
     background: rgba(104, 197, 219, 0.14) !important;
     color: #040607 !important;
 }
+
+/* Keep the Clips publication menu above the video/actions layers and reliably clickable. */
+body[data-page="clips"] .clips-info {
+    position: relative !important;
+    z-index: 1200 !important;
+}
+
+body[data-page="clips"] .clips-author-row,
+body[data-page="clips"] .clips-menu-wrap {
+    position: relative !important;
+    z-index: 1201 !important;
+}
+
+body[data-page="clips"] .clips-post-menu {
+    z-index: 1202 !important;
+    pointer-events: auto !important;
+}
+
+body[data-page="clips"] .clips-post-menu.is-open {
+    display: grid !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    pointer-events: auto !important;
+}
