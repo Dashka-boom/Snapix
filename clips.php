@@ -776,14 +776,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 <div class="clips-comment-actions-modal" data-clips-comment-actions-modal>
                     <button type="button" class="clips-comment-actions-overlay" data-clips-comment-actions-close aria-label="Закрыть меню"></button>
                     <div class="post-menu clips-comment-actions-dialog" data-clips-comment-actions-dialog>
-                        <button type="button" class="post-menu-item" data-clips-comment-action="share">
-                            <img src="icon/dark theme/addcommunication.png" alt="">
-                            <span>Поделиться</span>
-                        </button>
-                        <button type="button" class="post-menu-item" data-clips-comment-action="toggle_save" data-clips-comment-favorite-btn data-save-post-id="">
-                            <img src="icon/dark theme/favourites.png" alt="">
-                            <span>Избранное</span>
-                        </button>
                         <button type="button" class="post-menu-item post-menu-item-danger" data-clips-comment-action="report_post">
                             <img src="icon/complaint.png" alt="">
                             <span>Пожаловаться</span>
@@ -802,52 +794,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                             <p class="clips-stats-status">Загрузка...</p>
                         </div>
                     </div>
-                </div>
-                <div class="clips-share-modal" data-clips-share-modal>
-                    <button type="button" class="clips-share-modal-overlay" data-clips-share-close aria-label="Закрыть отправку"></button>
-                    <div class="clips-share-modal-dialog" role="dialog" aria-modal="true" aria-label="Отправить">
-                        <div class="clips-share-modal-header">
-                            <button type="button" class="clips-share-modal-close" data-clips-share-close aria-label="Закрыть">×</button>
-                            <h3>Отправить</h3>
-                            <span class="clips-share-header-spacer" aria-hidden="true"></span>
-                        </div>
-                        <div class="home-feed-tabs clips-share-tabs" role="tablist" aria-label="Категории отправки">
-                            <button type="button" class="home-feed-tab is-active" data-clips-share-tab="followers">Подписчики</button>
-                            <button type="button" class="home-feed-tab" data-clips-share-tab="following">Подписки</button>
-                            <button type="button" class="home-feed-tab" data-clips-share-tab="search">Поиск</button>
-                        </div>
-                        <div class="clips-share-modal-content">
-                            <section class="clips-share-panel is-active" data-clips-share-panel="followers">
-                                <div class="clips-share-users">
-                                    <div class="clips-share-user"><span class="clips-share-avatar">A</span><span class="clips-share-login">alex_follow</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">M</span><span class="clips-share-login">mira_follower</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">N</span><span class="clips-share-login">niko_88</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                </div>
-                            </section>
-                            <section class="clips-share-panel" data-clips-share-panel="following">
-                                <div class="clips-share-users">
-                                    <div class="clips-share-user"><span class="clips-share-avatar">L</span><span class="clips-share-login">luna_following</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">R</span><span class="clips-share-login">roma_artist</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">D</span><span class="clips-share-login">diana_clip</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                </div>
-                            </section>
-                            <section class="clips-share-panel" data-clips-share-panel="search">
-                                <div class="clips-share-search-wrap">
-                                    <input type="text" class="clips-share-search-input" placeholder="Поиск" aria-label="Поиск">
-                                    <img src="icon/dark theme/search.png" alt="" class="clips-share-search-icon">
-                                </div>
-                                <div class="clips-share-users">
-                                    <div class="clips-share-user"><span class="clips-share-avatar">S</span><span class="clips-share-login">search_user</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <p class="clips-share-empty">Такого пользователя нет</p>
-                                </div>
-                            </section>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="clips-nav" aria-label="Навигация Clips">
-                    <button type="button" class="clips-nav-btn" data-clips-prev aria-label="Предыдущий clips">↑</button>
-                    <button type="button" class="clips-nav-btn" data-clips-next aria-label="Следующий clips">↓</button>
                 </div>
             </section>
         <?php else: ?>
@@ -942,11 +888,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         };
         var commentActionsModal = document.querySelector('[data-clips-comment-actions-modal]');
         var commentActionsDialog = document.querySelector('[data-clips-comment-actions-dialog]');
-        var commentFavoriteButton = document.querySelector('[data-clips-comment-favorite-btn]');
-        var shareModal = document.querySelector('[data-clips-share-modal]');
         var followButton = document.querySelector('[data-clips-follow-btn]');
-        var shareTabButtons = document.querySelectorAll('[data-clips-share-tab]');
-        var sharePanels = document.querySelectorAll('[data-clips-share-panel]');
         var followRelationMap = <?php echo json_encode($relatedUserIds, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?> || {};
 
         function getEmptyStateMarkup() {
@@ -1088,11 +1030,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                     buttons.save.classList.toggle('is-saved', !!clip.state.saved);
                     buttons.save.setAttribute('data-save-post-id', String(clip.id));
                 }
-                if (commentFavoriteButton) {
-                    commentFavoriteButton.setAttribute('data-save-post-id', String(clip.id));
-                    commentFavoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
-                }
-                syncCommentFavoriteUi();
 
                 if (clipsMenuAccount) {
                     clipsMenuAccount.href = clip.author.profileUrl;
@@ -1187,26 +1124,12 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             }).join('');
         }
 
-        function syncCommentFavoriteUi() {
-            if (!commentsList || !clips.length) {
-                return;
-            }
-            var clip = clips[currentIndex];
-            var nodes = commentsList.querySelectorAll('.clips-comment-item .clips-comment-menu-btn');
-            nodes.forEach(function (favoriteButton) {
-                favoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
-            });
-        }
 
         function openCommentActionsModal(commentIndex) {
             if (!commentActionsModal || !clips.length) {
                 return;
             }
             activeCommentIndex = commentIndex;
-            if (commentFavoriteButton) {
-                var clip = clips[currentIndex];
-                commentFavoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
-            }
             commentActionsModal.classList.add('is-open');
         }
 
@@ -1218,29 +1141,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             commentActionsModal.classList.remove('is-open');
         }
 
-        function openShareModal() {
-            if (!shareModal) {
-                return;
-            }
-            shareModal.classList.add('is-open');
-        }
-
-        function closeShareModal() {
-            if (!shareModal) {
-                return;
-            }
-            shareModal.classList.remove('is-open');
-        }
-
-        function setShareTab(nextTab) {
-            shareTabButtons.forEach(function (tabButton) {
-                var isActive = tabButton.getAttribute('data-clips-share-tab') === nextTab;
-                tabButton.classList.toggle('is-active', isActive);
-            });
-            sharePanels.forEach(function (panel) {
-                panel.classList.toggle('is-active', panel.getAttribute('data-clips-share-panel') === nextTab);
-            });
-        }
 
         function formatStatsDate(value) {
             var parts = String(value || '').split('-');
@@ -1378,7 +1278,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 }
 
                 renderComments(data.comments || []);
-                syncCommentFavoriteUi();
             }).catch(function () {
                 commentsList.innerHTML = '<p class="comments-empty">Не удалось загрузить комментарии.</p>';
             });
@@ -1422,11 +1321,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                     var clip = clips[currentIndex];
                     var comment = commentsCache[activeCommentIndex] || null;
 
-                    if (action === 'share') {
-                        openShareModal();
-                        closeCommentActionsModal();
-                        return;
-                    }
                     if (action === 'report_post' && window.SnapixReportModal) {
                         window.SnapixReportModal.open({
                             login: (clip.author && clip.author.login) ? clip.author.login : 'user',
@@ -1445,12 +1339,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                     sendClipAction(action).then(function (data) {
                         if (!data || !data.ok) {
                             return;
-                        }
-                        clip.counts.saves = data.saves_count;
-                        clip.state.saved = !!data.saved;
-                        updateSavedStateEverywhere(clip.id, !!data.saved, data.saves_count);
-                        if (action === 'toggle_save') {
-                            animateButton(buttons.save, !!data.saved);
                         }
                         closeCommentActionsModal();
                     }).catch(function () {});
@@ -1578,12 +1466,10 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             var selectorPostId = String(postId || '');
             document.querySelectorAll('[data-save-post-id="' + selectorPostId + '"]').forEach(function (node) {
                 node.classList.toggle('is-saved', !!isSaved);
-                node.classList.toggle('is-favorited', !!isSaved);
             });
             if (typeof savesCount !== 'undefined' && counts.saves) {
                 counts.saves.textContent = formatCount(savesCount);
             }
-            syncCommentFavoriteUi();
         }
 
         document.querySelector('[data-clips-prev]').addEventListener('click', function () {
@@ -1709,15 +1595,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
 
         document.querySelectorAll('[data-clips-stats-close]').forEach(function (button) {
             button.addEventListener('click', closeStatsModal);
-        });
-
-        document.querySelectorAll('[data-clips-share-close]').forEach(function (button) {
-            button.addEventListener('click', closeShareModal);
-        });
-        shareTabButtons.forEach(function (button) {
-            button.addEventListener('click', function () {
-                setShareTab(button.getAttribute('data-clips-share-tab') || 'followers');
-            });
         });
 
 
