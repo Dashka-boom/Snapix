@@ -296,7 +296,7 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
             <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
             <?php $authorLogin = (string) ($post['author_login'] ?? $profileUser['login']); ?>
             <?php $authorAvatar = (string) ($post['author_avatar'] ?? $profileUser['avatar'] ?? ''); ?>
-            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars($authorLogin); ?>" data-post-author-avatar="<?php echo htmlspecialchars($authorAvatar); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-viewer-follow-status="<?php echo htmlspecialchars((string) ($post['viewer_follow_status'] ?? '')); ?>">
+            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars($authorLogin); ?>" data-post-author-avatar="<?php echo htmlspecialchars($authorAvatar); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-is-following-author="<?php echo in_array((string) ($post['viewer_follow_status'] ?? ''), ['accepted', 'pending'], true) ? '1' : '0'; ?>" data-post-viewer-follow-status="<?php echo htmlspecialchars((string) ($post['viewer_follow_status'] ?? '')); ?>">
                 <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                     <video class="post-card-media" preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                 <?php elseif (!empty($post['media_url'])): ?>
@@ -347,7 +347,7 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                             <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" data-post-action="share" aria-label="Отправить в сообщения"><img src="icon/dark theme/share.png" alt=""></button><span class="feed-action-count" data-post-id="<?php echo (int) $post['id']; ?>" data-post-count="shares"><?php echo (int) ($post['shares_count'] ?? 0); ?></span></div>
                         <?php endif; ?>
                     </div>
-                    <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>">
+                    <div class="comments-modal" id="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>">
                         <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>"></div>
                         <div class="comments-modal-dialog"><div class="comments-modal-header"><h3>Комментарии</h3><button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button></div><div class="comments-modal-body">
                             <?php if ($postComments): ?><?php foreach ($postComments as $comment): ?><div class="comment-item"><strong><?php echo htmlspecialchars($comment['login']); ?></strong><p><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p></div><?php endforeach; ?><?php else: ?><p class="comments-empty">Пока нет комментариев.</p><?php endif; ?>
@@ -1635,7 +1635,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 if (avatarLink) avatarLink.href = authorUrl;
                 if (loginLink) loginLink.href = authorUrl;
                 if (follow) {
-                    follow.hidden = !authorId || authorId === currentUserId || ['accepted', 'pending'].indexOf(card.dataset.postViewerFollowStatus || '') !== -1;
+                    follow.hidden = !authorId || authorId === currentUserId || card.dataset.postIsFollowingAuthor === '1';
                     follow.disabled = false;
                     follow.dataset.authorId = String(authorId || '');
                 }
@@ -1667,12 +1667,21 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 document.body.style.overflow = 'hidden';
             }
 
+            window.snapixOpenPostViewer = openViewer;
+
             document.querySelectorAll('.profile-media-grid .post-card').forEach((card) => {
                 card.addEventListener('click', (event) => {
-                    if (event.target.closest('button, a, form, .post-hover-overlay, .post-menu-wrap, .comments-modal')) return;
+                    if (event.target.closest('button, a, form, .profile-hover-action-item, .post-menu-wrap, .comments-modal')) return;
                     openViewer(card);
                 });
             });
+
+            const linkedPostId = new URLSearchParams(window.location.search).get('open_post') || new URLSearchParams(window.location.search).get('comments_post');
+            if (linkedPostId) {
+                const safeLinkedPostId = String(linkedPostId).replace(/[^0-9]/g, '');
+                const linkedCard = safeLinkedPostId ? document.querySelector('.profile-media-grid .post-card[data-post-id="' + safeLinkedPostId + '"]') : null;
+                if (linkedCard) openViewer(linkedCard);
+            }
 
             viewer.querySelectorAll('[data-post-viewer-close]').forEach((node) => node.addEventListener('click', closeViewer));
             document.addEventListener('keydown', (event) => {
@@ -1973,11 +1982,14 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
         })();
 
         document.querySelectorAll('.js-open-comments-modal').forEach((button) => {
-            button.addEventListener('click', () => {
-                const modalId = button.getAttribute('data-modal');
-                const modal = modalId ? document.getElementById(modalId) : null;
-                if (modal) {
-                    modal.classList.add('is-open');
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const card = button.closest('[data-post-id]');
+                if (card) {
+                    card.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                    const input = document.querySelector('#profilePostViewerCommentForm [name="comment_text"]');
+                    if (input) input.focus();
                 }
             });
         });

@@ -1244,7 +1244,7 @@ if ($feedPosts) {
                                         <?php echo nl2br(htmlspecialchars($post['caption'])); ?>
                                     </div>
                                 <?php endif; ?>
-                                <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-<?php echo (int) $post['id']; ?>">
+                                <div class="comments-modal" id="comments-modal-<?php echo (int) $post['id']; ?>">
                                     <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>"></div>
                                     <div class="comments-modal-dialog">
                                         <div class="comments-modal-header">
@@ -1790,7 +1790,9 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         mediaHost.innerHTML = '';
     }
 
-    document.querySelectorAll('body[data-page="home"] .feed-posts-grid .feed-card').forEach(function (card) {
+    window.snapixOpenPostViewer = openViewer;
+
+    document.querySelectorAll('body[data-page="home"] .feed-posts-grid .feed-card[data-post-id]').forEach(function (card) {
         card.addEventListener('click', function (event) {
             if (event.target.closest('button, form, a, input, textarea, select, label, .profile-hover-action-item, .post-menu-wrap')) {
                 return;
@@ -1798,6 +1800,13 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
             openViewer(card);
         });
     });
+
+    var linkedPostId = new URLSearchParams(window.location.search).get('open_post') || new URLSearchParams(window.location.search).get('comments_post');
+    if (linkedPostId) {
+        var safeLinkedPostId = String(linkedPostId).replace(/[^0-9]/g, '');
+        var linkedCard = safeLinkedPostId ? document.querySelector('body[data-page="home"] .feed-posts-grid .feed-card[data-post-id="' + safeLinkedPostId + '"]') : null;
+        if (linkedCard) openViewer(linkedCard);
+    }
 
     viewer.querySelectorAll('[data-post-viewer-close]').forEach(function (node) {
         node.addEventListener('click', closeViewer);
@@ -2262,11 +2271,14 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
 })();
 
 document.querySelectorAll('.js-open-comments-modal').forEach(function (button) {
-    button.addEventListener('click', function () {
-        var modalId = button.getAttribute('data-modal');
-        var modal = modalId ? document.getElementById(modalId) : null;
-        if (modal) {
-            modal.classList.add('is-open');
+    button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var card = button.closest('[data-post-id]');
+        if (card && window.snapixOpenPostViewer) {
+            window.snapixOpenPostViewer(card);
+            var input = document.querySelector('#profilePostViewerCommentForm [name="comment_text"]');
+            if (input) input.focus();
         }
     });
 });
