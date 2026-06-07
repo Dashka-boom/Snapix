@@ -918,7 +918,7 @@ body[data-page="chat"] .snapix-icon {
     position: absolute;
     left: 50%;
     top: 0;
-    width: 3px;
+    width: 2px;
     height: 17px;
     background: #040607;
     border-radius: 999px;
@@ -932,8 +932,8 @@ body[data-page="chat"] .snapix-icon {
     bottom: 0;
     width: 13px;
     height: 13px;
-    border-right: 3px solid #040607;
-    border-bottom: 3px solid #040607;
+    border-right: 2px solid #040607;
+    border-bottom: 2px solid #040607;
     transform: translateX(-50%) rotate(45deg);
     border-radius: 2px;
 }
