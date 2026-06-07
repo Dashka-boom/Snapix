@@ -74,6 +74,33 @@ function ensureChatSchema(PDO $pdo): void
     $ready = true;
 }
 
+function formatDialogLastMessagePreview(array $dialog, int $currentUserId): string
+{
+    $rawText = trim((string) ($dialog['last_message'] ?? ''));
+    if ($rawText === '') {
+        return 'Нет сообщений';
+    }
+
+    $isMine = (int) ($dialog['last_message_sender_id'] ?? 0) === $currentUserId;
+    $prefix = $isMine ? 'Вы' : (string) ($dialog['last_message_sender_login'] ?? $dialog['partner_login'] ?? 'Пользователь');
+    $lowerText = mb_strtolower($rawText);
+    $postId = (int) ($dialog['last_message_post_id'] ?? 0);
+
+    if ($postId > 0 || str_starts_with($rawText, '[post_share]|')) {
+        $preview = $isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
+    } elseif (str_starts_with($lowerText, '[photo]') || str_starts_with($lowerText, '[image]')) {
+        $preview = $isMine ? 'отправили фото' : 'отправил(а) фото';
+    } elseif (str_starts_with($lowerText, '[gif]')) {
+        $preview = $isMine ? 'отправили GIF' : 'отправил(а) GIF';
+    } elseif (str_starts_with($lowerText, '[voice]') || str_starts_with($lowerText, '[audio]')) {
+        $preview = 'голосовое сообщение';
+    } else {
+        $preview = $rawText;
+    }
+
+    return $prefix . ': ' . $preview;
+}
+
 function getDialogs(PDO $pdo, int $userId): array
 {
     $dialogsStmt = $pdo->prepare('
@@ -82,7 +109,11 @@ function getDialogs(PDO $pdo, int $userId): array
             partner.id AS partner_id,
             partner.login AS partner_login,
             partner.avatar AS partner_avatar,
+            partner.background_image AS partner_background_image,
+            latest.sender_id AS last_message_sender_id,
+            sender.login AS last_message_sender_login,
             latest.message_text AS last_message,
+            latest.post_id AS last_message_post_id,
             latest.created_at AS last_message_created_at,
             (
                 SELECT COUNT(*)
@@ -100,12 +131,19 @@ function getDialogs(PDO $pdo, int $userId): array
             ORDER BY m2.created_at DESC, m2.id DESC
             LIMIT 1
         )
+        LEFT JOIN users AS sender ON sender.id = latest.sender_id
         WHERE chats.user_one_id = :user_id OR chats.user_two_id = :user_id
         ORDER BY COALESCE(latest.created_at, chats.created_at) DESC
     ');
     $dialogsStmt->execute(['user_id' => $userId]);
+    $dialogs = $dialogsStmt->fetchAll();
 
-    return $dialogsStmt->fetchAll();
+    foreach ($dialogs as &$dialog) {
+        $dialog['last_message_preview'] = formatDialogLastMessagePreview($dialog, $userId);
+    }
+    unset($dialog);
+
+    return $dialogs;
 }
 
 function getMessages(PDO $pdo, int $chatId, int $userId): array
@@ -119,9 +157,11 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
     $messagesStmt = $pdo->prepare('
         SELECT
             m.id, m.sender_id, m.message_text, m.post_id, m.created_at, m.edited_at, m.deleted_for_all,
-            m.reply_to_message_id, m.forwarded_from_message_id
+            m.reply_to_message_id, m.forwarded_from_message_id,
+            CASE WHEN pm.id IS NULL THEN 0 ELSE 1 END AS is_pinned
         FROM messages m
         LEFT JOIN message_hidden mh ON mh.message_id = m.id AND mh.user_id = :user_id
+        LEFT JOIN pinned_messages pm ON pm.message_id = m.id AND pm.chat_id = m.chat_id
         WHERE m.chat_id = :chat_id
           AND mh.id IS NULL
         ORDER BY m.created_at ASC, m.id ASC
@@ -216,7 +256,7 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
             'message_text' => $text,
             'post_id' => $sharedPostId > 0 ? $sharedPostId : null,
             'created_at' => $message['created_at'],
-            'created_at_human' => date('d.m.Y H:i', strtotime((string) $message['created_at'])),
+            'created_at_human' => date('H:i', strtotime((string) $message['created_at'])),
             'is_mine' => (int) $message['sender_id'] === $userId,
             'is_post_share' => $isPostShare,
             'shared_post' => $sharedPost,
@@ -224,6 +264,7 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
             'forwarded_from_message_id' => (int) ($message['forwarded_from_message_id'] ?? 0),
             'deleted_for_all' => (int) ($message['deleted_for_all'] ?? 0) === 1,
             'is_edited' => !empty($message['edited_at']),
+            'is_pinned' => (int) ($message['is_pinned'] ?? 0) > 0,
             'reactions' => [],
             'my_reaction' => null,
         ];
@@ -298,7 +339,7 @@ function getPinnedMessages(PDO $pdo, int $chatId, int $userId): array
         WHERE pm.chat_id = :chat_id
           AND mh.id IS NULL
         ORDER BY pm.created_at DESC
-        LIMIT 5
+        LIMIT 1
     ');
     $stmt->execute([
         'chat_id' => $chatId,
@@ -312,6 +353,7 @@ function getPinnedMessages(PDO $pdo, int $chatId, int $userId): array
             'post_id' => (int) ($item['post_id'] ?? 0),
             'deleted_for_all' => (int) ($item['deleted_for_all'] ?? 0) === 1,
             'shared_post' => (int) ($item['post_id'] ?? 0) > 0,
+            'is_pinned' => true,
         ];
     }, $stmt->fetchAll());
 }
@@ -433,14 +475,41 @@ if ($action === 'delete' && $chatBelongsToUser) {
     }
 }
 
-if ($action === 'pin' && $chatBelongsToUser) {
+if (($action === 'pin' || $action === 'unpin') && $chatBelongsToUser) {
     $messageId = (int) ($_POST['message_id'] ?? 0);
-    $pdo->prepare('INSERT IGNORE INTO pinned_messages (chat_id, message_id, pinned_by_user_id) VALUES (:chat_id, :message_id, :user_id)')
-        ->execute([
-            'chat_id' => $chatId,
-            'message_id' => $messageId,
-            'user_id' => $currentUserId,
-        ]);
+    $messageExistsStmt = $pdo->prepare('SELECT id FROM messages WHERE id = :message_id AND chat_id = :chat_id LIMIT 1');
+    $messageExistsStmt->execute([
+        'message_id' => $messageId,
+        'chat_id' => $chatId,
+    ]);
+    if (!$messageExistsStmt->fetchColumn()) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'message_not_found']);
+        exit;
+    }
+
+    if ($action === 'pin') {
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare('DELETE FROM pinned_messages WHERE chat_id = :chat_id')->execute(['chat_id' => $chatId]);
+            $pdo->prepare('INSERT INTO pinned_messages (chat_id, message_id, pinned_by_user_id) VALUES (:chat_id, :message_id, :user_id)')
+                ->execute([
+                    'chat_id' => $chatId,
+                    'message_id' => $messageId,
+                    'user_id' => $currentUserId,
+                ]);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    } else {
+        $pdo->prepare('DELETE FROM pinned_messages WHERE chat_id = :chat_id AND message_id = :message_id')
+            ->execute([
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+            ]);
+    }
 }
 
 if ($action === 'forward' && $chatBelongsToUser) {
