@@ -297,7 +297,12 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                         </div>
                         <div class="chat-composer-row">
                             <button type="button" class="chat-tool-button" aria-label="Прикрепить файл"><img src="icon/dark theme/paper clip.png" alt=""></button>
-                            <button type="button" class="chat-tool-button" aria-label="Стикеры и эмодзи"><img src="icon/dark theme/add stickers.png" alt=""></button>
+                            <div class="chat-emoji-tool">
+                                <button type="button" class="chat-tool-button" id="chat-emoji-button" aria-label="Стикеры и эмодзи" aria-expanded="false" aria-controls="chat-emoji-picker"><img src="icon/dark theme/add stickers.png" alt=""></button>
+                                <div class="chat-emoji-picker" id="chat-emoji-picker" hidden>
+                                    <button type="button" data-chat-emoji="😀">😀</button><button type="button" data-chat-emoji="😂">😂</button><button type="button" data-chat-emoji="😍">😍</button><button type="button" data-chat-emoji="🥰">🥰</button><button type="button" data-chat-emoji="😎">😎</button><button type="button" data-chat-emoji="👍">👍</button><button type="button" data-chat-emoji="🔥">🔥</button><button type="button" data-chat-emoji="❤️">❤️</button><button type="button" data-chat-emoji="🎉">🎉</button><button type="button" data-chat-emoji="🙏">🙏</button><button type="button" data-chat-emoji="😢">😢</button><button type="button" data-chat-emoji="😮">😮</button>
+                                </div>
+                            </div>
                             <button type="button" class="chat-tool-button" aria-label="Голосовое сообщение"><img src="icon/dark theme/microphone.png" alt=""></button>
                             <label class="chat-input-shell" for="chat-message-input">
                                 <input type="text" id="chat-message-input" maxlength="1000" placeholder="Сообщение" autocomplete="off">
@@ -345,6 +350,8 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var messageInput = document.getElementById('chat-message-input');
     var dialogSearch = document.getElementById('chat-dialog-search');
     var scrollBottomButton = document.getElementById('chat-scroll-bottom');
+    var chatEmojiButton = document.getElementById('chat-emoji-button');
+    var chatEmojiPicker = document.getElementById('chat-emoji-picker');
     var pinnedBox = document.getElementById('chat-pinned');
     window.pinnedMessage = <?php echo json_encode($activePinnedMessage, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     var replyBox = document.getElementById('chat-reply-box');
@@ -738,6 +745,59 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     if (scrollBottomButton) {
         scrollBottomButton.addEventListener('click', function () {
             scrollMessagesToBottom('smooth');
+        });
+    }
+
+    if (chatEmojiButton && chatEmojiPicker && messageInput) {
+        var chatEmojiWrap = chatEmojiButton.closest('.chat-emoji-tool');
+
+        function setChatEmojiPickerOpen(isOpen) {
+            chatEmojiPicker.hidden = !isOpen;
+            chatEmojiButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        function insertChatEmojiAtCursor(input, emoji) {
+            if (!input || !emoji) {
+                return;
+            }
+
+            input.focus();
+            var start = typeof input.selectionStart === 'number' ? input.selectionStart : input.value.length;
+            var end = typeof input.selectionEnd === 'number' ? input.selectionEnd : start;
+
+            if (typeof input.setRangeText === 'function') {
+                input.setRangeText(emoji, start, end, 'end');
+            } else {
+                input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+                input.selectionStart = input.selectionEnd = start + emoji.length;
+            }
+
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        chatEmojiButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            setChatEmojiPickerOpen(chatEmojiPicker.hidden);
+        });
+
+        chatEmojiPicker.addEventListener('mousedown', function (event) {
+            event.preventDefault();
+        });
+
+        chatEmojiPicker.querySelectorAll('[data-chat-emoji]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                insertChatEmojiAtCursor(messageInput, button.getAttribute('data-chat-emoji') || '');
+                setChatEmojiPickerOpen(false);
+            });
+        });
+
+        document.addEventListener('click', function (event) {
+            if (chatEmojiPicker.hidden || (chatEmojiWrap && chatEmojiWrap.contains(event.target))) {
+                return;
+            }
+            setChatEmojiPickerOpen(false);
         });
     }
 
