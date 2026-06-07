@@ -868,26 +868,37 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     }
 
     function applyDialogSearch() {
+        console.log('search triggered');
+
         if (!dialogSearch || !dialogList) {
             return;
         }
 
         var query = dialogSearch.value.trim().toLowerCase();
+        console.log(query);
 
-        Array.prototype.forEach.call(dialogList.querySelectorAll('.dialog-item'), function (item) {
+        Array.prototype.forEach.call(dialogList.querySelectorAll('.dialog-item'), function (item, index) {
             var login = (item.getAttribute('data-dialog-login') || '').toLowerCase();
             var message = (item.getAttribute('data-dialog-message') || '').toLowerCase();
+
+            if (index === 0) {
+                console.log(login);
+                console.log(message);
+            }
 
             var isMatch = query === '' ||
                 login.indexOf(query) !== -1 ||
                 message.indexOf(query) !== -1;
 
             item.hidden = !isMatch;
+            item.style.display = isMatch ? '' : 'none';
         });
     }
 
     if (dialogSearch && dialogList) {
         dialogSearch.addEventListener('input', applyDialogSearch);
+        dialogSearch.addEventListener('keyup', applyDialogSearch);
+        dialogSearch.addEventListener('search', applyDialogSearch);
     }
 
     if (attachButton && attachmentInput && attachmentPreview) {
