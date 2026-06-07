@@ -496,7 +496,7 @@ body[data-page="chat"] .snapix-icon {
 .chat-pinned-item {
     border: 1px solid var(--chat-border);
     background: var(--chat-control);
-    color: #040607;
+    color: #040607 !important;
     border-radius: 999px;
     padding: 6px 12px;
     font-size: 12px;
@@ -504,6 +504,10 @@ body[data-page="chat"] .snapix-icon {
     align-items: center;
     gap: 6px;
     cursor: pointer;
+}
+
+.chat-pinned-item * {
+    color: #040607 !important;
 }
 
 .chat-messages-wrap {
