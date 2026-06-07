@@ -709,7 +709,7 @@ body[data-page="chat"] .snapix-icon {
 .chat-message-menu-item {
     border: 0;
     background: transparent;
-    color: var(--chat-text);
+    color: #040607 !important;
     text-align: left;
     border-radius: 11px;
     padding: 9px 10px;
@@ -717,6 +717,10 @@ body[data-page="chat"] .snapix-icon {
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
+}
+
+.chat-message-menu-item * {
+    color: #040607 !important;
 }
 
 .chat-message-menu-item:hover {
