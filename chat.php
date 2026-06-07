@@ -59,15 +59,13 @@ function formatDialogLastMessage(array $dialog, int $currentUserId): string
     $postId = (int) ($dialog['last_message_post_id'] ?? 0);
 
     if ($rawText === '' && $attachmentType !== '') {
-        $preview = $attachmentType === 'voice' ? 'голосовое сообщение' : ($attachmentType === 'gif' ? ($isMine ? 'отправили GIF' : 'отправил(а) GIF') : ($attachmentType === 'image' ? ($isMine ? 'отправили фото' : 'отправил(а) фото') : ($isMine ? 'отправили файл' : 'отправил(а) файл')));
+        $preview = $attachmentType === 'gif' ? ($isMine ? 'отправили GIF' : 'отправил(а) GIF') : ($attachmentType === 'image' ? ($isMine ? 'отправили фото' : 'отправил(а) фото') : ($isMine ? 'отправили файл' : 'отправил(а) файл'));
     } elseif ($postId > 0 || str_starts_with($rawText, '[post_share]|')) {
         $preview = $isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
     } elseif (str_starts_with($lowerText, '[photo]') || str_starts_with($lowerText, '[image]')) {
         $preview = $isMine ? 'отправили фото' : 'отправил(а) фото';
     } elseif (str_starts_with($lowerText, '[gif]')) {
         $preview = $isMine ? 'отправили GIF' : 'отправил(а) GIF';
-    } elseif (str_starts_with($lowerText, '[voice]') || str_starts_with($lowerText, '[audio]')) {
-        $preview = 'голосовое сообщение';
     } else {
         $preview = $rawText;
     }
@@ -322,7 +320,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                                     <button type="button" data-chat-emoji="😀">😀</button><button type="button" data-chat-emoji="😂">😂</button><button type="button" data-chat-emoji="😍">😍</button><button type="button" data-chat-emoji="🥰">🥰</button><button type="button" data-chat-emoji="😎">😎</button><button type="button" data-chat-emoji="👍">👍</button><button type="button" data-chat-emoji="🔥">🔥</button><button type="button" data-chat-emoji="❤️">❤️</button><button type="button" data-chat-emoji="🎉">🎉</button><button type="button" data-chat-emoji="🙏">🙏</button><button type="button" data-chat-emoji="😢">😢</button><button type="button" data-chat-emoji="😮">😮</button>
                                 </div>
                             </div>
-                            <button type="button" class="chat-tool-button" id="chat-voice-button" aria-label="Голосовое сообщение"><img src="icon/dark theme/microphone.png" alt=""></button>
+                            <button type="button" class="chat-tool-button" aria-label="Микрофон"><img src="icon/dark theme/microphone.png" alt=""></button>
                             <label class="chat-input-shell" for="chat-message-input">
                                 <span class="chat-attachment-preview" id="chat-attachment-preview" hidden>
                                     <img src="" alt="Предпросмотр вложения">
@@ -376,7 +374,6 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var attachmentInput = document.getElementById('chat-attachment-input');
     var attachmentPreview = document.getElementById('chat-attachment-preview');
     var attachmentRemove = document.getElementById('chat-attachment-remove');
-    var voiceButton = document.getElementById('chat-voice-button');
     var clearChatAttachment = null;
     var dialogSearch = document.getElementById('chat-dialog-search');
     var scrollBottomButton = document.getElementById('chat-scroll-bottom');
@@ -512,9 +509,6 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         var attachmentType = String((item && item.attachment_type) || '');
         if (attachmentType === 'image' || attachmentType === 'gif') {
             return '<img class="chat-message-attachment" src="' + escapeHtml(attachmentUrl) + '" alt="Вложение">';
-        }
-        if (attachmentType === 'voice' || attachmentType === 'audio') {
-            return '<audio class="chat-message-voice" src="' + escapeHtml(attachmentUrl) + '" controls preload="metadata"></audio>';
         }
         return '<a class="chat-message-file" href="' + escapeHtml(attachmentUrl) + '" target="_blank" rel="noopener">Файл</a>';
     }
@@ -721,15 +715,13 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         var preview = rawText;
 
         if (!rawText && attachmentType) {
-            preview = attachmentType === 'voice' ? 'голосовое сообщение' : (attachmentType === 'gif' ? (isMine ? 'отправили GIF' : 'отправил(а) GIF') : (attachmentType === 'image' ? (isMine ? 'отправили фото' : 'отправил(а) фото') : (isMine ? 'отправили файл' : 'отправил(а) файл')));
+            preview = attachmentType === 'gif' ? (isMine ? 'отправили GIF' : 'отправил(а) GIF') : (attachmentType === 'image' ? (isMine ? 'отправили фото' : 'отправил(а) фото') : (isMine ? 'отправили файл' : 'отправил(а) файл'));
         } else if (postId > 0 || rawText.indexOf('[post_share]|') === 0) {
             preview = isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
         } else if (lowerText.indexOf('[photo]') === 0 || lowerText.indexOf('[image]') === 0) {
             preview = isMine ? 'отправили фото' : 'отправил(а) фото';
         } else if (lowerText.indexOf('[gif]') === 0) {
             preview = isMine ? 'отправили GIF' : 'отправил(а) GIF';
-        } else if (lowerText.indexOf('[voice]') === 0 || lowerText.indexOf('[audio]') === 0) {
-            preview = 'голосовое сообщение';
         }
 
         return prefix + ': ' + preview;
@@ -956,122 +948,6 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 clearChatAttachment();
             });
         }
-    }
-
-    if (voiceButton && navigator.mediaDevices && window.MediaRecorder) {
-        var voiceRecorder = null;
-        var voiceChunks = [];
-        var voiceStream = null;
-        var isVoiceRecording = false;
-
-        function getVoiceMimeType() {
-            var candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg', 'audio/mp4'];
-            for (var i = 0; i < candidates.length; i += 1) {
-                if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(candidates[i])) {
-                    return candidates[i];
-                }
-            }
-            return '';
-        }
-
-        function voiceExtensionFromMime(mimeType) {
-            if (mimeType.indexOf('ogg') !== -1) return 'ogg';
-            if (mimeType.indexOf('mp4') !== -1) return 'm4a';
-            return 'webm';
-        }
-
-        function stopVoiceStream() {
-            if (voiceStream) {
-                voiceStream.getTracks().forEach(function (track) { track.stop(); });
-                voiceStream = null;
-            }
-        }
-
-        function sendVoiceBlob(blob, mimeType) {
-            if (!blob || !blob.size || !activeChatId) {
-                return;
-            }
-            var extension = voiceExtensionFromMime(mimeType || blob.type || 'audio/webm');
-            var voiceFile = new File([blob], 'voice_message.' + extension, { type: mimeType || blob.type || 'audio/webm' });
-            var body = new FormData();
-            body.set('action', 'send_voice');
-            body.set('chat_id', String(activeChatId));
-            body.set('voice_message', voiceFile);
-
-            fetch('chat-api.php', {
-                method: 'POST',
-                credentials: 'same-origin',
-                body: body
-            })
-                .then(function (response) { return response.json(); })
-                .then(function (data) {
-                    if (data.ok) {
-                        refreshChatState();
-                        if (Number(data.message_id || 0) > 0) {
-                            notifySocketAboutNewMessage(Number(data.message_id));
-                        }
-                    } else {
-                        lastError = data.error || 'voice_send_failed';
-                        console.error('Chat voice send error:', data);
-                    }
-                })
-                .catch(function (error) {
-                    lastError = 'voice_send_request_failed';
-                    console.error('Chat voice send request failed:', error);
-                });
-        }
-
-        function stopVoiceRecording() {
-            if (voiceRecorder && voiceRecorder.state !== 'inactive') {
-                voiceRecorder.stop();
-            }
-        }
-
-        function startVoiceRecording() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(function (stream) {
-                    voiceStream = stream;
-                    voiceChunks = [];
-                    var mimeType = getVoiceMimeType();
-                    voiceRecorder = mimeType ? new MediaRecorder(stream, { mimeType: mimeType }) : new MediaRecorder(stream);
-                    voiceRecorder.addEventListener('dataavailable', function (event) {
-                        if (event.data && event.data.size > 0) {
-                            voiceChunks.push(event.data);
-                        }
-                    });
-                    voiceRecorder.addEventListener('stop', function () {
-                        var recordedType = voiceRecorder && voiceRecorder.mimeType ? voiceRecorder.mimeType : (mimeType || 'audio/webm');
-                        var voiceBlob = new Blob(voiceChunks, { type: recordedType });
-                        voiceChunks = [];
-                        isVoiceRecording = false;
-                        voiceButton.classList.remove('is-recording');
-                        voiceButton.setAttribute('aria-pressed', 'false');
-                        stopVoiceStream();
-                        sendVoiceBlob(voiceBlob, recordedType);
-                    });
-                    isVoiceRecording = true;
-                    voiceButton.classList.add('is-recording');
-                    voiceButton.setAttribute('aria-pressed', 'true');
-                    voiceRecorder.start();
-                })
-                .catch(function (error) {
-                    isVoiceRecording = false;
-                    voiceButton.classList.remove('is-recording');
-                    voiceButton.setAttribute('aria-pressed', 'false');
-                    stopVoiceStream();
-                    lastError = 'voice_capture_failed';
-                    console.error('Chat voice capture failed:', error);
-                });
-        }
-
-        voiceButton.addEventListener('click', function (event) {
-            event.preventDefault();
-            if (isVoiceRecording) {
-                stopVoiceRecording();
-                return;
-            }
-            startVoiceRecording();
-        });
     }
 
     if (sendForm && messageInput) {
