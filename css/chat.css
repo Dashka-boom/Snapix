@@ -1046,6 +1046,8 @@ html[data-theme="light"] .chat-emoji-picker button:focus-visible {
     min-height: 48px;
     padding: 4px 4px 4px 18px;
     border-radius: 999px;
+    border: 0 !important;
+    box-shadow: none !important;
     background: var(--chat-control);
     display: flex;
     align-items: center;
@@ -1118,16 +1120,19 @@ html[data-theme="light"] .chat-attachment-preview {
 
 .chat-input-shell input,
 .chat-input-shell textarea {
-    min-width: 0;
     width: 100%;
+    min-width: 0;
     min-height: 38px;
     max-height: 86px;
-    border: 0;
-    outline: 0;
-    background: transparent;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
     color: var(--chat-text);
     font: inherit;
     line-height: 38px;
+    padding: 0;
+    margin: 0;
     resize: none;
     overflow-y: auto;
 }
