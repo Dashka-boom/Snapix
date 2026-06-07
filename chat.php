@@ -296,7 +296,8 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                             <button type="button" class="chat-reply-close" id="chat-reply-close" aria-label="Отменить ответ"><?php echo snapix_icon('x'); ?></button>
                         </div>
                         <div class="chat-composer-row">
-                            <button type="button" class="chat-tool-button" aria-label="Прикрепить файл"><img src="icon/dark theme/paper clip.png" alt=""></button>
+                            <button type="button" class="chat-tool-button" id="chat-attach-button" aria-label="Прикрепить файл"><img src="icon/dark theme/paper clip.png" alt=""></button>
+                            <input type="file" class="chat-attachment-input" id="chat-attachment-input" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" hidden>
                             <div class="chat-emoji-tool">
                                 <button type="button" class="chat-tool-button" id="chat-emoji-button" aria-label="Стикеры и эмодзи" aria-expanded="false" aria-controls="chat-emoji-picker"><img src="icon/dark theme/add stickers.png" alt=""></button>
                                 <div class="chat-emoji-picker" id="chat-emoji-picker" hidden>
@@ -305,6 +306,10 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                             </div>
                             <button type="button" class="chat-tool-button" aria-label="Голосовое сообщение"><img src="icon/dark theme/microphone.png" alt=""></button>
                             <label class="chat-input-shell" for="chat-message-input">
+                                <span class="chat-attachment-preview" id="chat-attachment-preview" hidden>
+                                    <img src="" alt="Предпросмотр фото">
+                                    <button type="button" id="chat-attachment-remove" aria-label="Удалить вложение">×</button>
+                                </span>
                                 <input type="text" id="chat-message-input" maxlength="1000" placeholder="Сообщение" autocomplete="off">
                                 <button type="submit" class="chat-submit-button" aria-label="Отправить сообщение"><?php echo snapix_icon('send'); ?></button>
                             </label>
@@ -348,6 +353,11 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var dialogList = document.getElementById('dialog-list');
     var sendForm = document.getElementById('chat-send-form');
     var messageInput = document.getElementById('chat-message-input');
+    var attachButton = document.getElementById('chat-attach-button');
+    var attachmentInput = document.getElementById('chat-attachment-input');
+    var attachmentPreview = document.getElementById('chat-attachment-preview');
+    var attachmentRemove = document.getElementById('chat-attachment-remove');
+    var clearChatAttachment = null;
     var dialogSearch = document.getElementById('chat-dialog-search');
     var scrollBottomButton = document.getElementById('chat-scroll-bottom');
     var chatEmojiButton = document.getElementById('chat-emoji-button');
@@ -816,6 +826,68 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         dialogSearch.addEventListener('input', applyDialogSearch);
     }
 
+    if (attachButton && attachmentInput && attachmentPreview) {
+        var selectedAttachmentUrl = '';
+        var allowedAttachmentTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        var allowedAttachmentExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+
+        clearChatAttachment = function () {
+            attachmentInput.value = '';
+            if (selectedAttachmentUrl) {
+                URL.revokeObjectURL(selectedAttachmentUrl);
+                selectedAttachmentUrl = '';
+            }
+            var previewImage = attachmentPreview.querySelector('img');
+            if (previewImage) {
+                previewImage.removeAttribute('src');
+            }
+            attachmentPreview.hidden = true;
+            if (messageInput) {
+                messageInput.focus();
+            }
+        };
+
+        attachButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            attachmentInput.click();
+        });
+
+        attachmentInput.addEventListener('change', function () {
+            var file = attachmentInput.files && attachmentInput.files[0] ? attachmentInput.files[0] : null;
+            if (!file) {
+                clearChatAttachment();
+                return;
+            }
+
+            var extension = (file.name.split('.').pop() || '').toLowerCase();
+            if ((file.type && allowedAttachmentTypes.indexOf(file.type) === -1) || allowedAttachmentExtensions.indexOf(extension) === -1) {
+                clearChatAttachment();
+                return;
+            }
+
+            if (selectedAttachmentUrl) {
+                URL.revokeObjectURL(selectedAttachmentUrl);
+            }
+            selectedAttachmentUrl = URL.createObjectURL(file);
+            var previewImage = attachmentPreview.querySelector('img');
+            if (previewImage) {
+                previewImage.src = selectedAttachmentUrl;
+            }
+            attachmentPreview.hidden = false;
+            if (messageInput) {
+                messageInput.focus();
+            }
+        });
+
+        if (attachmentRemove) {
+            attachmentRemove.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                clearChatAttachment();
+            });
+        }
+    }
+
     if (sendForm && messageInput) {
         sendForm.addEventListener('submit', function (event) {
             event.preventDefault();
@@ -846,6 +918,9 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 console.log('SEND RESPONSE:', data);
                     if (data.ok) {
                         messageInput.value = '';
+                        if (clearChatAttachment) {
+                            clearChatAttachment();
+                        }
                         clearReply();
                         if (Number(data.message_id || 0) > 0) {
                             notifySocketAboutNewMessage(Number(data.message_id));
