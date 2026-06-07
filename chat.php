@@ -297,7 +297,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                         </div>
                         <div class="chat-composer-row">
                             <button type="button" class="chat-tool-button" id="chat-attach-button" aria-label="Прикрепить файл"><img src="icon/dark theme/paper clip.png" alt=""></button>
-                            <input type="file" class="chat-attachment-input" id="chat-attachment-input" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" hidden>
+                            <input type="file" class="chat-attachment-input" id="chat-attachment-input" accept="image/gif,image/jpeg,image/png,image/webp,.gif,.jpg,.jpeg,.png,.webp" hidden>
                             <div class="chat-emoji-tool">
                                 <button type="button" class="chat-tool-button" id="chat-emoji-button" aria-label="Стикеры и эмодзи" aria-expanded="false" aria-controls="chat-emoji-picker"><img src="icon/dark theme/add stickers.png" alt=""></button>
                                 <div class="chat-emoji-picker" id="chat-emoji-picker" hidden>
@@ -828,8 +828,8 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 
     if (attachButton && attachmentInput && attachmentPreview) {
         var selectedAttachmentUrl = '';
-        var allowedAttachmentTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        var allowedAttachmentExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+        var allowedAttachmentTypes = ['image/gif', 'image/jpeg', 'image/png', 'image/webp'];
+        var allowedAttachmentExtensions = ['gif', 'jpg', 'jpeg', 'png', 'webp'];
 
         clearChatAttachment = function () {
             attachmentInput.value = '';
