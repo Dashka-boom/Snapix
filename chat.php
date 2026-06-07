@@ -273,7 +273,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 <?php else: ?>
                     <div class="dialog-list" id="dialog-list">
                         <?php foreach ($dialogs as $dialog): ?>
-                            <a href="chat.php?chat_id=<?php echo (int) $dialog['id']; ?>" class="dialog-item<?php echo (int) $dialog['id'] === $activeChatId ? ' is-active' : ''; ?>" data-chat-id="<?php echo (int) $dialog['id']; ?>" data-dialog-login="<?php echo htmlspecialchars(mb_strtolower($dialog['partner_login'])); ?>">
+                            <a href="chat.php?chat_id=<?php echo (int) $dialog['id']; ?>" class="dialog-item<?php echo (int) $dialog['id'] === $activeChatId ? ' is-active' : ''; ?>" data-chat-id="<?php echo (int) $dialog['id']; ?>" data-dialog-login="<?php echo htmlspecialchars(mb_strtolower($dialog['partner_login'])); ?>" data-dialog-message="<?php echo htmlspecialchars(mb_strtolower(formatDialogLastMessage($dialog, (int) $currentUser['id']))); ?>">
                                 <span class="dialog-avatar"<?php if (!empty($dialog['partner_avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($dialog['partner_avatar']); ?>');"<?php endif; ?>>
                                     <?php if (empty($dialog['partner_avatar'])): ?><?php echo htmlspecialchars(mb_substr($dialog['partner_login'], 0, 1)); ?><?php endif; ?>
                                 </span>
@@ -751,10 +751,11 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 : '<span class="dialog-avatar">' + escapeHtml(dialog.partner_login.slice(0, 1)) + '</span>';
             var unread = dialog.unread_count > 0 ? '<span class="dialog-unread">' + dialog.unread_count + '</span>' : '';
             var activeClass = Number(dialog.id) === activeChatId ? ' is-active' : '';
+            var lastMessageText = formatDialogLastMessage(dialog);
 
-            return '<a href="chat.php?chat_id=' + Number(dialog.id) + '" class="dialog-item' + activeClass + '" data-chat-id="' + Number(dialog.id) + '" data-dialog-login="' + escapeHtml((dialog.partner_login || '').toLowerCase()) + '">' +
+            return '<a href="chat.php?chat_id=' + Number(dialog.id) + '" class="dialog-item' + activeClass + '" data-chat-id="' + Number(dialog.id) + '" data-dialog-login="' + escapeHtml((dialog.partner_login || '').toLowerCase()) + '" data-dialog-message="' + escapeHtml(lastMessageText.toLowerCase()) + '">' +
                 avatar +
-                '<span class="dialog-content"><strong>' + escapeHtml(dialog.partner_login) + '</strong><small>' + escapeHtml(formatDialogLastMessage(dialog)) + '</small></span>' +
+                '<span class="dialog-content"><strong>' + escapeHtml(dialog.partner_login) + '</strong><small>' + escapeHtml(lastMessageText) + '</small></span>' +
                 unread +
                 '</a>';
         }).join('');
@@ -870,10 +871,18 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         if (!dialogSearch || !dialogList) {
             return;
         }
+
         var query = dialogSearch.value.trim().toLowerCase();
+
         Array.prototype.forEach.call(dialogList.querySelectorAll('.dialog-item'), function (item) {
             var login = (item.getAttribute('data-dialog-login') || '').toLowerCase();
-            item.hidden = query !== '' && login.indexOf(query) === -1;
+            var message = (item.getAttribute('data-dialog-message') || '').toLowerCase();
+
+            var isMatch = query === '' ||
+                login.indexOf(query) !== -1 ||
+                message.indexOf(query) !== -1;
+
+            item.hidden = !isMatch;
         });
     }
 
