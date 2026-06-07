@@ -517,24 +517,15 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         return '<a class="chat-message-file" href="' + escapeHtml(attachmentUrl) + '" target="_blank" rel="noopener">Файл</a>';
     }
 
-    function buildMessageProfileUrl(item) {
-        var senderId = Number((item && (item.sender_id || item.user_id)) || 0);
-        if (!senderId) {
-            return '#';
-        }
-        return senderId === currentUserId ? 'profile.php' : 'user.php?id=' + senderId;
-    }
-
     function buildMessageRowHtml(item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
             var senderLogin = item.sender_login || (item.is_mine ? 'Вы' : 'Пользователь');
             var senderAvatar = item.sender_avatar || item.avatar_url || '';
             var senderInitial = senderLogin ? senderLogin.slice(0, 1) : '?';
-            var senderProfileUrl = buildMessageProfileUrl(item);
             var avatarHtml = senderAvatar
-                ? '<a class="chat-message-avatar" href="' + escapeHtml(senderProfileUrl) + '" aria-label="Открыть профиль ' + escapeHtml(senderLogin) + '" style="background-image: url(\'' + escapeHtml(senderAvatar) + '\');"></a>'
-                : '<a class="chat-message-avatar" href="' + escapeHtml(senderProfileUrl) + '" aria-label="Открыть профиль ' + escapeHtml(senderLogin) + '">' + escapeHtml(senderInitial) + '</a>';
-            var authorHtml = '<a class="chat-message-author" href="' + escapeHtml(senderProfileUrl) + '">' + escapeHtml(senderLogin) + '</a>';
+                ? '<span class="chat-message-avatar" style="background-image: url(\'' + escapeHtml(senderAvatar) + '\');"></span>'
+                : '<span class="chat-message-avatar">' + escapeHtml(senderInitial) + '</span>';
+            var authorHtml = '';
             var messageBody = escapeHtml(item.message_text || '');
             if (messageBody.indexOf('[post_share]|') === 0) {
                 messageBody = 'Пересланная публикация недоступна';
