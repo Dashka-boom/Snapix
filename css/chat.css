@@ -771,6 +771,10 @@ body[data-page="chat"] .snapix-icon {
     cursor: pointer;
 }
 
+.chat-reaction-badge span:last-child {
+    color: #040607;
+}
+
 .chat-reaction-badge.is-active {
     background: rgba(4, 6, 7, .16);
 }
