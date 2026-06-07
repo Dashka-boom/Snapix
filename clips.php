@@ -93,10 +93,135 @@ function clips_fetch_follow_relation_map(PDO $pdo, int $currentUserId): array
     return $relationMap;
 }
 
+
+function clips_fetch_post_stats(PDO $pdo, int $postId, int $ownerUserId): array
+{
+    $totalsStmt = $pdo->prepare('
+        SELECT
+            (SELECT COUNT(*) FROM likes WHERE post_id = :likes_post_id) AS likes_total,
+            (SELECT COUNT(*) FROM comments WHERE post_id = :comments_post_id AND is_deleted = 0) AS comments_total,
+            (SELECT COUNT(*) FROM reposts WHERE post_id = :reposts_post_id) AS reposts_total,
+            (SELECT COUNT(*) FROM saved_posts WHERE post_id = :saves_post_id) AS saves_total
+    ');
+    $totalsStmt->execute([
+        'likes_post_id' => $postId,
+        'comments_post_id' => $postId,
+        'reposts_post_id' => $postId,
+        'saves_post_id' => $postId,
+    ]);
+    $totals = $totalsStmt->fetch() ?: [];
+
+    $dailyStmt = $pdo->prepare('
+        SELECT
+            event_day,
+            SUM(likes_count) AS likes,
+            SUM(comments_count) AS comments,
+            SUM(reposts_count) AS reposts,
+            SUM(saves_count) AS saves
+        FROM (
+            SELECT DATE(created_at) AS event_day, COUNT(*) AS likes_count, 0 AS comments_count, 0 AS reposts_count, 0 AS saves_count
+            FROM likes
+            WHERE post_id = :daily_likes_post_id
+            GROUP BY DATE(created_at)
+            UNION ALL
+            SELECT DATE(created_at) AS event_day, 0 AS likes_count, COUNT(*) AS comments_count, 0 AS reposts_count, 0 AS saves_count
+            FROM comments
+            WHERE post_id = :daily_comments_post_id AND is_deleted = 0
+            GROUP BY DATE(created_at)
+            UNION ALL
+            SELECT DATE(created_at) AS event_day, 0 AS likes_count, 0 AS comments_count, COUNT(*) AS reposts_count, 0 AS saves_count
+            FROM reposts
+            WHERE post_id = :daily_reposts_post_id
+            GROUP BY DATE(created_at)
+            UNION ALL
+            SELECT DATE(created_at) AS event_day, 0 AS likes_count, 0 AS comments_count, 0 AS reposts_count, COUNT(*) AS saves_count
+            FROM saved_posts
+            WHERE post_id = :daily_saves_post_id
+            GROUP BY DATE(created_at)
+        ) AS events
+        WHERE event_day IS NOT NULL
+        GROUP BY event_day
+        ORDER BY event_day ASC
+    ');
+    $dailyStmt->execute([
+        'daily_likes_post_id' => $postId,
+        'daily_comments_post_id' => $postId,
+        'daily_reposts_post_id' => $postId,
+        'daily_saves_post_id' => $postId,
+    ]);
+
+    $daily = [];
+    foreach (($dailyStmt->fetchAll() ?: []) as $row) {
+        $daily[] = [
+            'date' => (string) ($row['event_day'] ?? ''),
+            'likes' => (int) ($row['likes'] ?? 0),
+            'comments' => (int) ($row['comments'] ?? 0),
+            'reposts' => (int) ($row['reposts'] ?? 0),
+            'saves' => (int) ($row['saves'] ?? 0),
+        ];
+    }
+
+    $topPostStmt = $pdo->prepare('
+        SELECT
+            posts.id,
+            post_media.media_url,
+            post_media.media_type,
+            (
+                COALESCE(likes_agg.likes_count, 0) +
+                COALESCE(comments_agg.comments_count, 0) +
+                COALESCE(reposts_agg.reposts_count, 0) +
+                COALESCE(saves_agg.saves_count, 0)
+            ) AS interactions_total
+        FROM posts
+        LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
+        LEFT JOIN (
+            SELECT post_id, COUNT(*) AS likes_count
+            FROM likes
+            GROUP BY post_id
+        ) AS likes_agg ON likes_agg.post_id = posts.id
+        LEFT JOIN (
+            SELECT post_id, COUNT(*) AS comments_count
+            FROM comments
+            WHERE is_deleted = 0
+            GROUP BY post_id
+        ) AS comments_agg ON comments_agg.post_id = posts.id
+        LEFT JOIN (
+            SELECT post_id, COUNT(*) AS reposts_count
+            FROM reposts
+            GROUP BY post_id
+        ) AS reposts_agg ON reposts_agg.post_id = posts.id
+        LEFT JOIN (
+            SELECT post_id, COUNT(*) AS saves_count
+            FROM saved_posts
+            GROUP BY post_id
+        ) AS saves_agg ON saves_agg.post_id = posts.id
+        WHERE posts.user_id = :owner_user_id
+          AND posts.is_deleted = 0
+        ORDER BY interactions_total DESC, posts.created_at DESC, posts.id DESC
+        LIMIT 1
+    ');
+    $topPostStmt->execute(['owner_user_id' => $ownerUserId]);
+    $topPost = $topPostStmt->fetch() ?: [];
+
+    return [
+        'likes_total' => (int) ($totals['likes_total'] ?? 0),
+        'comments_total' => (int) ($totals['comments_total'] ?? 0),
+        'reposts_total' => (int) ($totals['reposts_total'] ?? 0),
+        'saves_total' => (int) ($totals['saves_total'] ?? 0),
+        'daily' => $daily,
+        'top_post' => $topPost ? [
+            'id' => (int) ($topPost['id'] ?? 0),
+            'media_url' => (string) ($topPost['media_url'] ?? ''),
+            'media_type' => (string) ($topPost['media_type'] ?? ''),
+            'interactions_total' => (int) ($topPost['interactions_total'] ?? 0),
+        ] : [],
+    ];
+}
+
 $user = null;
 
 if (isset($_SESSION['user_id'])) {
-    $stmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, login, avatar, role FROM users WHERE id = :id');
     $stmt->execute(['id' => $_SESSION['user_id']]);
     $user = $stmt->fetch() ?: null;
 }
@@ -104,8 +229,8 @@ if (isset($_SESSION['user_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'delete_post', 'toggle_follow_user'], true);
-    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment', 'delete_post', 'toggle_follow_user', 'get_follow_relations'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'delete_post', 'toggle_follow_user', 'get_clip_post_stats'], true);
+    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment', 'delete_post', 'toggle_follow_user', 'get_follow_relations', 'get_clip_post_stats'], true);
 
     if ($requiresAuth && !$user) {
         snapix_send_post_action_error('login_required', 401);
@@ -240,6 +365,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ajaxExtra['deleted'] = true;
     }
 
+    if ($action === 'get_clip_post_stats') {
+        if ($postId <= 0 || !$postExists) {
+            snapix_send_post_action_error('post_not_found', 404);
+        }
+
+        $canViewStats = $postOwnerId === (int) $user['id'] || in_array((string) ($user['role'] ?? ''), ['admin', 'moderator'], true);
+        if (!$canViewStats) {
+            snapix_send_post_action_error('forbidden', 403);
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'stats' => clips_fetch_post_stats($pdo, $postId, $postOwnerId),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     if ($action === 'get_comments') {
         if ($postId <= 0 || !$postExists) {
             snapix_send_post_action_error('post_not_found', 404);
@@ -355,6 +498,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $currentUserId = (int) ($user['id'] ?? 0);
 $relatedUserIds = clips_fetch_follow_relation_map($pdo, $currentUserId);
+$canModerateClips = in_array((string) ($user['role'] ?? ''), ['admin', 'moderator'], true);
 
 $clipsStmt = $pdo->query('
     SELECT
@@ -527,7 +671,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                                         <img src="icon/trash.png" alt="">
                                         <span>Удалить</span>
                                     </button>
-                                    <button type="button" class="post-menu-item">
+                                    <button type="button" class="post-menu-item" data-clips-menu-action="open_stats" data-clips-stats-btn data-post-id="">
                                         <img src="icon/dark theme/analytic.png" alt="">
                                         <span>Кто посмотрел пост</span>
                                     </button>
@@ -537,6 +681,12 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                                         <img src="icon/dark theme/об аккаунте.png" alt="">
                                         <span>Об аккаунте</span>
                                     </a>
+                                    <?php if ($canModerateClips): ?>
+                                        <button type="button" class="post-menu-item" data-clips-menu-action="open_stats" data-clips-stats-btn data-post-id="">
+                                            <img src="icon/dark theme/analytic.png" alt="">
+                                            <span>Кто посмотрел пост</span>
+                                        </button>
+                                    <?php endif; ?>
                                     <?php if ($user): ?>
                                         <button type="button" class="post-menu-item" data-clips-menu-action="hide_post">
                                             <img src="icon/dark theme/dislike.png" alt="">
@@ -638,6 +788,19 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                             <img src="icon/complaint.png" alt="">
                             <span>Пожаловаться</span>
                         </button>
+                    </div>
+                </div>
+                <div class="clips-stats-modal" data-clips-stats-modal aria-hidden="true">
+                    <button type="button" class="clips-stats-modal-overlay" data-clips-stats-close aria-label="Закрыть статистику"></button>
+                    <div class="clips-stats-modal-dialog" role="dialog" aria-modal="true" aria-label="Статистика публикации">
+                        <div class="clips-stats-modal-header">
+                            <button type="button" class="clips-stats-modal-close" data-clips-stats-close aria-label="Закрыть">×</button>
+                            <h3>Статистика публикации</h3>
+                            <span class="clips-stats-header-spacer" aria-hidden="true"></span>
+                        </div>
+                        <div class="clips-stats-modal-body" data-clips-stats-content>
+                            <p class="clips-stats-status">Загрузка...</p>
+                        </div>
                     </div>
                 </div>
                 <div class="clips-share-modal" data-clips-share-modal>
@@ -756,6 +919,9 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         var clipsMenuForeign = document.querySelector('[data-clips-menu-foreign]');
         var clipsMenuAccount = document.querySelector('[data-clips-menu-account]');
         var clipsBlockLabel = document.querySelector('[data-clips-block-label]');
+        var clipsStatsButtons = document.querySelectorAll('[data-clips-stats-btn]');
+        var statsModal = document.querySelector('[data-clips-stats-modal]');
+        var statsContent = document.querySelector('[data-clips-stats-content]');
         var commentLinks = document.querySelectorAll('[data-clips-comment-link]');
         var commentsModal = document.querySelector('[data-clips-comments-modal]');
         var commentsList = document.querySelector('[data-clips-comments-list]');
@@ -934,6 +1100,9 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 if (clipsBlockLabel) {
                     clipsBlockLabel.textContent = 'Добавить ' + clip.author.login + ' в чёрный список';
                 }
+                clipsStatsButtons.forEach(function (button) {
+                    button.setAttribute('data-post-id', String(clip.id));
+                });
                 if (clipsMenuOwn) {
                     clipsMenuOwn.classList.toggle('is-hidden', !isOwnClip);
                 }
@@ -1070,6 +1239,99 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             });
             sharePanels.forEach(function (panel) {
                 panel.classList.toggle('is-active', panel.getAttribute('data-clips-share-panel') === nextTab);
+            });
+        }
+
+        function formatStatsDate(value) {
+            var parts = String(value || '').split('-');
+            if (parts.length !== 3) {
+                return value || '';
+            }
+            return parts[2] + '.' + parts[1] + '.' + parts[0];
+        }
+
+        function renderStatsLoading() {
+            if (!statsContent) {
+                return;
+            }
+            statsContent.innerHTML = '<p class="clips-stats-status">Загрузка...</p>';
+        }
+
+        function renderStatsError(message) {
+            if (!statsContent) {
+                return;
+            }
+            statsContent.innerHTML = '<p class="clips-stats-status is-error">' + escapeHtml(message || 'Не удалось загрузить статистику.') + '</p>';
+        }
+
+        function renderStats(stats) {
+            if (!statsContent) {
+                return;
+            }
+            var daily = Array.isArray(stats.daily) ? stats.daily : [];
+            var dailyRows = daily.length ? daily.map(function (day) {
+                return '<tr><td>' + escapeHtml(formatStatsDate(day.date)) + '</td><td>' + escapeHtml(day.likes || 0) + '</td><td>' + escapeHtml(day.comments || 0) + '</td><td>' + escapeHtml(day.reposts || 0) + '</td><td>' + escapeHtml(day.saves || 0) + '</td></tr>';
+            }).join('') : '<tr><td colspan="5">Данных по дням пока нет.</td></tr>';
+            var topPost = stats.top_post || {};
+            var topPostMedia = topPost.media_url ? '<div class="clips-stats-top-thumb">' + (topPost.media_type === 'video' ? '<video src="' + escapeHtml(topPost.media_url) + '" muted playsinline></video>' : '<img src="' + escapeHtml(topPost.media_url) + '" alt="">') + '</div>' : '<div class="clips-stats-top-thumb is-empty">#</div>';
+            var topPostMarkup = topPost.id
+                ? '<div class="clips-stats-top-post">' + topPostMedia + '<div><strong>ID публикации: ' + escapeHtml(topPost.id) + '</strong><span>Всего взаимодействий: ' + escapeHtml(topPost.interactions_total || 0) + '</span></div></div>'
+                : '<p class="clips-stats-status">Пока нет публикаций для сравнения.</p>';
+
+            statsContent.innerHTML =
+                '<p class="clips-stats-period">Период: всё время</p>' +
+                '<div class="clips-stats-cards">' +
+                    '<section class="clips-stats-card"><span>Всего лайков за период</span><strong>' + escapeHtml(stats.likes_total || 0) + '</strong></section>' +
+                    '<section class="clips-stats-card"><span>Всего комментариев</span><strong>' + escapeHtml(stats.comments_total || 0) + '</strong></section>' +
+                    '<section class="clips-stats-card"><span>Всего репостов</span><strong>' + escapeHtml(stats.reposts_total || 0) + '</strong></section>' +
+                    '<section class="clips-stats-card"><span>Всего добавлений в избранное</span><strong>' + escapeHtml(stats.saves_total || 0) + '</strong></section>' +
+                '</div>' +
+                '<section class="clips-stats-section"><h4>Динамика по дням</h4><div class="clips-stats-table-wrap"><table class="clips-stats-table"><thead><tr><th>Дата</th><th>Лайки</th><th>Комментарии</th><th>Репосты</th><th>Избранное</th></tr></thead><tbody>' + dailyRows + '</tbody></table></div></section>' +
+                '<section class="clips-stats-section"><h4>Пост с наибольшим количеством взаимодействий</h4>' + topPostMarkup + '</section>';
+        }
+
+        function closeStatsModal() {
+            if (!statsModal) {
+                return;
+            }
+            statsModal.classList.remove('is-open');
+            statsModal.setAttribute('aria-hidden', 'true');
+        }
+
+        function openStatsModal(postId) {
+            if (!statsModal || !statsContent || !postId) {
+                return;
+            }
+            statsModal.classList.add('is-open');
+            statsModal.setAttribute('aria-hidden', 'false');
+            renderStatsLoading();
+            var formData = new URLSearchParams();
+            formData.set('action', 'get_clip_post_stats');
+            formData.set('post_id', String(postId));
+            fetch('clips.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'Accept': 'application/json'
+                },
+                body: formData.toString()
+            }).then(function (response) {
+                if (!response.ok) {
+                    return response.json().catch(function () { return {}; }).then(function (payload) {
+                        throw new Error(payload.error || 'Не удалось загрузить статистику.');
+                    });
+                }
+                return response.json();
+            }).then(function (payload) {
+                if (!payload || !payload.ok) {
+                    renderStatsError('Не удалось загрузить статистику.');
+                    return;
+                }
+                renderStats(payload.stats || {});
+            }).catch(function (error) {
+                renderStatsError(error && error.message ? error.message : 'Не удалось загрузить статистику.');
             });
         }
 
@@ -1384,6 +1646,14 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 var action = button.getAttribute('data-clips-menu-action');
                 var clip = clips[currentIndex];
 
+                if (action === 'open_stats') {
+                    openStatsModal(button.getAttribute('data-post-id') || (clip ? clip.id : ''));
+                    if (clipsMenu) {
+                        clipsMenu.classList.remove('is-open');
+                    }
+                    return;
+                }
+
                 if (action === 'report_post' && window.SnapixReportModal) {
                     window.SnapixReportModal.open({
                         login: (clip.author && clip.author.login) ? clip.author.login : 'user',
@@ -1437,6 +1707,10 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             });
         });
 
+        document.querySelectorAll('[data-clips-stats-close]').forEach(function (button) {
+            button.addEventListener('click', closeStatsModal);
+        });
+
         document.querySelectorAll('[data-clips-share-close]').forEach(function (button) {
             button.addEventListener('click', closeShareModal);
         });
@@ -1456,6 +1730,11 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         });
 
         document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && statsModal && statsModal.classList.contains('is-open')) {
+                closeStatsModal();
+                return;
+            }
+
             if (event.key === 'ArrowUp') {
                 event.preventDefault();
                 navigateClip(-1);
