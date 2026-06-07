@@ -282,7 +282,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                         </div>
                         <button type="button" class="chat-thread-more" aria-label="Действия диалога"><?php echo snapix_icon('more-horizontal'); ?></button>
                     </div>
-                    <div class="chat-pinned-wrapper" id="chatPinnedWrapper"></div>
+                    <div class="chat-pinned is-hidden" id="chat-pinned"></div>
                     <div class="chat-messages-wrap">
                         <div class="chat-messages" id="chat-messages"></div>
                         <button type="button" class="chat-scroll-bottom is-hidden" id="chat-scroll-bottom" aria-label="Перейти к последнему сообщению"><span class="chat-scroll-arrow"></span></button>
@@ -345,7 +345,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var messageInput = document.getElementById('chat-message-input');
     var dialogSearch = document.getElementById('chat-dialog-search');
     var scrollBottomButton = document.getElementById('chat-scroll-bottom');
-    var pinnedBox = document.getElementById('chatPinnedWrapper');
+    var pinnedBox = document.getElementById('chat-pinned');
     window.pinnedMessage = <?php echo json_encode($activePinnedMessage, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     var replyBox = document.getElementById('chat-reply-box');
     var replyText = document.getElementById('chat-reply-text');
@@ -432,13 +432,13 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         }
         if (!message) {
             pinnedBox.innerHTML = '';
-            pinnedBox.style.display = 'none';
+            pinnedBox.classList.add('is-hidden');
             return;
         }
 
-        pinnedBox.style.display = 'flex';
+        pinnedBox.classList.remove('is-hidden');
         pinnedBox.innerHTML =
-            '<button type="button" class="chat-pinned" data-scroll-message-id="' + Number(message.id) + '">' +
+            '<button type="button" class="chat-pinned-item" data-scroll-message-id="' + Number(message.id) + '">' +
                 '<img src="icon/dark theme/pinn.png" class="chat-pinned-icon" alt="">' +
                 '<div class="chat-pinned-content">' +
                     '<span class="chat-pinned-label">Закрепленное сообщение</span>' +

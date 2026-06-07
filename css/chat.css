@@ -480,13 +480,17 @@ body[data-page="chat"] .snapix-icon {
     white-space: nowrap;
 }
 
-.chat-pinned-wrapper {
+.chat-pinned {
     width: 100%;
     padding: 8px 14px;
+    display: flex;
+}
+
+.chat-pinned.is-hidden {
     display: none;
 }
 
-.chat-pinned {
+.chat-pinned-item {
     width: 100%;
     border-radius: 16px;
     background: rgba(106, 198, 221, 0.18);
@@ -500,7 +504,7 @@ body[data-page="chat"] .snapix-icon {
     cursor: pointer;
 }
 
-.chat-pinned * {
+.chat-pinned-item * {
     color: #040607 !important;
 }
 
