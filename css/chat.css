@@ -496,7 +496,7 @@ body[data-page="chat"] .snapix-icon {
 .chat-pinned-item {
     border: 1px solid var(--chat-border);
     background: var(--chat-control);
-    color: var(--chat-text);
+    color: #040607;
     border-radius: 999px;
     padding: 6px 12px;
     font-size: 12px;
