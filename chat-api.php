@@ -74,6 +74,33 @@ function ensureChatSchema(PDO $pdo): void
     $ready = true;
 }
 
+function formatDialogLastMessagePreview(array $dialog, int $currentUserId): string
+{
+    $rawText = trim((string) ($dialog['last_message'] ?? ''));
+    if ($rawText === '') {
+        return 'Нет сообщений';
+    }
+
+    $isMine = (int) ($dialog['last_message_sender_id'] ?? 0) === $currentUserId;
+    $prefix = $isMine ? 'Вы' : (string) ($dialog['last_message_sender_login'] ?? $dialog['partner_login'] ?? 'Пользователь');
+    $lowerText = mb_strtolower($rawText);
+    $postId = (int) ($dialog['last_message_post_id'] ?? 0);
+
+    if ($postId > 0 || str_starts_with($rawText, '[post_share]|')) {
+        $preview = $isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
+    } elseif (str_starts_with($lowerText, '[photo]') || str_starts_with($lowerText, '[image]')) {
+        $preview = $isMine ? 'отправили фото' : 'отправил(а) фото';
+    } elseif (str_starts_with($lowerText, '[gif]')) {
+        $preview = $isMine ? 'отправили GIF' : 'отправил(а) GIF';
+    } elseif (str_starts_with($lowerText, '[voice]') || str_starts_with($lowerText, '[audio]')) {
+        $preview = 'голосовое сообщение';
+    } else {
+        $preview = $rawText;
+    }
+
+    return $prefix . ': ' . $preview;
+}
+
 function getDialogs(PDO $pdo, int $userId): array
 {
     $dialogsStmt = $pdo->prepare('
@@ -82,7 +109,11 @@ function getDialogs(PDO $pdo, int $userId): array
             partner.id AS partner_id,
             partner.login AS partner_login,
             partner.avatar AS partner_avatar,
+            partner.background_image AS partner_background_image,
+            latest.sender_id AS last_message_sender_id,
+            sender.login AS last_message_sender_login,
             latest.message_text AS last_message,
+            latest.post_id AS last_message_post_id,
             latest.created_at AS last_message_created_at,
             (
                 SELECT COUNT(*)
@@ -100,12 +131,19 @@ function getDialogs(PDO $pdo, int $userId): array
             ORDER BY m2.created_at DESC, m2.id DESC
             LIMIT 1
         )
+        LEFT JOIN users AS sender ON sender.id = latest.sender_id
         WHERE chats.user_one_id = :user_id OR chats.user_two_id = :user_id
         ORDER BY COALESCE(latest.created_at, chats.created_at) DESC
     ');
     $dialogsStmt->execute(['user_id' => $userId]);
+    $dialogs = $dialogsStmt->fetchAll();
 
-    return $dialogsStmt->fetchAll();
+    foreach ($dialogs as &$dialog) {
+        $dialog['last_message_preview'] = formatDialogLastMessagePreview($dialog, $userId);
+    }
+    unset($dialog);
+
+    return $dialogs;
 }
 
 function getMessages(PDO $pdo, int $chatId, int $userId): array
@@ -216,7 +254,7 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
             'message_text' => $text,
             'post_id' => $sharedPostId > 0 ? $sharedPostId : null,
             'created_at' => $message['created_at'],
-            'created_at_human' => date('d.m.Y H:i', strtotime((string) $message['created_at'])),
+            'created_at_human' => date('H:i', strtotime((string) $message['created_at'])),
             'is_mine' => (int) $message['sender_id'] === $userId,
             'is_post_share' => $isPostShare,
             'shared_post' => $sharedPost,
