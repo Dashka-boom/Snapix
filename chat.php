@@ -240,7 +240,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                     <div class="chat-pinned" id="chat-pinned"></div>
                     <div class="chat-messages-wrap">
                         <div class="chat-messages" id="chat-messages"></div>
-                        <button type="button" class="chat-scroll-bottom is-hidden" id="chat-scroll-bottom" aria-label="Перейти к последнему сообщению">⌄</button>
+                        <button type="button" class="chat-scroll-bottom is-hidden" id="chat-scroll-bottom" aria-label="Перейти к последнему сообщению"><span class="chat-scroll-arrow"></span></button>
                     </div>
                     <form class="chat-send-form" id="chat-send-form">
                         <div class="chat-reply-box is-hidden" id="chat-reply-box">

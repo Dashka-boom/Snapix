@@ -893,17 +893,49 @@ body[data-page="chat"] .snapix-icon {
     position: absolute;
     right: 28px;
     bottom: 22px;
-    width: 48px;
-    height: 48px;
-    border: 0;
+    width: 54px;
+    height: 54px;
     border-radius: 50%;
     background: var(--chat-accent);
-    color: var(--chat-bubble-text);
-    font-size: 28px;
-    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
     cursor: pointer;
     box-shadow: 0 12px 30px rgba(104, 197, 219, .22);
     transition: opacity .18s ease, transform .18s ease;
+}
+
+.chat-scroll-arrow {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+.chat-scroll-arrow::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 4px;
+    height: 14px;
+    background: #040607;
+    border-radius: 999px;
+    transform: translateX(-50%);
+}
+
+.chat-scroll-arrow::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 12px;
+    height: 12px;
+    border-right: 4px solid #040607;
+    border-bottom: 4px solid #040607;
+    transform: translateX(-50%) rotate(45deg);
+    border-radius: 2px;
 }
 
 .chat-scroll-bottom.is-hidden {
