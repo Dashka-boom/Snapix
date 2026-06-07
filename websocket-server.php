@@ -133,7 +133,7 @@ class SnapixChatServer implements MessageComponentInterface
             'sender_id' => (int) $message['sender_id'],
             'message_text' => (string) $message['message_text'],
             'created_at' => (string) $message['created_at'],
-            'created_at_human' => date('d.m.Y H:i', strtotime((string) $message['created_at'])),
+            'created_at_human' => date('H:i', strtotime((string) $message['created_at'])),
 
              'deleted_for_all' => false,
              'is_edited' => false,
