@@ -13,12 +13,7 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $query = trim((string) ($_GET['q'] ?? ''));
-$normalizedQuery = snapix_normalize_hashtags($query);
-$searchHashtag = '';
-
-if ($normalizedQuery !== '') {
-    $searchHashtag = snapix_split_hashtags($normalizedQuery)[0] ?? '';
-}
+$searchHashtag = snapix_normalize_hashtag_search_query($query);
 
 $posts = [];
 
@@ -66,7 +61,7 @@ if ($searchHashtag !== '') {
             <form class="hashtag-search-form" method="get" action="search.php">
                 <label for="hashtag-search-input">Хештег</label>
                 <div class="hashtag-search-row">
-                    <input id="hashtag-search-input" type="text" name="q" placeholder="#snapix" value="<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8'); ?>">
+                    <input id="hashtag-search-input" type="text" name="q" maxlength="300" placeholder="#snapix" value="<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8'); ?>">
                     <button type="submit" class="primary-link">Найти</button>
                 </div>
             </form>
@@ -98,7 +93,7 @@ if ($searchHashtag !== '') {
                                     <?php endif; ?>
                                     <?php if (!empty($post['hashtags'])): ?>
                                         <div class="post-viewer-hashtags hashtag-search-tags">
-                                            <?php foreach (snapix_split_hashtags((string) $post['hashtags']) as $tag): ?>
+                                            <?php foreach (snapix_split_safe_hashtags((string) $post['hashtags']) as $tag): ?>
                                                 <a href="search.php?q=<?php echo urlencode($tag); ?>"><?php echo htmlspecialchars($tag); ?></a>
                                             <?php endforeach; ?>
                                         </div>

@@ -123,11 +123,16 @@ function storePostMedia(array $file): array
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $caption = trim($_POST['caption'] ?? '');
-    $hashtags = snapix_normalize_hashtags((string) ($_POST['hashtags'] ?? ''));
+    $hashtagError = null;
+    $hashtags = snapix_validate_and_normalize_hashtags((string) ($_POST['hashtags'] ?? ''), $hashtagError);
     $newMedia = null;
     $oldMediaUrl = (string) ($post['media_url'] ?? '');
 
     try {
+        if ($hashtagError !== null) {
+            throw new RuntimeException($hashtagError);
+        }
+
         if (isset($_FILES['media']) && ($_FILES['media']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
             $newMedia = storePostMedia($_FILES['media']);
         }
@@ -238,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="field">
                     <label for="hashtags">Хештеги</label>
-                    <input id="hashtags" name="hashtags" type="text" maxlength="500" placeholder="#snapix #photo #travel" value="<?php echo htmlspecialchars($hashtags, ENT_QUOTES, 'UTF-8'); ?>">
+                    <input id="hashtags" name="hashtags" type="text" maxlength="300" placeholder="#snapix #photo #travel" value="<?php echo htmlspecialchars($hashtags, ENT_QUOTES, 'UTF-8'); ?>">
                 </div>
 
                 <p class="form-status<?php echo $error === '' ? '' : ' is-error'; ?>" aria-live="polite"><?php echo htmlspecialchars($error); ?></p>

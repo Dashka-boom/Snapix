@@ -244,7 +244,15 @@ if (isset($_POST['save_to_db']) && $_POST['save_to_db'] === '1') {
     }
 
     $caption = trim((string) ($_POST['caption'] ?? ''));
-    $hashtags = snapix_normalize_hashtags((string) ($_POST['hashtags'] ?? ''));
+    $hashtagError = null;
+    $hashtags = snapix_validate_and_normalize_hashtags((string) ($_POST['hashtags'] ?? ''), $hashtagError);
+
+    if ($hashtagError !== null) {
+        clips_json_response([
+            'success' => false,
+            'error' => $hashtagError,
+        ], 422);
+    }
 
     try {
         $pdo->beginTransaction();
