@@ -1472,13 +1472,20 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
             }
         }
 
-        document.querySelector('[data-clips-prev]').addEventListener('click', function () {
-            navigateClip(-1);
-        });
+        var clipsPrevButton = document.querySelector('[data-clips-prev]');
+        var clipsNextButton = document.querySelector('[data-clips-next]');
 
-        document.querySelector('[data-clips-next]').addEventListener('click', function () {
-            navigateClip(1);
-        });
+        if (clipsPrevButton) {
+            clipsPrevButton.addEventListener('click', function () {
+                navigateClip(-1);
+            });
+        }
+
+        if (clipsNextButton) {
+            clipsNextButton.addEventListener('click', function () {
+                navigateClip(1);
+            });
+        }
 
         document.querySelectorAll('[data-clips-action]').forEach(function (button) {
             button.addEventListener('click', function () {
