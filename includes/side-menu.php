@@ -495,7 +495,7 @@ function render_side_menu(?array $sideMenuUser = null): void
                 <img src="icon/dark theme/notification.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Уведомления</span>
             </a>
-            <a href="search.php" class="side-menu-item" aria-label="Поиск">
+            <a href="search.php" class="side-menu-item" aria-label="Поиск" data-search-trigger aria-controls="searchDrawer" aria-expanded="false">
                 <img src="icon/dark theme/search.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Поиск</span>
             </a>
@@ -538,6 +538,31 @@ function render_side_menu(?array $sideMenuUser = null): void
         <?php endif; ?>
     </aside>
     <?php render_notifications_drawer($sideMenuUser); ?>
+    <section class="search-drawer" id="searchDrawer" aria-label="Поиск" aria-hidden="true">
+        <header class="search-drawer-header">
+            <h2>Поиск</h2>
+            <button type="button" class="search-drawer-close" data-search-close aria-label="Закрыть поиск">×</button>
+        </header>
+
+        <div class="search-drawer-input-wrap">
+            <input type="search" class="search-drawer-input" placeholder="Поиск" aria-label="Поиск">
+        </div>
+
+        <div class="search-tabs" role="tablist" aria-label="Категории поиска">
+            <button type="button" class="search-tab is-active" data-search-tab="users" role="tab" aria-selected="true">
+                Пользователи
+            </button>
+            <button type="button" class="search-tab" data-search-tab="hashtags" role="tab" aria-selected="false">
+                Хештеги
+            </button>
+        </div>
+
+        <div class="search-results">
+            <div class="search-results-panel is-active" data-search-panel="users"></div>
+            <div class="search-results-panel" data-search-panel="hashtags"></div>
+        </div>
+    </section>
+    <div class="search-drawer-backdrop" data-search-backdrop aria-hidden="true"></div>
 
     <?php $moderationAlert = snapix_side_fetch_unread_moderation_notification($sideMenuUser); ?>
     <?php if ($moderationAlert): ?>
@@ -585,6 +610,7 @@ function render_side_menu(?array $sideMenuUser = null): void
         window.IS_AUTH = <?php echo $sideMenuUser ? 'true' : 'false'; ?>;
     </script>
     <script src="js/notifications-drawer.js" defer></script>
+    <script src="js/search-drawer.js" defer></script>
     <script src="js/moderation-alert.js" defer></script>
     <script src="js/report-modal.js" defer></script>
     <script src="js/theme-toggle.js" defer></script>
