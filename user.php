@@ -1273,7 +1273,36 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Просмотр публикации">
                 <div class="post-viewer-menu-wrap" data-post-viewer-menu-wrap>
                     <button type="button" class="post-viewer-menu-toggle" data-post-viewer-menu-toggle aria-label="Действия с публикацией" aria-expanded="false">•••</button>
-                    <div class="post-viewer-menu" data-post-viewer-menu hidden></div>
+                    <div class="post-viewer-menu" data-post-viewer-menu hidden>
+                <div class="post-viewer-menu-own is-hidden">
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="edit_post">
+                        <img src="icon/dark theme/edd.png" alt="">
+                        <span>Редактировать</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="open_stats">
+                        <img src="icon/dark theme/analytic.png" alt="">
+                        <span>Кто посмотрел пост</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item post-viewer-menu-item-danger" data-post-viewer-menu-action="delete_post">
+                        <img src="icon/trash.png" alt="">
+                        <span>Удалить пост</span>
+                    </button>
+                </div>
+                <div class="post-viewer-menu-foreign is-hidden">
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="hide_post">
+                        <img src="icon/dark theme/dislike.png" alt="">
+                        <span>Не интересно</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="block_user">
+                        <img src="icon/dark theme/stop.png" alt="">
+                        <span data-post-viewer-block-label>Добавить пользователя в чёрный список</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item post-viewer-menu-item-danger" data-post-viewer-menu-action="report_post">
+                        <img src="icon/complaint.png" alt="">
+                        <span>Пожаловаться</span>
+                    </button>
+                </div>
+            </div>
                 </div>
                 <button type="button" class="profile-post-viewer-close" data-post-viewer-close aria-label="Закрыть">×</button>
                 <div class="profile-post-viewer-media" id="profilePostViewerMedia"></div>
@@ -1399,6 +1428,9 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             const commentForm = document.getElementById('profilePostViewerCommentForm');
             const postViewerMenuToggle = viewer ? viewer.querySelector('[data-post-viewer-menu-toggle]') : null;
             const postViewerMenu = viewer ? viewer.querySelector('[data-post-viewer-menu]') : null;
+            const postViewerMenuOwn = viewer ? viewer.querySelector('.post-viewer-menu-own') : null;
+            const postViewerMenuForeign = viewer ? viewer.querySelector('.post-viewer-menu-foreign') : null;
+            const postViewerBlockLabel = viewer ? viewer.querySelector('[data-post-viewer-block-label]') : null;
             if (!viewer || !mediaHost) return;
 
             function closePostViewerMenu() {
@@ -1414,6 +1446,17 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 const shouldOpen = postViewerMenu.hidden;
                 postViewerMenu.hidden = !shouldOpen;
                 postViewerMenuToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+            }
+
+            function updatePostViewerMenu(card, authorId) {
+                const currentUserId = Number((window.snapixCurrentUser || {}).id || 0);
+                const isOwnPost = !!currentUserId && Number(authorId || 0) === currentUserId;
+                if (postViewerMenuOwn) postViewerMenuOwn.classList.toggle('is-hidden', !isOwnPost);
+                if (postViewerMenuForeign) postViewerMenuForeign.classList.toggle('is-hidden', isOwnPost);
+                if (postViewerBlockLabel) {
+                    const authorLogin = (card.dataset.postAuthorLogin || '').trim() || 'пользователя';
+                    postViewerBlockLabel.textContent = `Добавить ${authorLogin} в чёрный список`;
+                }
             }
 
             function closeViewer() {
@@ -1656,6 +1699,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 const authorUrl = authorId && authorId === currentUserId ? 'profile.php' : 'user.php?id=' + encodeURIComponent(String(authorId));
                 if (avatarLink) avatarLink.href = authorUrl;
                 if (loginLink) loginLink.href = authorUrl;
+                updatePostViewerMenu(card, authorId);
                 if (follow) {
                     follow.hidden = !authorId || authorId === currentUserId || card.dataset.postIsFollowingAuthor === '1';
                     follow.disabled = false;

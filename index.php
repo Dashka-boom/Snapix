@@ -1325,7 +1325,36 @@ if ($feedPosts) {
     <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Просмотр публикации">
         <div class="post-viewer-menu-wrap" data-post-viewer-menu-wrap>
             <button type="button" class="post-viewer-menu-toggle" data-post-viewer-menu-toggle aria-label="Действия с публикацией" aria-expanded="false">•••</button>
-            <div class="post-viewer-menu" data-post-viewer-menu hidden></div>
+            <div class="post-viewer-menu" data-post-viewer-menu hidden>
+                <div class="post-viewer-menu-own is-hidden">
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="edit_post">
+                        <img src="icon/dark theme/edd.png" alt="">
+                        <span>Редактировать</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="open_stats">
+                        <img src="icon/dark theme/analytic.png" alt="">
+                        <span>Кто посмотрел пост</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item post-viewer-menu-item-danger" data-post-viewer-menu-action="delete_post">
+                        <img src="icon/trash.png" alt="">
+                        <span>Удалить пост</span>
+                    </button>
+                </div>
+                <div class="post-viewer-menu-foreign is-hidden">
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="hide_post">
+                        <img src="icon/dark theme/dislike.png" alt="">
+                        <span>Не интересно</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="block_user">
+                        <img src="icon/dark theme/stop.png" alt="">
+                        <span data-post-viewer-block-label>Добавить пользователя в чёрный список</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item post-viewer-menu-item-danger" data-post-viewer-menu-action="report_post">
+                        <img src="icon/complaint.png" alt="">
+                        <span>Пожаловаться</span>
+                    </button>
+                </div>
+            </div>
         </div>
         <button type="button" class="profile-post-viewer-close" data-post-viewer-close aria-label="Закрыть">×</button>
         <div class="profile-post-viewer-media" id="profilePostViewerMedia"></div>
@@ -1413,6 +1442,9 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     var commentForm = document.getElementById('profilePostViewerCommentForm');
     var postViewerMenuToggle = viewer.querySelector('[data-post-viewer-menu-toggle]');
     var postViewerMenu = viewer.querySelector('[data-post-viewer-menu]');
+    var postViewerMenuOwn = viewer.querySelector('.post-viewer-menu-own');
+    var postViewerMenuForeign = viewer.querySelector('.post-viewer-menu-foreign');
+    var postViewerBlockLabel = viewer.querySelector('[data-post-viewer-block-label]');
     var currentUserId = <?php echo (int) ($user['id'] ?? 0); ?>;
     var currentUserRole = <?php echo json_encode((string) ($user['role'] ?? 'user'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     var actionToEndpoint = { like: 'toggle_like', repost: 'add_repost', save: 'toggle_save' };
@@ -1434,6 +1466,16 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         var shouldOpen = postViewerMenu.hidden;
         postViewerMenu.hidden = !shouldOpen;
         postViewerMenuToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    }
+
+    function updatePostViewerMenu(card, authorId) {
+        var isOwnPost = !!currentUserId && Number(authorId || 0) === Number(currentUserId);
+        if (postViewerMenuOwn) postViewerMenuOwn.classList.toggle('is-hidden', !isOwnPost);
+        if (postViewerMenuForeign) postViewerMenuForeign.classList.toggle('is-hidden', isOwnPost);
+        if (postViewerBlockLabel) {
+            var authorLogin = (card.dataset.postAuthorLogin || '').trim() || 'пользователя';
+            postViewerBlockLabel.textContent = 'Добавить ' + authorLogin + ' в чёрный список';
+        }
     }
 
     function postComments(postId) {
@@ -1771,6 +1813,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         var loginLink = document.getElementById('profilePostViewerLoginLink');
         if (avatarLink) avatarLink.href = authorUrl;
         if (loginLink) loginLink.href = authorUrl;
+        updatePostViewerMenu(card, authorId);
         if (follow) {
             follow.hidden = !currentUserId || currentUserId === authorId || card.dataset.postIsFollowingAuthor === '1';
             follow.disabled = false;
