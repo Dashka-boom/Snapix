@@ -344,7 +344,7 @@ if (!in_array($panel, $allowedPanels, true)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_post', 'delete_comment', 'edit_comment', 'report_comment', 'toggle_comment_like', 'add_repost', 'modal_follow_author'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_post', 'hide_post', 'block_user', 'report_post', 'delete_comment', 'edit_comment', 'report_comment', 'toggle_comment_like', 'add_repost', 'modal_follow_author'], true);
     $ajaxExtra = [];
     $postId = (int) ($_POST['post_id'] ?? 0);
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
@@ -872,6 +872,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($postExists && $action === 'hide_post' && $ownerId !== (int) $user['id']) {
             $pdo->prepare('INSERT IGNORE INTO hidden_posts (user_id, post_id) VALUES (:user_id, :post_id)')
                 ->execute(['user_id' => $user['id'], 'post_id' => $postId]);
+        }
+
+        if ($postExists && $action === 'block_user' && $ownerId > 0 && $ownerId !== (int) $user['id']) {
+            $pdo->prepare('INSERT IGNORE INTO user_blocks (blocker_user_id, blocked_user_id) VALUES (:blocker_user_id, :blocked_user_id)')
+                ->execute(['blocker_user_id' => (int) $user['id'], 'blocked_user_id' => $ownerId]);
         }
 
         if ($postExists && $action === 'report_post' && $ownerId !== (int) $user['id']) {
@@ -2459,22 +2464,71 @@ $showFollowingPanel = $panel === 'following';
                 if (!removed) window.location.reload();
             }
 
+            function removePostCardsByAuthor(authorId) {
+                let removed = false;
+                document.querySelectorAll('.feed-card[data-post-author-id="' + authorId + '"], .post-card[data-post-author-id="' + authorId + '"]').forEach((card) => {
+                    card.remove();
+                    removed = true;
+                });
+                if (!removed) window.location.reload();
+            }
+
+            function sendPostViewerAction(action, extra = {}) {
+                const formData = new FormData();
+                formData.set('action', action);
+                formData.set('post_id', viewer.dataset.postId || '');
+                formData.set('owner_id', viewer.dataset.postAuthorId || '');
+                Object.keys(extra || {}).forEach((key) => formData.set(key, extra[key]));
+                return fetch(window.location.href, { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })
+                    .then((response) => response.json().catch(() => ({})).then((data) => {
+                        if (!response.ok || (data && data.ok === false)) throw new Error((data && data.error) || 'Не удалось выполнить действие.');
+                        return data;
+                    }));
+            }
+
             function deleteCurrentViewerPost(postId) {
                 if (!confirm('Удалить публикацию?')) return;
-                const formData = new FormData();
-                formData.set('action', 'delete_post');
-                formData.set('post_id', postId);
-                formData.set('owner_id', viewer.dataset.postAuthorId || '');
-                fetch(window.location.href, { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })
-                    .then((response) => {
-                        if (!response.ok) throw new Error('Не удалось удалить публикацию.');
-                        return response;
-                    })
+                sendPostViewerAction('delete_post')
                     .then(() => {
                         closeViewer();
                         removePostCardsFromPage(postId);
                     })
                     .catch((error) => alert(error.message || 'Не удалось удалить публикацию.'));
+            }
+
+            function hideCurrentViewerPost(postId) {
+                sendPostViewerAction('hide_post')
+                    .then(() => {
+                        closePostViewerMenu();
+                        closeViewer();
+                        removePostCardsFromPage(postId);
+                    })
+                    .catch((error) => alert(error.message || 'Не удалось скрыть публикацию.'));
+            }
+
+            function blockCurrentViewerAuthor(authorId) {
+                sendPostViewerAction('block_user', { target_user_id: authorId })
+                    .then(() => {
+                        closePostViewerMenu();
+                        closeViewer();
+                        removePostCardsByAuthor(authorId);
+                    })
+                    .catch((error) => alert(error.message || 'Не удалось добавить пользователя в чёрный список.'));
+            }
+
+            function reportCurrentViewerPost(postId, authorId, authorLogin) {
+                if (!window.SnapixReportModal) return;
+                window.SnapixReportModal.open({
+                    login: authorLogin || 'user',
+                    userId: authorId || 0,
+                    postId: postId,
+                    onSubmit: (reason, api) => {
+                        sendPostViewerAction('report_post', { report_reason: reason }).then((data) => {
+                            if (!data || data.ok === false) return;
+                            if (api && typeof api.showSuccess === 'function') api.showSuccess();
+                        });
+                    }
+                });
             }
 
             const closeViewer = () => {
@@ -2570,20 +2624,40 @@ $showFollowingPanel = $panel === 'following';
                     event.stopPropagation();
                     const action = button.getAttribute('data-post-viewer-menu-action');
                     const postId = viewer.dataset.postId || '';
+                    const authorId = viewer.dataset.postAuthorId || '';
                     const currentUserId = Number((window.snapixCurrentUser || {}).id || 0);
-                    const isOwnPost = !!currentUserId && Number(viewer.dataset.postAuthorId || 0) === currentUserId;
-                    if (!postId || ['edit_post', 'open_stats', 'delete_post'].indexOf(action) === -1 || !isOwnPost) return;
-                    closePostViewerMenu();
-                    if (action === 'edit_post') {
-                        window.location.href = 'edit-post.php?id=' + encodeURIComponent(postId);
+                    const isOwnPost = !!currentUserId && Number(authorId || 0) === currentUserId;
+                    if (!postId) return;
+                    if (['edit_post', 'open_stats', 'delete_post'].indexOf(action) !== -1) {
+                        if (!isOwnPost) return;
+                        closePostViewerMenu();
+                        if (action === 'edit_post') {
+                            window.location.href = 'edit-post.php?id=' + encodeURIComponent(postId);
+                            return;
+                        }
+                        if (action === 'open_stats') {
+                            openPostViewerStatsModal(postId);
+                            return;
+                        }
+                        if (action === 'delete_post') {
+                            deleteCurrentViewerPost(postId);
+                        }
                         return;
                     }
-                    if (action === 'open_stats') {
-                        openPostViewerStatsModal(postId);
-                        return;
-                    }
-                    if (action === 'delete_post') {
-                        deleteCurrentViewerPost(postId);
+                    if (['hide_post', 'block_user', 'report_post'].indexOf(action) !== -1) {
+                        if (isOwnPost) return;
+                        if (action === 'hide_post') {
+                            hideCurrentViewerPost(postId);
+                            return;
+                        }
+                        if (action === 'block_user') {
+                            blockCurrentViewerAuthor(authorId);
+                            return;
+                        }
+                        if (action === 'report_post') {
+                            closePostViewerMenu();
+                            reportCurrentViewerPost(postId, authorId, login ? login.textContent : '');
+                        }
                     }
                 });
             }
