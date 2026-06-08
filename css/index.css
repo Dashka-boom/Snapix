@@ -4095,6 +4095,19 @@ body.has-side-menu {
     z-index: 10029 !important;
 }
 
+
+.clips-stats-modal[data-post-viewer-stats-modal] {
+    z-index: 12050;
+}
+
+.clips-stats-modal[data-post-viewer-stats-modal] .clips-stats-modal-overlay {
+    z-index: 12049 !important;
+}
+
+.clips-stats-modal[data-post-viewer-stats-modal] .clips-stats-modal-dialog {
+    z-index: 12051;
+}
+
 .clips-stats-modal-dialog {
     position: relative;
     z-index: 10031;
