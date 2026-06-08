@@ -1048,7 +1048,7 @@ if ($feedPosts) {
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                         <?php $authorProfileUrl = $user ? buildProfileUrl((int) $post['user_id'], (int) $user['id']) : 'login.php'; ?>
                         <?php $feedScope = (int) $post['is_following_author'] > 0 ? 'following' : 'for-you'; ?>
-                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['login'] ?? '')); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>" data-post-is-following-author="<?php echo (int) $post['is_following_author'] > 0 ? '1' : '0'; ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
+                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['login'] ?? '')); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['avatar'] ?? '')); ?>" data-post-caption="<?php echo htmlspecialchars((string) ($post['caption'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>" data-post-is-following-author="<?php echo (int) $post['is_following_author'] > 0 ? '1' : '0'; ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
                             <header class="feed-card-header">
                                 <div class="feed-header-main">
                                     <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-avatar-link" aria-label="Открыть профиль <?php echo htmlspecialchars($post['login']); ?>">
@@ -1366,6 +1366,7 @@ if ($feedPosts) {
                     <button type="button" class="profile-post-viewer-follow" id="profilePostViewerFollow">Подписаться</button>
                 </div>
             </header>
+            <div class="post-viewer-caption" data-post-viewer-caption hidden></div>
             <div class="profile-post-viewer-comments" id="profilePostViewerComments">
                 <p class="profile-post-viewer-empty">Комментариев нет</p>
             </div>
@@ -1439,6 +1440,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     var login = document.getElementById('profilePostViewerLogin');
     var follow = document.getElementById('profilePostViewerFollow');
     var commentsHost = document.getElementById('profilePostViewerComments');
+    var postViewerCaption = viewer.querySelector('[data-post-viewer-caption]');
     var commentForm = document.getElementById('profilePostViewerCommentForm');
     var postViewerMenuToggle = viewer.querySelector('[data-post-viewer-menu-toggle]');
     var postViewerMenu = viewer.querySelector('[data-post-viewer-menu]');
@@ -1964,6 +1966,9 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         var loginLink = document.getElementById('profilePostViewerLoginLink');
         if (avatarLink) avatarLink.href = authorUrl;
         if (loginLink) loginLink.href = authorUrl;
+        var caption = card.dataset.postCaption || '';
+        postViewerCaption.textContent = caption;
+        postViewerCaption.hidden = caption.trim() === '';
         updatePostViewerMenu(card, authorId);
         if (follow) {
             follow.hidden = !currentUserId || currentUserId === authorId || card.dataset.postIsFollowingAuthor === '1';
