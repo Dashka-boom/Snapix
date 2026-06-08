@@ -8687,3 +8687,276 @@ body[data-page="clips"] .clips-post-menu.is-open {
     transform: translateY(0) !important;
     pointer-events: auto !important;
 }
+
+/* Light theme support for statistics and report modals */
+body.theme-light .clips-stats-modal-dialog,
+body[data-theme="light"] .clips-stats-modal-dialog,
+html.theme-light .clips-stats-modal-dialog,
+html[data-theme="light"] .clips-stats-modal-dialog,
+body.light-theme .clips-stats-modal-dialog {
+    background: #FCFBF8 !important;
+    color: #040607 !important;
+    border: 1px solid rgba(4, 6, 7, 0.12) !important;
+}
+
+body.theme-light .clips-stats-modal-header,
+body[data-theme="light"] .clips-stats-modal-header,
+html.theme-light .clips-stats-modal-header,
+html[data-theme="light"] .clips-stats-modal-header,
+body.light-theme .clips-stats-modal-header {
+    background: #FCFBF8 !important;
+    border-bottom-color: rgba(4, 6, 7, 0.12) !important;
+}
+
+body.theme-light .clips-stats-modal-header h3,
+body[data-theme="light"] .clips-stats-modal-header h3,
+html.theme-light .clips-stats-modal-header h3,
+html[data-theme="light"] .clips-stats-modal-header h3,
+body.light-theme .clips-stats-modal-header h3,
+body.theme-light .clips-stats-section h4,
+body[data-theme="light"] .clips-stats-section h4,
+html.theme-light .clips-stats-section h4,
+html[data-theme="light"] .clips-stats-section h4,
+body.light-theme .clips-stats-section h4,
+body.theme-light .clips-stats-top-post strong,
+body[data-theme="light"] .clips-stats-top-post strong,
+html.theme-light .clips-stats-top-post strong,
+html[data-theme="light"] .clips-stats-top-post strong,
+body.light-theme .clips-stats-top-post strong {
+    color: #040607 !important;
+}
+
+body.theme-light .clips-stats-modal-close,
+body[data-theme="light"] .clips-stats-modal-close,
+html.theme-light .clips-stats-modal-close,
+html[data-theme="light"] .clips-stats-modal-close,
+body.light-theme .clips-stats-modal-close {
+    color: #040607 !important;
+}
+
+body.theme-light .clips-stats-modal-body,
+body[data-theme="light"] .clips-stats-modal-body,
+html.theme-light .clips-stats-modal-body,
+html[data-theme="light"] .clips-stats-modal-body,
+body.light-theme .clips-stats-modal-body {
+    scrollbar-color: rgba(104, 197, 219, 0.45) #FCFBF8;
+}
+
+body.theme-light .clips-stats-modal-body::-webkit-scrollbar-track,
+body[data-theme="light"] .clips-stats-modal-body::-webkit-scrollbar-track,
+html.theme-light .clips-stats-modal-body::-webkit-scrollbar-track,
+html[data-theme="light"] .clips-stats-modal-body::-webkit-scrollbar-track,
+body.light-theme .clips-stats-modal-body::-webkit-scrollbar-track {
+    background: #FCFBF8;
+}
+
+body.theme-light .clips-stats-status,
+body[data-theme="light"] .clips-stats-status,
+html.theme-light .clips-stats-status,
+html[data-theme="light"] .clips-stats-status,
+body.light-theme .clips-stats-status,
+body.theme-light .clips-stats-top-post span,
+body[data-theme="light"] .clips-stats-top-post span,
+html.theme-light .clips-stats-top-post span,
+html[data-theme="light"] .clips-stats-top-post span,
+body.light-theme .clips-stats-top-post span {
+    color: rgba(4, 6, 7, 0.68) !important;
+}
+
+body.theme-light .clips-stats-period,
+body[data-theme="light"] .clips-stats-period,
+html.theme-light .clips-stats-period,
+html[data-theme="light"] .clips-stats-period,
+body.light-theme .clips-stats-period {
+    color: #040607 !important;
+}
+
+body.theme-light .clips-stats-card,
+body[data-theme="light"] .clips-stats-card,
+html.theme-light .clips-stats-card,
+html[data-theme="light"] .clips-stats-card,
+body.light-theme .clips-stats-card,
+body.theme-light .clips-stats-top-post,
+body[data-theme="light"] .clips-stats-top-post,
+html.theme-light .clips-stats-top-post,
+html[data-theme="light"] .clips-stats-top-post,
+body.light-theme .clips-stats-top-post {
+    background: #FFFFFF !important;
+    border: 1px solid rgba(4, 6, 7, 0.12) !important;
+    color: #040607 !important;
+}
+
+body.theme-light .clips-stats-card span,
+body[data-theme="light"] .clips-stats-card span,
+html.theme-light .clips-stats-card span,
+html[data-theme="light"] .clips-stats-card span,
+body.light-theme .clips-stats-card span {
+    color: rgba(4, 6, 7, 0.68) !important;
+}
+
+body.theme-light .clips-stats-card strong,
+body[data-theme="light"] .clips-stats-card strong,
+html.theme-light .clips-stats-card strong,
+html[data-theme="light"] .clips-stats-card strong,
+body.light-theme .clips-stats-card strong {
+    color: #040607 !important;
+}
+
+body.theme-light .clips-stats-table-wrap,
+body[data-theme="light"] .clips-stats-table-wrap,
+html.theme-light .clips-stats-table-wrap,
+html[data-theme="light"] .clips-stats-table-wrap,
+body.light-theme .clips-stats-table-wrap {
+    border-color: rgba(4, 6, 7, 0.08) !important;
+    background: #FFFFFF !important;
+}
+
+body.theme-light .clips-stats-table,
+body[data-theme="light"] .clips-stats-table,
+html.theme-light .clips-stats-table,
+html[data-theme="light"] .clips-stats-table,
+body.light-theme .clips-stats-table {
+    color: #040607 !important;
+}
+
+body.theme-light .clips-stats-table th,
+body[data-theme="light"] .clips-stats-table th,
+html.theme-light .clips-stats-table th,
+html[data-theme="light"] .clips-stats-table th,
+body.light-theme .clips-stats-table th {
+    background: rgba(104, 197, 219, 0.12) !important;
+    color: #040607 !important;
+}
+
+body.theme-light .clips-stats-table td,
+body[data-theme="light"] .clips-stats-table td,
+html.theme-light .clips-stats-table td,
+html[data-theme="light"] .clips-stats-table td,
+body.light-theme .clips-stats-table td {
+    background: #FFFFFF !important;
+    color: #040607 !important;
+}
+
+body.theme-light .clips-stats-table th,
+body.theme-light .clips-stats-table td,
+body[data-theme="light"] .clips-stats-table th,
+body[data-theme="light"] .clips-stats-table td,
+html.theme-light .clips-stats-table th,
+html.theme-light .clips-stats-table td,
+html[data-theme="light"] .clips-stats-table th,
+html[data-theme="light"] .clips-stats-table td,
+body.light-theme .clips-stats-table th,
+body.light-theme .clips-stats-table td {
+    border-bottom-color: rgba(4, 6, 7, 0.08) !important;
+}
+
+body.theme-light .report-modal-content,
+body[data-theme="light"] .report-modal-content,
+html.theme-light .report-modal-content,
+html[data-theme="light"] .report-modal-content,
+body.light-theme .report-modal-content {
+    background: #FCFBF8 !important;
+    color: #040607 !important;
+    border: 1px solid rgba(4, 6, 7, 0.12) !important;
+}
+
+body.theme-light .report-modal-close,
+body[data-theme="light"] .report-modal-close,
+html.theme-light .report-modal-close,
+html[data-theme="light"] .report-modal-close,
+body.light-theme .report-modal-close {
+    color: #040607 !important;
+}
+
+body.theme-light .report-modal-content h2,
+body.theme-light .report-modal-content h1,
+body.theme-light .report-modal-content p,
+body.theme-light .report-reason,
+body[data-theme="light"] .report-modal-content h2,
+body[data-theme="light"] .report-modal-content h1,
+body[data-theme="light"] .report-modal-content p,
+body[data-theme="light"] .report-reason,
+html.theme-light .report-modal-content h2,
+html.theme-light .report-modal-content h1,
+html.theme-light .report-modal-content p,
+html.theme-light .report-reason,
+html[data-theme="light"] .report-modal-content h2,
+html[data-theme="light"] .report-modal-content h1,
+html[data-theme="light"] .report-modal-content p,
+html[data-theme="light"] .report-reason,
+body.light-theme .report-modal-content h2,
+body.light-theme .report-modal-content h1,
+body.light-theme .report-modal-content p,
+body.light-theme .report-reason {
+    color: #040607 !important;
+}
+
+body.theme-light .report-reason,
+body[data-theme="light"] .report-reason,
+html.theme-light .report-reason,
+html[data-theme="light"] .report-reason,
+body.light-theme .report-reason {
+    border-bottom-color: rgba(4, 6, 7, 0.08) !important;
+}
+
+body.theme-light .report-reason input,
+body[data-theme="light"] .report-reason input,
+html.theme-light .report-reason input,
+html[data-theme="light"] .report-reason input,
+body.light-theme .report-reason input {
+    background: #FFFFFF !important;
+    border: 2px solid #040607 !important;
+}
+
+body.theme-light .report-reason input:checked,
+body[data-theme="light"] .report-reason input:checked,
+html.theme-light .report-reason input:checked,
+html[data-theme="light"] .report-reason input:checked,
+body.light-theme .report-reason input:checked {
+    background: #68C5DB !important;
+    border-color: #68C5DB !important;
+    box-shadow: inset 0 0 0 4px #FFFFFF !important;
+}
+
+body.theme-light .report-custom-reason-input,
+body[data-theme="light"] .report-custom-reason-input,
+html.theme-light .report-custom-reason-input,
+html[data-theme="light"] .report-custom-reason-input,
+body.light-theme .report-custom-reason-input {
+    background: #FFFFFF !important;
+    color: #040607 !important;
+    border: 1px solid rgba(4, 6, 7, 0.12) !important;
+}
+
+body.theme-light .report-custom-reason-input::placeholder,
+body[data-theme="light"] .report-custom-reason-input::placeholder,
+html.theme-light .report-custom-reason-input::placeholder,
+html[data-theme="light"] .report-custom-reason-input::placeholder,
+body.light-theme .report-custom-reason-input::placeholder {
+    color: rgba(4, 6, 7, 0.45) !important;
+}
+
+body.theme-light .report-submit-btn,
+body[data-theme="light"] .report-submit-btn,
+html.theme-light .report-submit-btn,
+html[data-theme="light"] .report-submit-btn,
+body.light-theme .report-submit-btn {
+    background: #68C5DB !important;
+    color: #040607 !important;
+    border: 0 !important;
+}
+
+body.theme-light .report-submit-btn:hover,
+body.theme-light .report-submit-btn:focus-visible,
+body[data-theme="light"] .report-submit-btn:hover,
+body[data-theme="light"] .report-submit-btn:focus-visible,
+html.theme-light .report-submit-btn:hover,
+html.theme-light .report-submit-btn:focus-visible,
+html[data-theme="light"] .report-submit-btn:hover,
+html[data-theme="light"] .report-submit-btn:focus-visible,
+body.light-theme .report-submit-btn:hover,
+body.light-theme .report-submit-btn:focus-visible {
+    background: #68C5DB !important;
+    color: #040607 !important;
+    opacity: .92;
+}
