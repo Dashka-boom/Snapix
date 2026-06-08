@@ -1323,6 +1323,10 @@ if ($feedPosts) {
 <div class="profile-post-viewer" id="profilePostViewer" aria-hidden="true">
     <div class="profile-post-viewer-overlay" data-post-viewer-close></div>
     <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Просмотр публикации">
+        <div class="post-viewer-menu-wrap" data-post-viewer-menu-wrap>
+            <button type="button" class="post-viewer-menu-toggle" data-post-viewer-menu-toggle aria-label="Действия с публикацией" aria-expanded="false">•••</button>
+            <div class="post-viewer-menu" data-post-viewer-menu hidden></div>
+        </div>
         <button type="button" class="profile-post-viewer-close" data-post-viewer-close aria-label="Закрыть">×</button>
         <div class="profile-post-viewer-media" id="profilePostViewerMedia"></div>
         <aside class="profile-post-viewer-side">
@@ -1332,7 +1336,6 @@ if ($feedPosts) {
                     <a href="#" class="profile-post-viewer-login-link-name" id="profilePostViewerLoginLink"><strong id="profilePostViewerLogin"></strong></a>
                     <button type="button" class="profile-post-viewer-follow" id="profilePostViewerFollow">Подписаться</button>
                 </div>
-                <button type="button" class="profile-post-viewer-more" aria-label="Ещё">•••</button>
             </header>
             <div class="profile-post-viewer-comments" id="profilePostViewerComments">
                 <p class="profile-post-viewer-empty">Комментариев нет</p>
@@ -1408,12 +1411,29 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     var follow = document.getElementById('profilePostViewerFollow');
     var commentsHost = document.getElementById('profilePostViewerComments');
     var commentForm = document.getElementById('profilePostViewerCommentForm');
+    var postViewerMenuToggle = viewer.querySelector('[data-post-viewer-menu-toggle]');
+    var postViewerMenu = viewer.querySelector('[data-post-viewer-menu]');
     var currentUserId = <?php echo (int) ($user['id'] ?? 0); ?>;
     var currentUserRole = <?php echo json_encode((string) ($user['role'] ?? 'user'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     var actionToEndpoint = { like: 'toggle_like', repost: 'add_repost', save: 'toggle_save' };
 
     if (!viewer || !mediaHost) {
         return;
+    }
+
+    function closePostViewerMenu() {
+        if (!postViewerMenu || !postViewerMenuToggle) return;
+        postViewerMenu.hidden = true;
+        postViewerMenuToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    function togglePostViewerMenu(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!postViewerMenu || !postViewerMenuToggle) return;
+        var shouldOpen = postViewerMenu.hidden;
+        postViewerMenu.hidden = !shouldOpen;
+        postViewerMenuToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
     }
 
     function postComments(postId) {
@@ -1723,6 +1743,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     }
 
     function openViewer(card) {
+        closePostViewerMenu();
         var postId = card.dataset.postId || '';
         var mediaUrl = card.dataset.postMediaUrl || '';
         var mediaType = card.dataset.postMediaType || 'image';
@@ -1783,6 +1804,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     }
 
     function closeViewer() {
+        closePostViewerMenu();
         viewer.classList.remove('is-open');
         viewer.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('is-modal-open');
@@ -1808,6 +1830,9 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         if (linkedCard) openViewer(linkedCard);
     }
 
+    if (postViewerMenuToggle) {
+        postViewerMenuToggle.addEventListener('click', togglePostViewerMenu);
+    }
     viewer.querySelectorAll('[data-post-viewer-close]').forEach(function (node) {
         node.addEventListener('click', closeViewer);
     });
@@ -1816,6 +1841,9 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     });
 
     document.addEventListener('click', function (event) {
+        if (viewer.classList.contains('is-open') && !(event.target.closest && event.target.closest('#profilePostViewer [data-post-viewer-menu-wrap]'))) {
+            closePostViewerMenu();
+        }
         closeCommentMenus(event.target.closest ? event.target.closest('#profilePostViewer .profile-viewer-comment-menu') : null);
 
         var replyButton = event.target.closest ? event.target.closest('#profilePostViewer .profile-viewer-comment-reply') : null;

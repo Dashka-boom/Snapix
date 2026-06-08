@@ -1703,6 +1703,10 @@ $showFollowingPanel = $panel === 'following';
     <div class="profile-post-viewer" id="profilePostViewer" aria-hidden="true">
         <div class="profile-post-viewer-overlay" data-post-viewer-close></div>
         <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Просмотр публикации">
+            <div class="post-viewer-menu-wrap" data-post-viewer-menu-wrap>
+                <button type="button" class="post-viewer-menu-toggle" data-post-viewer-menu-toggle aria-label="Действия с публикацией" aria-expanded="false">•••</button>
+                <div class="post-viewer-menu" data-post-viewer-menu hidden></div>
+            </div>
             <button type="button" class="profile-post-viewer-close" data-post-viewer-close aria-label="Закрыть">×</button>
             <div class="profile-post-viewer-media" id="profilePostViewerMedia"></div>
             <aside class="profile-post-viewer-side">
@@ -1712,7 +1716,6 @@ $showFollowingPanel = $panel === 'following';
                         <a href="#" class="profile-post-viewer-login-link-name" id="profilePostViewerLoginLink"><strong id="profilePostViewerLogin"></strong></a>
                         <button type="button" class="profile-post-viewer-follow" id="profilePostViewerFollow">Подписаться</button>
                     </div>
-                    <button type="button" class="profile-post-viewer-more" aria-label="Ещё">•••</button>
                 </header>
                 <div class="profile-post-viewer-comments" id="profilePostViewerComments">
                     <p class="profile-post-viewer-empty">Комментариев нет</p>
@@ -2307,9 +2310,27 @@ $showFollowingPanel = $panel === 'following';
             const saves = document.getElementById('viewerSavesCount');
             const viewerComments = document.getElementById('profilePostViewerComments');
             const commentForm = document.getElementById('profilePostViewerCommentForm');
+            const postViewerMenuToggle = viewer ? viewer.querySelector('[data-post-viewer-menu-toggle]') : null;
+            const postViewerMenu = viewer ? viewer.querySelector('[data-post-viewer-menu]') : null;
             if (!viewer || !mediaHost) return;
 
+            const closePostViewerMenu = () => {
+                if (!postViewerMenu || !postViewerMenuToggle) return;
+                postViewerMenu.hidden = true;
+                postViewerMenuToggle.setAttribute('aria-expanded', 'false');
+            };
+
+            const togglePostViewerMenu = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!postViewerMenu || !postViewerMenuToggle) return;
+                const shouldOpen = postViewerMenu.hidden;
+                postViewerMenu.hidden = !shouldOpen;
+                postViewerMenuToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+            };
+
             const closeViewer = () => {
+                closePostViewerMenu();
                 viewer.classList.remove('is-open');
                 document.body.classList.remove('is-modal-open');
                 document.body.style.overflow = '';
@@ -2321,6 +2342,7 @@ $showFollowingPanel = $panel === 'following';
             document.querySelectorAll('.profile-media-grid .post-card').forEach((card) => {
                 card.addEventListener('click', (event) => {
                     if (event.target.closest('button, a, form, .profile-hover-action-item, .post-menu-wrap')) return;
+                    closePostViewerMenu();
                     const mediaUrl = card.dataset.postMediaUrl || '';
                     const mediaType = card.dataset.postMediaType || 'image';
                     mediaHost.innerHTML = '';
@@ -2387,9 +2409,17 @@ $showFollowingPanel = $panel === 'following';
                 if (linkedCard) linkedCard.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
             }
 
+            if (postViewerMenuToggle) {
+                postViewerMenuToggle.addEventListener('click', togglePostViewerMenu);
+            }
             viewer.querySelectorAll('[data-post-viewer-close]').forEach((node) => node.addEventListener('click', closeViewer));
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape' && viewer.classList.contains('is-open')) closeViewer();
+            });
+            document.addEventListener('click', (event) => {
+                if (viewer.classList.contains('is-open') && !event.target.closest('#profilePostViewer [data-post-viewer-menu-wrap]')) {
+                    closePostViewerMenu();
+                }
             });
             if (follow) {
                 follow.addEventListener('click', () => {
