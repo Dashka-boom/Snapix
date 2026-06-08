@@ -8,6 +8,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 require './config/config.php';
+require_once './includes/hashtags.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -243,14 +244,16 @@ if (isset($_POST['save_to_db']) && $_POST['save_to_db'] === '1') {
     }
 
     $caption = trim((string) ($_POST['caption'] ?? ''));
+    $hashtags = snapix_normalize_hashtags((string) ($_POST['hashtags'] ?? ''));
 
     try {
         $pdo->beginTransaction();
 
-        $insertPostStmt = $pdo->prepare('INSERT INTO posts (user_id, caption) VALUES (:user_id, :caption)');
+        $insertPostStmt = $pdo->prepare('INSERT INTO posts (user_id, caption, hashtags) VALUES (:user_id, :caption, :hashtags)');
         $insertPostStmt->execute([
             'user_id' => (int) $_SESSION['user_id'],
             'caption' => $caption !== '' ? $caption : null,
+            'hashtags' => $hashtags !== '' ? $hashtags : null,
         ]);
 
         $postId = (int) $pdo->lastInsertId();

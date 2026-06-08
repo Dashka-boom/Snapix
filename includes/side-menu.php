@@ -495,7 +495,7 @@ function render_side_menu(?array $sideMenuUser = null): void
                 <img src="icon/dark theme/notification.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Уведомления</span>
             </a>
-            <a href="#" class="side-menu-item" aria-label="Поиск">
+            <a href="search.php" class="side-menu-item" aria-label="Поиск">
                 <img src="icon/dark theme/search.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Поиск</span>
             </a>

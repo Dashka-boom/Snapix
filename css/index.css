@@ -6470,6 +6470,11 @@ body[data-page="home"] .feed-card-media > video {
     gap: 10px;
 }
 
+.home-sidebar-empty {
+    color: var(--home-secondary-text);
+    font-size: 14px;
+}
+
 .home-sidebar-hashtags a {
     padding: 8px 11px;
     border: 1px solid rgba(104, 197, 219, 0.22);
@@ -8970,4 +8975,176 @@ body.light-theme .report-submit-btn:focus-visible {
     background: #68C5DB !important;
     color: #040607 !important;
     opacity: .92;
+}
+
+.create-post-form input[type="text"] {
+    width: 100%;
+    border: 1px solid #d8dfe8;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font: inherit;
+    background: #fff;
+    color: inherit;
+}
+
+.create-post-form input[type="text"]:focus {
+    outline: none;
+    border-color: #0095f6;
+    box-shadow: 0 0 0 4px rgba(0, 149, 246, 0.12);
+}
+
+.post-viewer-hashtags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 18px 14px;
+    border-bottom: 1px solid rgba(104, 197, 219, 0.2);
+}
+
+.post-viewer-caption[hidden] + .post-viewer-hashtags {
+    padding-top: 14px;
+}
+
+.post-viewer-hashtags[hidden] {
+    display: none !important;
+}
+
+.post-viewer-hashtags a {
+    color: #68C5DB;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-decoration: none;
+}
+
+.post-viewer-hashtags a:hover,
+.post-viewer-hashtags a:focus-visible {
+    text-decoration: underline;
+    outline: none;
+}
+
+.hashtag-search-page {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 28px 20px 72px;
+    display: grid;
+    gap: 22px;
+}
+
+.hashtag-search-card,
+.hashtag-search-results {
+    padding: 24px;
+}
+
+.hashtag-search-card h1,
+.hashtag-search-results h2 {
+    margin: 0 0 8px;
+}
+
+.hashtag-search-subtitle,
+.hashtag-search-empty {
+    color: var(--home-secondary-text, #9ca3af);
+}
+
+.hashtag-search-form {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.hashtag-search-row {
+    display: flex;
+    gap: 10px;
+}
+
+.hashtag-search-row input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 1px solid rgba(104, 197, 219, 0.28);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,.06);
+    color: inherit;
+    font: inherit;
+}
+
+.hashtag-search-row input:focus {
+    outline: none;
+    border-color: #68C5DB;
+    box-shadow: 0 0 0 4px rgba(104, 197, 219, 0.14);
+}
+
+.hashtag-search-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.hashtag-search-post {
+    overflow: hidden;
+}
+
+.hashtag-search-post-media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    background: #040607;
+    color: #fff;
+    text-decoration: none;
+}
+
+.hashtag-search-post-media img,
+.hashtag-search-post-media video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.hashtag-search-post-body {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+}
+
+.hashtag-search-author {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.hashtag-search-tags {
+    padding: 0;
+    border-bottom: 0;
+}
+
+body.theme-light .post-viewer-hashtags,
+body[data-theme="light"] .post-viewer-hashtags,
+html.theme-light .post-viewer-hashtags,
+html[data-theme="light"] .post-viewer-hashtags,
+body.light-theme .post-viewer-hashtags {
+    border-bottom-color: rgba(4, 6, 7, 0.12) !important;
+}
+
+body.theme-light .create-post-form input[type="text"],
+body[data-theme="light"] .create-post-form input[type="text"],
+html.theme-light .create-post-form input[type="text"],
+html[data-theme="light"] .create-post-form input[type="text"],
+body.light-theme .create-post-form input[type="text"],
+body.theme-light .hashtag-search-row input,
+body[data-theme="light"] .hashtag-search-row input,
+html.theme-light .hashtag-search-row input,
+html[data-theme="light"] .hashtag-search-row input,
+body.light-theme .hashtag-search-row input {
+    background: #FFFFFF !important;
+    border-color: rgba(4, 6, 7, 0.12) !important;
+    color: #040607 !important;
+}
+
+@media (max-width: 640px) {
+    .hashtag-search-row {
+        flex-direction: column;
+    }
 }
