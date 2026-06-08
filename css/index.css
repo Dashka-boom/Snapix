@@ -4095,6 +4095,17 @@ body.has-side-menu {
     z-index: 10029 !important;
 }
 
+.clips-stats-modal-overlay:hover,
+.clips-stats-modal-overlay:focus-visible {
+    background: rgba(0, 0, 0, 0.68) !important;
+    background-color: rgba(0, 0, 0, 0.68) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+    outline: none;
+    transform: none !important;
+}
+
 
 .clips-stats-modal[data-post-viewer-stats-modal] {
     z-index: 12050;
@@ -4155,8 +4166,14 @@ body.has-side-menu {
 
 .clips-stats-modal-close:hover,
 .clips-stats-modal-close:focus-visible {
+    background: transparent !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
     color: #68C5DB !important;
+    filter: none !important;
     outline: none;
+    transform: none !important;
 }
 
 .clips-stats-header-spacer {
