@@ -9149,109 +9149,50 @@ body.light-theme .hashtag-search-row input {
     }
 }
 
-/* Search drawer from the vertical side menu */
-.search-drawer {
-    width: min(520px, calc(100vw - 96px));
-    height: calc(100vh - 32px);
-    height: calc(100dvh - 32px);
-    max-height: 920px;
-    padding: 22px 0 24px;
-    background: #040607;
-    border: 1px solid rgba(104, 197, 219, 0.2);
-    border-radius: 0 28px 28px 0;
-    box-shadow: 26px 0 70px rgba(0, 0, 0, 0.38);
-    color: #ffffff;
-    position: fixed;
-    top: 16px;
-    left: 80px;
-    z-index: 260;
-    display: flex;
-    flex-direction: column;
-    transform: translateX(calc(-100% - 96px));
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+
+/* Search page */
+.search-page {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 28px 20px 72px;
+    display: grid;
+    gap: 22px;
 }
 
-.search-drawer.is-open {
-    transform: translateX(0);
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.search-drawer-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 190;
-    background: rgba(0, 0, 0, 0.18);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.24s ease;
-}
-
-.search-drawer-backdrop.is-open {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.search-drawer-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 0 22px 18px;
-}
-
-.search-drawer-header h2 {
-    margin: 0;
-    color: #ffffff !important;
-    font-size: 28px;
-    line-height: 1.1;
-}
-
-.search-drawer-close {
-    width: 42px;
-    height: 42px;
-    min-height: 42px;
+.search-page-card {
     padding: 0;
-    border-radius: 50%;
-    background: transparent !important;
-    border: 1px solid rgba(104, 197, 219, 0.2) !important;
-    color: #ffffff !important;
-    font-size: 28px;
-    line-height: 1;
-    cursor: pointer;
+    overflow: hidden;
 }
 
-.search-drawer-close:hover,
-.search-drawer-close:focus-visible {
-    background: rgba(104, 197, 219, 0.12) !important;
-    border-color: #68C5DB !important;
-    outline: none;
+.search-page-form {
+    padding: 22px;
+    margin: 0;
 }
 
-.search-drawer-input-wrap {
-    padding: 0 22px 18px;
+.search-page-input-row {
+    display: flex;
+    gap: 10px;
 }
 
-.search-drawer-input {
-    width: 100%;
-    min-height: 48px;
+.search-page-input-row input[type="search"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 52px;
     border: 1px solid rgba(104, 197, 219, 0.28);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
     padding: 0 18px;
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
     font: inherit;
     font-size: 15px;
     outline: none;
 }
 
-.search-drawer-input::placeholder {
+.search-page-input-row input[type="search"]::placeholder {
     color: rgba(255, 255, 255, 0.62);
 }
 
-.search-drawer-input:focus {
+.search-page-input-row input[type="search"]:focus {
     border-color: #68C5DB;
     box-shadow: 0 0 0 4px rgba(104, 197, 219, 0.14);
 }
@@ -9296,67 +9237,17 @@ body.light-theme .hashtag-search-row input {
     background: #68C5DB;
 }
 
-.search-results {
-    min-height: 0;
-    flex: 1 1 auto;
-    overflow: hidden;
-}
-
 .search-results-panel {
     display: none;
-    min-height: 100%;
-    padding: 18px 22px;
-    overflow-y: auto;
+    padding: 22px;
 }
 
 .search-results-panel.is-active {
     display: block;
 }
 
-html.theme-light .search-drawer,
-html[data-theme="light"] .search-drawer,
-body.theme-light .search-drawer,
-body[data-theme="light"] .search-drawer,
-body.light-theme .search-drawer {
-    background: #FCFBF8 !important;
-    border-color: rgba(4, 6, 7, 0.12) !important;
-    color: #040607 !important;
-    box-shadow: 26px 0 70px rgba(4, 6, 7, 0.14) !important;
-}
-
-html.theme-light .search-drawer-header h2,
-html[data-theme="light"] .search-drawer-header h2,
-body.theme-light .search-drawer-header h2,
-body[data-theme="light"] .search-drawer-header h2,
-body.light-theme .search-drawer-header h2 {
-    color: #040607 !important;
-}
-
-html.theme-light .search-drawer-close,
-html[data-theme="light"] .search-drawer-close,
-body.theme-light .search-drawer-close,
-body[data-theme="light"] .search-drawer-close,
-body.light-theme .search-drawer-close {
-    border-color: rgba(4, 6, 7, 0.12) !important;
-    color: #040607 !important;
-}
-
-html.theme-light .search-drawer-input,
-html[data-theme="light"] .search-drawer-input,
-body.theme-light .search-drawer-input,
-body[data-theme="light"] .search-drawer-input,
-body.light-theme .search-drawer-input {
-    background: #ffffff !important;
-    border-color: rgba(4, 6, 7, 0.12) !important;
-    color: #040607 !important;
-}
-
-html.theme-light .search-drawer-input::placeholder,
-html[data-theme="light"] .search-drawer-input::placeholder,
-body.theme-light .search-drawer-input::placeholder,
-body[data-theme="light"] .search-drawer-input::placeholder,
-body.light-theme .search-drawer-input::placeholder {
-    color: rgba(4, 6, 7, 0.48) !important;
+.search-results-panel .hashtag-search-results {
+    padding: 0;
 }
 
 html.theme-light .search-tabs,
@@ -9394,12 +9285,26 @@ body.light-theme .search-tab.is-active {
     color: #040607 !important;
 }
 
-@media (max-width: 700px) {
-    .search-drawer {
-        left: 72px;
-        width: calc(100vw - 84px);
-        top: 8px;
-        height: calc(100dvh - 16px);
-        border-radius: 0 22px 22px 0;
+html.theme-light .search-page-input-row input[type="search"],
+html[data-theme="light"] .search-page-input-row input[type="search"],
+body.theme-light .search-page-input-row input[type="search"],
+body[data-theme="light"] .search-page-input-row input[type="search"],
+body.light-theme .search-page-input-row input[type="search"] {
+    background: #FFFFFF !important;
+    border-color: rgba(4, 6, 7, 0.12) !important;
+    color: #040607 !important;
+}
+
+html.theme-light .search-page-input-row input[type="search"]::placeholder,
+html[data-theme="light"] .search-page-input-row input[type="search"]::placeholder,
+body.theme-light .search-page-input-row input[type="search"]::placeholder,
+body[data-theme="light"] .search-page-input-row input[type="search"]::placeholder,
+body.light-theme .search-page-input-row input[type="search"]::placeholder {
+    color: rgba(4, 6, 7, 0.48) !important;
+}
+
+@media (max-width: 640px) {
+    .search-page-input-row {
+        flex-direction: column;
     }
 }
