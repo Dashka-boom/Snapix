@@ -1754,3 +1754,91 @@ body.light-theme[data-page="chat"] .chat-shared-author,
 body.light-theme[data-page="chat"] .chat-shared-caption {
     color: #040607 !important;
 }
+
+/* Light theme: keep search and composer as single uninterrupted pills. */
+body.theme-light[data-page="chat"] .chat-search,
+body[data-theme="light"][data-page="chat"] .chat-search,
+html.theme-light body[data-page="chat"] .chat-search,
+html[data-theme="light"] body[data-page="chat"] .chat-search,
+body.light-theme[data-page="chat"] .chat-search {
+    background: rgba(104, 197, 219, 0.41) !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+}
+
+body.theme-light[data-page="chat"] .chat-search img,
+body[data-theme="light"][data-page="chat"] .chat-search img,
+html.theme-light body[data-page="chat"] .chat-search img,
+html[data-theme="light"] body[data-page="chat"] .chat-search img,
+body.light-theme[data-page="chat"] .chat-search img {
+    width: 18px !important;
+    height: 18px !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+body.theme-light[data-page="chat"] .chat-search input,
+body[data-theme="light"][data-page="chat"] .chat-search input,
+html.theme-light body[data-page="chat"] .chat-search input,
+html[data-theme="light"] body[data-page="chat"] .chat-search input,
+body.light-theme[data-page="chat"] .chat-search input {
+    align-self: stretch;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: #040607 !important;
+    outline: none !important;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+body.theme-light[data-page="chat"] .chat-input-shell,
+body[data-theme="light"][data-page="chat"] .chat-input-shell,
+html.theme-light body[data-page="chat"] .chat-input-shell,
+html[data-theme="light"] body[data-page="chat"] .chat-input-shell,
+body.light-theme[data-page="chat"] .chat-input-shell {
+    background: rgba(4, 6, 7, 0.08) !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+}
+
+body.theme-light[data-page="chat"] .chat-input-shell input,
+body.theme-light[data-page="chat"] .chat-input-shell textarea,
+body[data-theme="light"][data-page="chat"] .chat-input-shell input,
+body[data-theme="light"][data-page="chat"] .chat-input-shell textarea,
+html.theme-light body[data-page="chat"] .chat-input-shell input,
+html.theme-light body[data-page="chat"] .chat-input-shell textarea,
+html[data-theme="light"] body[data-page="chat"] .chat-input-shell input,
+html[data-theme="light"] body[data-page="chat"] .chat-input-shell textarea,
+body.light-theme[data-page="chat"] .chat-input-shell input,
+body.light-theme[data-page="chat"] .chat-input-shell textarea {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: #040607 !important;
+    outline: none !important;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+body.theme-light[data-page="chat"] .chat-submit-button,
+body[data-theme="light"][data-page="chat"] .chat-submit-button,
+html.theme-light body[data-page="chat"] .chat-submit-button,
+html[data-theme="light"] body[data-page="chat"] .chat-submit-button,
+body.light-theme[data-page="chat"] .chat-submit-button {
+    background: #68C5DB !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    box-shadow: none !important;
+    color: #040607 !important;
+    overflow: hidden;
+}
