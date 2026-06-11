@@ -117,7 +117,7 @@ class SnapixChatServer implements MessageComponentInterface
 
     private function loadMessageForChat(int $chatId, int $messageId): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT id, sender_id, message_text, created_at FROM messages WHERE id = :id AND chat_id = :chat_id LIMIT 1');
+        $stmt = $this->pdo->prepare('SELECT messages.id, messages.sender_id, users.login AS sender_login, users.avatar AS sender_avatar, messages.message_text, messages.attachment_url, messages.attachment_type, messages.created_at FROM messages INNER JOIN users ON users.id = messages.sender_id WHERE messages.id = :id AND messages.chat_id = :chat_id LIMIT 1');
         $stmt->execute([
             'id' => $messageId,
             'chat_id' => $chatId,
@@ -131,9 +131,14 @@ class SnapixChatServer implements MessageComponentInterface
         return [
             'id' => (int) $message['id'],
             'sender_id' => (int) $message['sender_id'],
+            'sender_login' => (string) ($message['sender_login'] ?? ''),
+            'sender_avatar' => (string) ($message['sender_avatar'] ?? ''),
+            'avatar_url' => (string) ($message['sender_avatar'] ?? ''),
             'message_text' => (string) $message['message_text'],
+            'attachment_url' => (string) ($message['attachment_url'] ?? ''),
+            'attachment_type' => (string) ($message['attachment_type'] ?? ''),
             'created_at' => (string) $message['created_at'],
-            'created_at_human' => date('d.m.Y H:i', strtotime((string) $message['created_at'])),
+            'created_at_human' => date('H:i', strtotime((string) $message['created_at'])),
 
              'deleted_for_all' => false,
              'is_edited' => false,

@@ -11,6 +11,9 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $currentUserId = (int) $_SESSION['user_id'];
+$currentUserStmt = $pdo->prepare('SELECT login, avatar FROM users WHERE id = :id LIMIT 1');
+$currentUserStmt->execute(['id' => $currentUserId]);
+$currentUser = $currentUserStmt->fetch() ?: ['login' => '', 'avatar' => ''];
 
 function ensureChatSchema(PDO $pdo): void
 {
@@ -30,6 +33,8 @@ function ensureChatSchema(PDO $pdo): void
         'forwarded_from_message_id' => 'ALTER TABLE messages ADD COLUMN forwarded_from_message_id BIGINT UNSIGNED NULL AFTER reply_to_message_id',
         'deleted_for_all' => 'ALTER TABLE messages ADD COLUMN deleted_for_all TINYINT(1) NOT NULL DEFAULT 0 AFTER is_read',
         'edited_at' => 'ALTER TABLE messages ADD COLUMN edited_at TIMESTAMP NULL DEFAULT NULL AFTER created_at',
+        'attachment_url' => 'ALTER TABLE messages ADD COLUMN attachment_url VARCHAR(255) NULL AFTER message_text',
+        'attachment_type' => 'ALTER TABLE messages ADD COLUMN attachment_type VARCHAR(32) NULL AFTER attachment_url',
     ];
 
     foreach ($requiredMessageColumns as $columnName => $sql) {
@@ -74,6 +79,142 @@ function ensureChatSchema(PDO $pdo): void
     $ready = true;
 }
 
+function detectChatAttachmentType(string $extension, string $mimeType): string
+{
+    if ($extension === 'gif') {
+        return 'gif';
+    }
+    if (in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+        return 'image';
+    }
+    if (str_starts_with($mimeType, 'video/')) {
+        return 'video';
+    }
+    if (str_starts_with($mimeType, 'audio/')) {
+        return 'audio';
+    }
+    if (in_array($extension, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true)) {
+        return 'document';
+    }
+    if (in_array($extension, ['zip', 'rar'], true)) {
+        return 'archive';
+    }
+
+    return 'file';
+}
+
+function uploadChatAttachment(array $file): ?array
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK || !is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'attachment_upload_failed']);
+        exit;
+    }
+
+    $maxSize = 20 * 1024 * 1024;
+    if ((int) ($file['size'] ?? 0) <= 0 || (int) $file['size'] > $maxSize) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'attachment_size_invalid']);
+        exit;
+    }
+
+    $originalName = (string) ($file['name'] ?? '');
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $allowedExtensions = ['txt', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'mp3', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'mkv', 'zip', 'rar'];
+    if (!in_array($extension, $allowedExtensions, true)) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'attachment_extension_forbidden']);
+        exit;
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = (string) ($finfo->file((string) $file['tmp_name']) ?: 'application/octet-stream');
+    $allowedMimeTypes = [
+        'txt' => ['text/plain'],
+        'jpg' => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png' => ['image/png'],
+        'webp' => ['image/webp'],
+        'gif' => ['image/gif'],
+        'mp4' => ['video/mp4'],
+        'mkv' => ['video/x-matroska', 'application/octet-stream'],
+        'mp3' => ['audio/mpeg', 'audio/mp3'],
+        'pdf' => ['application/pdf'],
+        'doc' => ['application/msword', 'application/octet-stream'],
+        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
+        'xls' => ['application/vnd.ms-excel', 'application/octet-stream'],
+        'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/zip'],
+        'ppt' => ['application/vnd.ms-powerpoint', 'application/octet-stream'],
+        'pptx' => ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/zip'],
+        'zip' => ['application/zip', 'application/x-zip-compressed'],
+        'rar' => ['application/vnd.rar', 'application/x-rar', 'application/x-rar-compressed', 'application/octet-stream'],
+    ];
+
+    if (!in_array($mimeType, $allowedMimeTypes[$extension] ?? [], true)) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'attachment_mime_forbidden']);
+        exit;
+    }
+
+    if (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true) && @getimagesize((string) $file['tmp_name']) === false) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'attachment_image_invalid']);
+        exit;
+    }
+
+    $uploadDir = __DIR__ . '/uploads/chat_attachments';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'attachment_directory_failed']);
+        exit;
+    }
+
+    $filename = 'message_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+    $destination = $uploadDir . '/' . $filename;
+    if (!move_uploaded_file((string) $file['tmp_name'], $destination)) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'attachment_save_failed']);
+        exit;
+    }
+
+    return [
+        'url' => 'uploads/chat_attachments/' . $filename,
+        'type' => detectChatAttachmentType($extension, $mimeType),
+    ];
+}
+
+function formatDialogLastMessagePreview(array $dialog, int $currentUserId): string
+{
+    $rawText = trim((string) ($dialog['last_message'] ?? ''));
+    $attachmentType = (string) ($dialog['last_message_attachment_type'] ?? '');
+    $isMine = (int) ($dialog['last_message_sender_id'] ?? 0) === $currentUserId;
+
+    if ($rawText === '' && $attachmentType === '') {
+        return 'Нет сообщений';
+    }
+
+    $prefix = $isMine ? 'Вы' : (string) ($dialog['last_message_sender_login'] ?? $dialog['partner_login'] ?? 'Пользователь');
+    $lowerText = mb_strtolower($rawText);
+    $postId = (int) ($dialog['last_message_post_id'] ?? 0);
+
+    if ($rawText === '' && $attachmentType !== '') {
+        $preview = $attachmentType === 'gif' ? ($isMine ? 'отправили GIF' : 'отправил(а) GIF') : ($attachmentType === 'image' ? ($isMine ? 'отправили фото' : 'отправил(а) фото') : ($isMine ? 'отправили файл' : 'отправил(а) файл'));
+    } elseif ($postId > 0 || str_starts_with($rawText, '[post_share]|')) {
+        $preview = $isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
+    } elseif (str_starts_with($lowerText, '[photo]') || str_starts_with($lowerText, '[image]')) {
+        $preview = $isMine ? 'отправили фото' : 'отправил(а) фото';
+    } elseif (str_starts_with($lowerText, '[gif]')) {
+        $preview = $isMine ? 'отправили GIF' : 'отправил(а) GIF';
+    } else {
+        $preview = $rawText;
+    }
+
+    return $prefix . ': ' . $preview;
+}
+
 function getDialogs(PDO $pdo, int $userId): array
 {
     $dialogsStmt = $pdo->prepare('
@@ -82,7 +223,12 @@ function getDialogs(PDO $pdo, int $userId): array
             partner.id AS partner_id,
             partner.login AS partner_login,
             partner.avatar AS partner_avatar,
+            partner.background_image AS partner_background_image,
+            latest.sender_id AS last_message_sender_id,
+            sender.login AS last_message_sender_login,
             latest.message_text AS last_message,
+            latest.attachment_type AS last_message_attachment_type,
+            latest.post_id AS last_message_post_id,
             latest.created_at AS last_message_created_at,
             (
                 SELECT COUNT(*)
@@ -100,12 +246,19 @@ function getDialogs(PDO $pdo, int $userId): array
             ORDER BY m2.created_at DESC, m2.id DESC
             LIMIT 1
         )
+        LEFT JOIN users AS sender ON sender.id = latest.sender_id
         WHERE chats.user_one_id = :user_id OR chats.user_two_id = :user_id
         ORDER BY COALESCE(latest.created_at, chats.created_at) DESC
     ');
     $dialogsStmt->execute(['user_id' => $userId]);
+    $dialogs = $dialogsStmt->fetchAll();
 
-    return $dialogsStmt->fetchAll();
+    foreach ($dialogs as &$dialog) {
+        $dialog['last_message_preview'] = formatDialogLastMessagePreview($dialog, $userId);
+    }
+    unset($dialog);
+
+    return $dialogs;
 }
 
 function getMessages(PDO $pdo, int $chatId, int $userId): array
@@ -118,10 +271,14 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
 
     $messagesStmt = $pdo->prepare('
         SELECT
-            m.id, m.sender_id, m.message_text, m.post_id, m.created_at, m.edited_at, m.deleted_for_all,
-            m.reply_to_message_id, m.forwarded_from_message_id
+            m.id, m.sender_id, sender.login AS sender_login, sender.avatar AS sender_avatar,
+            m.message_text, m.attachment_url, m.attachment_type, m.post_id, m.created_at, m.edited_at, m.deleted_for_all,
+            m.reply_to_message_id, m.forwarded_from_message_id,
+            CASE WHEN pm.id IS NULL THEN 0 ELSE 1 END AS is_pinned
         FROM messages m
+        INNER JOIN users AS sender ON sender.id = m.sender_id
         LEFT JOIN message_hidden mh ON mh.message_id = m.id AND mh.user_id = :user_id
+        LEFT JOIN pinned_messages pm ON pm.message_id = m.id AND pm.chat_id = m.chat_id
         WHERE m.chat_id = :chat_id
           AND mh.id IS NULL
         ORDER BY m.created_at ASC, m.id ASC
@@ -191,6 +348,8 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
 
         if ((int) $message['deleted_for_all'] === 1) {
             $text = 'Сообщение удалено';
+            $message['attachment_url'] = '';
+            $message['attachment_type'] = '';
             $sharedPost = null;
             $isPostShare = false;
         } elseif ($sharedPostId > 0 && isset($sharedPosts[$sharedPostId])) {
@@ -213,10 +372,15 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
         $messages[] = [
             'id' => (int) $message['id'],
             'sender_id' => (int) $message['sender_id'],
+            'sender_login' => (string) ($message['sender_login'] ?? ''),
+            'sender_avatar' => (string) ($message['sender_avatar'] ?? ''),
+            'avatar_url' => (string) ($message['sender_avatar'] ?? ''),
             'message_text' => $text,
+            'attachment_url' => (string) ($message['attachment_url'] ?? ''),
+            'attachment_type' => (string) ($message['attachment_type'] ?? ''),
             'post_id' => $sharedPostId > 0 ? $sharedPostId : null,
             'created_at' => $message['created_at'],
-            'created_at_human' => date('d.m.Y H:i', strtotime((string) $message['created_at'])),
+            'created_at_human' => date('H:i', strtotime((string) $message['created_at'])),
             'is_mine' => (int) $message['sender_id'] === $userId,
             'is_post_share' => $isPostShare,
             'shared_post' => $sharedPost,
@@ -224,6 +388,7 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
             'forwarded_from_message_id' => (int) ($message['forwarded_from_message_id'] ?? 0),
             'deleted_for_all' => (int) ($message['deleted_for_all'] ?? 0) === 1,
             'is_edited' => !empty($message['edited_at']),
+            'is_pinned' => (int) ($message['is_pinned'] ?? 0) > 0,
             'reactions' => [],
             'my_reaction' => null,
         ];
@@ -291,14 +456,14 @@ function getMessages(PDO $pdo, int $chatId, int $userId): array
 function getPinnedMessages(PDO $pdo, int $chatId, int $userId): array
 {
     $stmt = $pdo->prepare('
-        SELECT m.id, m.message_text, m.post_id, m.deleted_for_all
+        SELECT m.id, m.message_text, m.attachment_url, m.attachment_type, m.post_id, m.deleted_for_all
         FROM pinned_messages pm
         INNER JOIN messages m ON m.id = pm.message_id
         LEFT JOIN message_hidden mh ON mh.message_id = m.id AND mh.user_id = :user_id
         WHERE pm.chat_id = :chat_id
           AND mh.id IS NULL
         ORDER BY pm.created_at DESC
-        LIMIT 5
+        LIMIT 1
     ');
     $stmt->execute([
         'chat_id' => $chatId,
@@ -309,9 +474,12 @@ function getPinnedMessages(PDO $pdo, int $chatId, int $userId): array
         return [
             'id' => (int) $item['id'],
             'message_text' => (int) $item['deleted_for_all'] === 1 ? 'Сообщение удалено' : (string) ($item['message_text'] ?? ''),
+            'attachment_url' => (string) ($item['attachment_url'] ?? ''),
+            'attachment_type' => (string) ($item['attachment_type'] ?? ''),
             'post_id' => (int) ($item['post_id'] ?? 0),
             'deleted_for_all' => (int) ($item['deleted_for_all'] ?? 0) === 1,
             'shared_post' => (int) ($item['post_id'] ?? 0) > 0,
+            'is_pinned' => true,
         ];
     }, $stmt->fetchAll());
 }
@@ -341,8 +509,9 @@ if ($action === 'send') {
 
     $messageText = trim((string) ($_POST['message_text'] ?? ''));
     $replyToMessageId = (int) ($_POST['reply_to_message_id'] ?? 0);
+    $attachment = uploadChatAttachment($_FILES['attachment'] ?? ['error' => UPLOAD_ERR_NO_FILE]);
 
-    if ($messageText === '') {
+    if ($messageText === '' && $attachment === null) {
         http_response_code(422);
         echo json_encode(['ok' => false, 'error' => 'message_empty', 'chat_id' => $chatId]);
         exit;
@@ -360,11 +529,13 @@ if ($action === 'send') {
     }
 
     try {
-        $insertStmt = $pdo->prepare('INSERT INTO messages (chat_id, sender_id, message_text, post_id, reply_to_message_id, forwarded_from_message_id, is_read, deleted_for_all) VALUES (:chat_id, :sender_id, :message_text, :post_id, :reply_to_message_id, NULL, 0, 0)');
+        $insertStmt = $pdo->prepare('INSERT INTO messages (chat_id, sender_id, message_text, attachment_url, attachment_type, post_id, reply_to_message_id, forwarded_from_message_id, is_read, deleted_for_all) VALUES (:chat_id, :sender_id, :message_text, :attachment_url, :attachment_type, :post_id, :reply_to_message_id, NULL, 0, 0)');
         $insertStmt->execute([
             'chat_id' => $chatId,
             'sender_id' => $currentUserId,
             'message_text' => substr($messageText, 0, 1000),
+            'attachment_url' => $attachment['url'] ?? null,
+            'attachment_type' => $attachment['type'] ?? null,
             'post_id' => null,
             'reply_to_message_id' => $replyToMessageId > 0 ? $replyToMessageId : null,
         ]);
@@ -433,14 +604,41 @@ if ($action === 'delete' && $chatBelongsToUser) {
     }
 }
 
-if ($action === 'pin' && $chatBelongsToUser) {
+if (($action === 'pin' || $action === 'unpin') && $chatBelongsToUser) {
     $messageId = (int) ($_POST['message_id'] ?? 0);
-    $pdo->prepare('INSERT IGNORE INTO pinned_messages (chat_id, message_id, pinned_by_user_id) VALUES (:chat_id, :message_id, :user_id)')
-        ->execute([
-            'chat_id' => $chatId,
-            'message_id' => $messageId,
-            'user_id' => $currentUserId,
-        ]);
+    $messageExistsStmt = $pdo->prepare('SELECT id FROM messages WHERE id = :message_id AND chat_id = :chat_id LIMIT 1');
+    $messageExistsStmt->execute([
+        'message_id' => $messageId,
+        'chat_id' => $chatId,
+    ]);
+    if (!$messageExistsStmt->fetchColumn()) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'message_not_found']);
+        exit;
+    }
+
+    if ($action === 'pin') {
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare('DELETE FROM pinned_messages WHERE chat_id = :chat_id')->execute(['chat_id' => $chatId]);
+            $pdo->prepare('INSERT INTO pinned_messages (chat_id, message_id, pinned_by_user_id) VALUES (:chat_id, :message_id, :user_id)')
+                ->execute([
+                    'chat_id' => $chatId,
+                    'message_id' => $messageId,
+                    'user_id' => $currentUserId,
+                ]);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    } else {
+        $pdo->prepare('DELETE FROM pinned_messages WHERE chat_id = :chat_id AND message_id = :message_id')
+            ->execute([
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+            ]);
+    }
 }
 
 if ($action === 'forward' && $chatBelongsToUser) {
@@ -453,7 +651,7 @@ if ($action === 'forward' && $chatBelongsToUser) {
         exit;
     }
 
-    $sourceMessageStmt = $pdo->prepare('SELECT message_text, post_id FROM messages WHERE id = :id AND chat_id = :chat_id LIMIT 1');
+    $sourceMessageStmt = $pdo->prepare('SELECT message_text, attachment_url, attachment_type, post_id FROM messages WHERE id = :id AND chat_id = :chat_id LIMIT 1');
     $sourceMessageStmt->execute(['id' => $messageId, 'chat_id' => $chatId]);
     $source = $sourceMessageStmt->fetch();
     if (!$source) {
@@ -481,11 +679,13 @@ if ($action === 'forward' && $chatBelongsToUser) {
         $targetChatId = (int) $pdo->lastInsertId();
     }
 
-    $pdo->prepare('INSERT INTO messages (chat_id, sender_id, message_text, post_id, reply_to_message_id, forwarded_from_message_id, is_read, deleted_for_all) VALUES (:chat_id, :sender_id, :message_text, :post_id, NULL, :forwarded_from_message_id, 0, 0)')
+    $pdo->prepare('INSERT INTO messages (chat_id, sender_id, message_text, attachment_url, attachment_type, post_id, reply_to_message_id, forwarded_from_message_id, is_read, deleted_for_all) VALUES (:chat_id, :sender_id, :message_text, :attachment_url, :attachment_type, :post_id, NULL, :forwarded_from_message_id, 0, 0)')
         ->execute([
             'chat_id' => $targetChatId,
             'sender_id' => $currentUserId,
             'message_text' => substr((string) ($source['message_text'] ?? ''), 0, 1000),
+            'attachment_url' => (string) ($source['attachment_url'] ?? '') !== '' ? (string) $source['attachment_url'] : null,
+            'attachment_type' => (string) ($source['attachment_type'] ?? '') !== '' ? (string) $source['attachment_type'] : null,
             'post_id' => (int) ($source['post_id'] ?? 0) > 0 ? (int) $source['post_id'] : null,
             'forwarded_from_message_id' => $messageId,
         ]);
@@ -544,9 +744,11 @@ if ($action === 'react' && $chatBelongsToUser) {
 
 $messages = [];
 $pinnedMessages = [];
+$messagesCount = 0;
 if ($chatBelongsToUser) {
     $messages = getMessages($pdo, $chatId, $currentUserId);
     $pinnedMessages = getPinnedMessages($pdo, $chatId, $currentUserId);
+    $messagesCount = count($messages);
 }
 
 $dialogs = getDialogs($pdo, $currentUserId);
@@ -558,6 +760,14 @@ $unreadTotal = (int) $unreadTotalStmt->fetchColumn();
 echo json_encode([
     'ok' => true,
     'message_id' => $action === 'send' ? ($createdMessageId ?? 0) : 0,
+    'user_id' => $currentUserId,
+    'login' => (string) ($currentUser['login'] ?? ''),
+    'avatar_url' => (string) ($currentUser['avatar'] ?? ''),
+    'message_text' => $action === 'send' ? $messageText ?? '' : '',
+    'attachment_url' => $action === 'send' ? (string) ($attachment['url'] ?? '') : '',
+    'attachment_type' => $action === 'send' ? (string) ($attachment['type'] ?? '') : '',
+    'created_at' => $action === 'send' && $createdMessageId > 0 ? date('Y-m-d H:i:s') : '',
+    'messages_count' => $messagesCount,
     'messages' => $messages,
     'dialogs' => $dialogs,
     'pinned_messages' => $pinnedMessages,

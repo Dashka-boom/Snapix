@@ -2196,25 +2196,6 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         removeButton.addEventListener('click', clearAttachment);
     })();
 
-    var emojiButton = document.getElementById('profilePostViewerEmojiButton');
-    var emojiPicker = document.getElementById('profilePostViewerEmojiPicker');
-    if (emojiButton && emojiPicker && commentForm) {
-        emojiButton.addEventListener('click', function (event) {
-            event.stopPropagation();
-            emojiPicker.hidden = !emojiPicker.hidden;
-            emojiButton.setAttribute('aria-expanded', emojiPicker.hidden ? 'false' : 'true');
-        });
-        emojiPicker.querySelectorAll('[data-emoji]').forEach(function (button) {
-            button.addEventListener('click', function () {
-                var input = commentForm.querySelector('[name="comment_text"]');
-                if (input) {
-                    input.value += button.getAttribute('data-emoji') || '';
-                    input.focus();
-                }
-                emojiPicker.hidden = true;
-            });
-        });
-    }
 })();
 (function () {
     var tabs = document.querySelectorAll('.home-feed-tab');

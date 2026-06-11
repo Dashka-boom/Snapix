@@ -19,6 +19,16 @@ if (!$currentUser) {
     exit;
 }
 
+
+function buildChatProfileUrl(int $profileUserId, ?int $currentUserId): string
+{
+    if ($currentUserId !== null && $profileUserId === $currentUserId) {
+        return 'profile.php';
+    }
+
+    return 'user.php?id=' . $profileUserId;
+}
+
 function getOrCreateChat(PDO $pdo, int $firstUserId, int $secondUserId): int
 {
     $userOne = min($firstUserId, $secondUserId);
@@ -43,6 +53,63 @@ function getOrCreateChat(PDO $pdo, int $firstUserId, int $secondUserId): int
 
     return (int) $pdo->lastInsertId();
 }
+
+function formatDialogLastMessage(array $dialog, int $currentUserId): string
+{
+    $rawText = trim((string) ($dialog['last_message'] ?? ''));
+    $attachmentType = (string) ($dialog['last_message_attachment_type'] ?? '');
+    $isMine = (int) ($dialog['last_message_sender_id'] ?? 0) === $currentUserId;
+
+    if ($rawText === '' && $attachmentType === '') {
+        return 'Нет сообщений';
+    }
+
+    $prefix = $isMine ? 'Вы' : (string) ($dialog['last_message_sender_login'] ?? $dialog['partner_login'] ?? 'Пользователь');
+    $lowerText = mb_strtolower($rawText);
+    $postId = (int) ($dialog['last_message_post_id'] ?? 0);
+
+    if ($rawText === '' && $attachmentType !== '') {
+        $preview = $attachmentType === 'gif' ? ($isMine ? 'отправили GIF' : 'отправил(а) GIF') : ($attachmentType === 'image' ? ($isMine ? 'отправили фото' : 'отправил(а) фото') : ($isMine ? 'отправили файл' : 'отправил(а) файл'));
+    } elseif ($postId > 0 || str_starts_with($rawText, '[post_share]|')) {
+        $preview = $isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
+    } elseif (str_starts_with($lowerText, '[photo]') || str_starts_with($lowerText, '[image]')) {
+        $preview = $isMine ? 'отправили фото' : 'отправил(а) фото';
+    } elseif (str_starts_with($lowerText, '[gif]')) {
+        $preview = $isMine ? 'отправили GIF' : 'отправил(а) GIF';
+    } else {
+        $preview = $rawText;
+    }
+
+    return $prefix . ': ' . $preview;
+}
+
+function ensureChatPinnedMessagesSchema(PDO $pdo): void
+{
+    $messageColumns = [];
+    $messageColumnsStmt = $pdo->query('SHOW COLUMNS FROM messages');
+    foreach ($messageColumnsStmt->fetchAll() as $column) {
+        $messageColumns[(string) $column['Field']] = true;
+    }
+    if (!isset($messageColumns['attachment_url'])) {
+        $pdo->exec('ALTER TABLE messages ADD COLUMN attachment_url VARCHAR(255) NULL AFTER message_text');
+    }
+    if (!isset($messageColumns['attachment_type'])) {
+        $pdo->exec('ALTER TABLE messages ADD COLUMN attachment_type VARCHAR(32) NULL AFTER attachment_url');
+    }
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS pinned_messages (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        chat_id BIGINT UNSIGNED NOT NULL,
+        message_id BIGINT UNSIGNED NOT NULL,
+        pinned_by_user_id BIGINT UNSIGNED NOT NULL,
+        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uniq_pinned_message (chat_id, message_id),
+        KEY idx_pinned_chat (chat_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci');
+}
+
+ensureChatPinnedMessagesSchema($pdo);
 
 $targetUserId = (int) ($_GET['user_id'] ?? 0);
 $activeChatId = (int) ($_GET['chat_id'] ?? 0);
@@ -86,7 +153,11 @@ $dialogsStmt = $pdo->prepare('
         partner.id AS partner_id,
         partner.login AS partner_login,
         partner.avatar AS partner_avatar,
+        partner.background_image AS partner_background_image,
+        latest.sender_id AS last_message_sender_id,
+        sender.login AS last_message_sender_login,
         latest.message_text AS last_message,
+        latest.post_id AS last_message_post_id,
         latest.created_at AS last_message_created_at,
         (
             SELECT COUNT(*)
@@ -104,6 +175,7 @@ $dialogsStmt = $pdo->prepare('
         ORDER BY m2.created_at DESC, m2.id DESC
         LIMIT 1
     )
+    LEFT JOIN users AS sender ON sender.id = latest.sender_id
     WHERE chats.user_one_id = :current_user_id OR chats.user_two_id = :current_user_id
     ORDER BY COALESCE(latest.created_at, chats.created_at) DESC
 ');
@@ -125,6 +197,37 @@ foreach ($dialogs as $dialog) {
 if (!$activeDialog && !empty($dialogs)) {
     $activeDialog = $dialogs[0];
     $activeChatId = (int) $activeDialog['id'];
+}
+
+$activePinnedMessage = null;
+if ($activeChatId > 0) {
+    $activePinnedStmt = $pdo->prepare('
+        SELECT m.id, m.message_text, m.attachment_url, m.attachment_type, m.post_id, m.deleted_for_all
+        FROM pinned_messages pm
+        INNER JOIN messages m ON m.id = pm.message_id
+        LEFT JOIN message_hidden mh ON mh.message_id = m.id AND mh.user_id = :user_id
+        WHERE pm.chat_id = :chat_id
+          AND mh.id IS NULL
+        ORDER BY pm.created_at DESC
+        LIMIT 1
+    ');
+    $activePinnedStmt->execute([
+        'chat_id' => $activeChatId,
+        'user_id' => $currentUser['id'],
+    ]);
+    $activePinnedRow = $activePinnedStmt->fetch();
+    if ($activePinnedRow) {
+        $activePinnedMessage = [
+            'id' => (int) $activePinnedRow['id'],
+            'message_text' => (int) $activePinnedRow['deleted_for_all'] === 1 ? 'Сообщение удалено' : (string) ($activePinnedRow['message_text'] ?? ''),
+            'attachment_url' => (string) ($activePinnedRow['attachment_url'] ?? ''),
+            'attachment_type' => (string) ($activePinnedRow['attachment_type'] ?? ''),
+            'post_id' => (int) ($activePinnedRow['post_id'] ?? 0),
+            'deleted_for_all' => (int) ($activePinnedRow['deleted_for_all'] ?? 0) === 1,
+            'shared_post' => (int) ($activePinnedRow['post_id'] ?? 0) > 0,
+            'is_pinned' => true,
+        ];
+    }
 }
 
 $forwardRecipientsStmt = $pdo->prepare("
@@ -154,20 +257,29 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     <main class="chat-page">
         <section class="chat-shell card-surface">
             <aside class="chat-dialogs">
-                <h1>Сообщения</h1>
+                <div class="chat-dialogs-head">
+                    <div class="chat-account-line">
+                        <strong><?php echo htmlspecialchars($currentUser['login']); ?></strong>
+                        <span class="chat-account-arrow" aria-hidden="true">⌄</span>
+                    </div>
+                </div>
                 <?php if ($error !== ''): ?><p class="chat-error"><?php echo htmlspecialchars($error); ?></p><?php endif; ?>
+                <label class="chat-search" for="chat-dialog-search">
+                    <img src="icon/dark theme/search.png" alt="" aria-hidden="true">
+                    <input type="search" id="chat-dialog-search" placeholder="Поиск" autocomplete="off">
+                </label>
                 <?php if (!$dialogs): ?>
                     <p class="chat-empty">Диалогов пока нет. Откройте профиль пользователя и начните чат.</p>
                 <?php else: ?>
                     <div class="dialog-list" id="dialog-list">
                         <?php foreach ($dialogs as $dialog): ?>
-                            <a href="chat.php?chat_id=<?php echo (int) $dialog['id']; ?>" class="dialog-item<?php echo (int) $dialog['id'] === $activeChatId ? ' is-active' : ''; ?>" data-chat-id="<?php echo (int) $dialog['id']; ?>">
+                            <a href="chat.php?chat_id=<?php echo (int) $dialog['id']; ?>" class="dialog-item<?php echo (int) $dialog['id'] === $activeChatId ? ' is-active' : ''; ?>" data-chat-id="<?php echo (int) $dialog['id']; ?>" data-dialog-login="<?php echo htmlspecialchars(mb_strtolower($dialog['partner_login'])); ?>" data-dialog-message="<?php echo htmlspecialchars(mb_strtolower(formatDialogLastMessage($dialog, (int) $currentUser['id']))); ?>">
                                 <span class="dialog-avatar"<?php if (!empty($dialog['partner_avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($dialog['partner_avatar']); ?>');"<?php endif; ?>>
                                     <?php if (empty($dialog['partner_avatar'])): ?><?php echo htmlspecialchars(mb_substr($dialog['partner_login'], 0, 1)); ?><?php endif; ?>
                                 </span>
                                 <span class="dialog-content">
                                     <strong><?php echo htmlspecialchars($dialog['partner_login']); ?></strong>
-                                    <small><?php echo htmlspecialchars($dialog['last_message'] ?? 'Нет сообщений'); ?></small>
+                                    <small><?php echo htmlspecialchars(formatDialogLastMessage($dialog, (int) $currentUser['id'])); ?></small>
                                 </span>
                                 <?php if ((int) $dialog['unread_count'] > 0): ?>
                                     <span class="dialog-unread"><?php echo (int) $dialog['unread_count']; ?></span>
@@ -182,11 +294,20 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 <?php if (!$activeDialog): ?>
                     <div class="chat-placeholder">Выберите диалог слева.</div>
                 <?php else: ?>
-                    <div class="chat-thread-header">
-                        <h2><?php echo htmlspecialchars($activeDialog['partner_login']); ?></h2>
+                    <div class="chat-thread-header"<?php if (!empty($activeDialog['partner_background_image'])): ?> style="--chat-cover: url('<?php echo htmlspecialchars($activeDialog['partner_background_image']); ?>');"<?php endif; ?>>
+                        <div class="chat-thread-header-bg" aria-hidden="true"></div>
+                        <a class="chat-thread-user" href="<?php echo htmlspecialchars(buildChatProfileUrl((int) $activeDialog['partner_id'], (int) $currentUser['id'])); ?>" aria-label="Открыть профиль <?php echo htmlspecialchars($activeDialog['partner_login']); ?>">
+                            <span class="chat-thread-avatar"<?php if (!empty($activeDialog['partner_avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($activeDialog['partner_avatar']); ?>');"<?php endif; ?>>
+                                <?php if (empty($activeDialog['partner_avatar'])): ?><?php echo htmlspecialchars(mb_substr($activeDialog['partner_login'], 0, 1)); ?><?php endif; ?>
+                            </span>
+                            <h2><?php echo htmlspecialchars($activeDialog['partner_login']); ?></h2>
+                        </a>
                     </div>
-                    <div class="chat-pinned" id="chat-pinned"></div>
-                    <div class="chat-messages" id="chat-messages"></div>
+                    <div class="chat-pinned is-hidden" id="chat-pinned"></div>
+                    <div class="chat-messages-wrap">
+                        <div class="chat-messages" id="chat-messages"></div>
+                        <button type="button" class="chat-scroll-bottom is-hidden" id="chat-scroll-bottom" aria-label="Перейти к последнему сообщению"><span class="chat-scroll-arrow"></span></button>
+                    </div>
                     <form class="chat-send-form" id="chat-send-form">
                         <div class="chat-reply-box is-hidden" id="chat-reply-box">
                             <div class="chat-reply-box-content">
@@ -195,8 +316,25 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                             </div>
                             <button type="button" class="chat-reply-close" id="chat-reply-close" aria-label="Отменить ответ"><?php echo snapix_icon('x'); ?></button>
                         </div>
-                        <input type="text" id="chat-message-input" maxlength="1000" placeholder="Введите сообщение" autocomplete="off">
-                        <button type="submit" aria-label="Отправить сообщение"><?php echo snapix_icon('send'); ?></button>
+                        <div class="chat-composer-row">
+                            <button type="button" class="chat-tool-button" id="chat-attach-button" aria-label="Прикрепить файл"><img src="icon/dark theme/paper clip.png" alt=""></button>
+                            <input type="file" class="chat-attachment-input" id="chat-attachment-input" accept=".txt,.gif,.jpg,.jpeg,.png,.webp,.mp4,.mp3,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mkv,.zip,.rar,image/gif,image/jpeg,image/png,image/webp,video/mp4,audio/mpeg,application/pdf" hidden>
+                            <div class="chat-emoji-tool">
+                                <button type="button" class="chat-tool-button" id="chat-emoji-button" aria-label="Стикеры и эмодзи" aria-expanded="false" aria-controls="chat-emoji-picker"><img src="icon/dark theme/add stickers.png" alt=""></button>
+                                <div class="chat-emoji-picker" id="chat-emoji-picker" hidden>
+                                    <button type="button" data-chat-emoji="😀">😀</button><button type="button" data-chat-emoji="😂">😂</button><button type="button" data-chat-emoji="😍">😍</button><button type="button" data-chat-emoji="🥰">🥰</button><button type="button" data-chat-emoji="😎">😎</button><button type="button" data-chat-emoji="👍">👍</button><button type="button" data-chat-emoji="🔥">🔥</button><button type="button" data-chat-emoji="❤️">❤️</button><button type="button" data-chat-emoji="🎉">🎉</button><button type="button" data-chat-emoji="🙏">🙏</button><button type="button" data-chat-emoji="😢">😢</button><button type="button" data-chat-emoji="😮">😮</button>
+                                </div>
+                            </div>
+                            <label class="chat-input-shell" for="chat-message-input">
+                                <span class="chat-attachment-preview" id="chat-attachment-preview" hidden>
+                                    <img src="" alt="Предпросмотр вложения">
+                                    <span class="chat-attachment-name"></span>
+                                    <button type="button" id="chat-attachment-remove" aria-label="Удалить вложение">×</button>
+                                </span>
+                                <textarea id="chat-message-input" maxlength="1000" rows="1" placeholder="Сообщение" autocomplete="off"></textarea>
+                                <button type="submit" class="chat-submit-button" aria-label="Отправить сообщение"><img src="icon/message.png" alt="Отправить"></button>
+                            </label>
+                        </div>
                     </form>
                 <?php endif; ?>
             </section>
@@ -231,11 +369,22 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 <script>
 (function () {
     var activeChatId = Number(document.body.getAttribute('data-active-chat-id') || 0);
+    var currentUserId = Number(document.body.getAttribute('data-user-id') || 0);
     var messageList = document.getElementById('chat-messages');
     var dialogList = document.getElementById('dialog-list');
     var sendForm = document.getElementById('chat-send-form');
     var messageInput = document.getElementById('chat-message-input');
+    var attachButton = document.getElementById('chat-attach-button');
+    var attachmentInput = document.getElementById('chat-attachment-input');
+    var attachmentPreview = document.getElementById('chat-attachment-preview');
+    var attachmentRemove = document.getElementById('chat-attachment-remove');
+    var clearChatAttachment = null;
+    var dialogSearch = document.getElementById('chat-dialog-search');
+    var scrollBottomButton = document.getElementById('chat-scroll-bottom');
+    var chatEmojiButton = document.getElementById('chat-emoji-button');
+    var chatEmojiPicker = document.getElementById('chat-emoji-picker');
     var pinnedBox = document.getElementById('chat-pinned');
+    window.pinnedMessage = <?php echo json_encode($activePinnedMessage, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     var replyBox = document.getElementById('chat-reply-box');
     var replyText = document.getElementById('chat-reply-text');
     var replyClose = document.getElementById('chat-reply-close');
@@ -256,15 +405,37 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
     var reactionEmojis = ['❤️', '😂', '👍', '🔥', '😢', '😮'];
     var activeReactionMessageId = 0;
     var lastMessageRenderHash = '';
+    var lastRenderedDateLabel = '';
+    var activeMenuMessage = null;
 
-    var iconSmile = <?php echo json_encode(snapix_icon('smile')); ?>;
-    var iconMoreVertical = <?php echo json_encode(snapix_icon('more-vertical')); ?>;
     var iconEdit = <?php echo json_encode(snapix_icon('edit')); ?>;
     var iconTrash = <?php echo json_encode(snapix_icon('trash')); ?>;
     var iconPin = <?php echo json_encode(snapix_icon('pin')); ?>;
     var iconReply = <?php echo json_encode(snapix_icon('reply')); ?>;
     var iconForward = <?php echo json_encode(snapix_icon('forward')); ?>;
     var iconCopy = <?php echo json_encode(snapix_icon('copy')); ?>;
+
+    function isNearBottom() {
+        if (!messageList) {
+            return true;
+        }
+        return messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight < 120;
+    }
+
+    function scrollMessagesToBottom(behavior) {
+        if (!messageList) {
+            return;
+        }
+        messageList.scrollTo({ top: messageList.scrollHeight, behavior: behavior || 'auto' });
+        updateScrollBottomButton();
+    }
+
+    function updateScrollBottomButton() {
+        if (!scrollBottomButton || !messageList) {
+            return;
+        }
+        scrollBottomButton.classList.toggle('is-hidden', isNearBottom());
+    }
 
 
     function escapeHtml(value) {
@@ -293,31 +464,78 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         return truncateForQuote(item.message_text || '');
     }
 
-    function renderPinned(pinnedItems) {
+    function renderPinnedMessage(message) {
         if (!pinnedBox) {
             return;
         }
-        if (!Array.isArray(pinnedItems) || !pinnedItems.length) {
-            pinnedBox.classList.add('is-hidden');
+        if (!message) {
             pinnedBox.innerHTML = '';
+            pinnedBox.classList.add('is-hidden');
             return;
         }
+
         pinnedBox.classList.remove('is-hidden');
-        pinnedBox.innerHTML = pinnedItems.map(function (item) {
-            return '<button type="button" class="chat-pinned-item" data-scroll-message-id="' + Number(item.id) + '">' +
-                '<span>' + iconPin + '</span><span>' + escapeHtml(getMessagePreview(item)) + '</span>' +
-                '</button>';
-        }).join('');
+        pinnedBox.innerHTML =
+            '<button type="button" class="chat-pinned-item" data-scroll-message-id="' + Number(message.id) + '">' +
+                '<img src="icon/dark theme/pinn.png" class="chat-pinned-icon" alt="">' +
+                '<div class="chat-pinned-content">' +
+                    '<span class="chat-pinned-label">Закрепленное сообщение</span>' +
+                    '<p>' + escapeHtml(getMessagePreview(message)) + '</p>' +
+                '</div>' +
+            '</button>';
+    }
+
+    function renderPinned(pinnedItems) {
+        renderPinnedMessage(Array.isArray(pinnedItems) && pinnedItems.length ? pinnedItems[0] : null);
+    }
+
+    function formatMessageTime(item) {
+        var humanTime = String((item && item.created_at_human) || '').trim();
+        var humanMatch = humanTime.match(/(\d{2}:\d{2})(?::\d{2})?$/);
+        if (humanMatch) {
+            return humanMatch[1];
+        }
+
+        var rawTime = String((item && item.created_at) || '').trim();
+        var rawMatch = rawTime.match(/(?:^|[ T])(\d{2}:\d{2})(?::\d{2})?/);
+        if (rawMatch) {
+            return rawMatch[1];
+        }
+
+        return humanTime;
+    }
+
+    function buildMessageAttachmentHtml(item) {
+        var attachmentUrl = String((item && item.attachment_url) || '');
+        if (!attachmentUrl) {
+            return '';
+        }
+        var attachmentType = String((item && item.attachment_type) || '');
+        if (attachmentType === 'image' || attachmentType === 'gif') {
+            return '<img class="chat-message-attachment" src="' + escapeHtml(attachmentUrl) + '" alt="Вложение">';
+        }
+        return '<a class="chat-message-file" href="' + escapeHtml(attachmentUrl) + '" target="_blank" rel="noopener">Файл</a>';
     }
 
     function buildMessageRowHtml(item) {
             var sideClass = item.is_mine ? 'is-mine' : 'is-theirs';
-            var messageBody = escapeHtml(item.message_text);
+            var senderLogin = item.sender_login || (item.is_mine ? 'Вы' : 'Пользователь');
+            var senderAvatar = item.sender_avatar || item.avatar_url || '';
+            var senderInitial = senderLogin ? senderLogin.slice(0, 1) : '?';
+            var avatarHtml = senderAvatar
+                ? '<span class="chat-message-avatar" style="background-image: url(\'' + escapeHtml(senderAvatar) + '\');"></span>'
+                : '<span class="chat-message-avatar">' + escapeHtml(senderInitial) + '</span>';
+            var authorHtml = '';
+            var messageBody = escapeHtml(item.message_text || '');
             if (messageBody.indexOf('[post_share]|') === 0) {
                 messageBody = 'Пересланная публикация недоступна';
             }
-            var bodyHtml = '<p>' + messageBody + '</p>';
+            var attachmentHtml = buildMessageAttachmentHtml(item);
+            var messageTimeHtml = '<span class="chat-message-meta"><time>' + escapeHtml(formatMessageTime(item)) + '</time></span>';
+            var bodyHtml = '<p class="chat-message-text">' + messageBody + messageTimeHtml + '</p>' + attachmentHtml;
+            var sharedMessageClass = '';
             if (item.shared_post) {
+                sharedMessageClass = ' has-shared-post';
                 var post = item.shared_post;
                 var mediaHtml = '';
                 if (post.media_url) {
@@ -329,13 +547,13 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 }
                 var caption = post.caption ? '<p class=\"chat-shared-caption\">' + escapeHtml(post.caption) + '</p>' : '';
                 var authorLogin = post.author_login || '?';
-                var avatarHtml = post.author_avatar
+                var sharedAvatarHtml = post.author_avatar
                     ? '<span class="chat-shared-avatar" style="background-image: url(\'' + escapeHtml(post.author_avatar) + '\');"></span>'
                     : '<span class=\"chat-shared-avatar\">' + escapeHtml(authorLogin.slice(0, 1)) + '</span>';
                 messageBody = '' +
                     '<a class=\"chat-shared-card\" href=\"' + escapeHtml(post.post_url) + '\">' +
                         '<span class=\"chat-shared-head\">' +
-                            avatarHtml +
+                            sharedAvatarHtml +
                             '<strong class=\"chat-shared-author\">' + escapeHtml(authorLogin) + '</strong>' +
                         '</span>' +
                         mediaHtml +
@@ -353,19 +571,30 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 ? '<div class="chat-forwarded-label">Переслано</div>'
                 : '';
             var editedHtml = item.is_edited ? '<em class="chat-edited-label">изменено</em>' : '';
-            var reactionTrigger = '<button type="button" class="chat-reaction-trigger" data-message-id="' + Number(item.id) + '" aria-label="Выбрать реакцию">' + iconSmile + '</button>';
-            var menuButton = '<button type="button" class="chat-message-menu-trigger" data-message-id="' + Number(item.id) + '" aria-label="Действия с сообщением">' + iconMoreVertical + '</button>';
+            var reactionTrigger = '<button type="button" class="chat-reaction-trigger" data-message-id="' + Number(item.id) + '" aria-label="Выбрать реакцию">' +
+                '<img src="icon/dark theme/add stickers.png" alt="">' +
+                '</button>';
+            var menuButton = '<button type="button" class="chat-message-menu-trigger" data-message-id="' + Number(item.id) + '" aria-label="Действия с сообщением">' +
+                '<span class="chat-menu-dots">•••</span>' +
+                '</button>';
             var menuHtml = '<div class="chat-message-menu" data-menu-for="' + Number(item.id) + '"></div>';
             var actionsHtml = '<div class="chat-message-actions">' + reactionTrigger + menuButton + '</div>';
 
             var reactionsHtml = '<div class="chat-message-reactions" data-reactions-for="' + Number(item.id) + '"></div>';
             return '<div class="chat-message-row ' + sideClass + '" data-message-row-id="' + Number(item.id) + '">' +
-                actionsHtml + menuHtml +
-                '<div class="chat-message ' + sideClass + '" data-message-id="' + Number(item.id) + '">' +
-                replyHtml + forwardedHtml + bodyHtml +
-                '<time>' + escapeHtml(item.created_at_human) + ' ' + editedHtml + '</time>' + reactionsHtml +
+                '<div class="chat-message-group">' +
+                    avatarHtml +
+                    '<div class="chat-message-stack">' +
+                        authorHtml +
+                        '<div class="chat-message ' + sideClass + sharedMessageClass + '" data-message-id="' + Number(item.id) + '">' +
+                            replyHtml + forwardedHtml + bodyHtml +
+                            editedHtml + reactionsHtml +
+                        '</div>' +
+                    '</div>' +
+                    actionsHtml +
+                    menuHtml +
                 '</div>' +
-                '</div>';
+            '</div>';
     }
 
     function appendMessage(item) {
@@ -378,9 +607,19 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         if (messageList.querySelector('.chat-empty')) {
             messageList.innerHTML = '';
         }
-        messageList.insertAdjacentHTML('beforeend', buildMessageRowHtml(item));
+        var shouldStick = isNearBottom() || item.is_mine;
+        var itemDateLabel = getMessageDateLabel(item);
+        var dateSeparator = itemDateLabel && itemDateLabel !== lastRenderedDateLabel ? '<div class="chat-date-separator">' + escapeHtml(itemDateLabel) + '</div>' : '';
+        if (itemDateLabel) {
+            lastRenderedDateLabel = itemDateLabel;
+        }
+        messageList.insertAdjacentHTML('beforeend', dateSeparator + buildMessageRowHtml(item));
         renderReactionBadges(item);
-        messageList.scrollTop = messageList.scrollHeight;
+        if (shouldStick) {
+            scrollMessagesToBottom('smooth');
+        } else {
+            updateScrollBottomButton();
+        }
     }
 
     function renderMessages(items) {
@@ -389,12 +628,49 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         }
         if (!items.length) {
             messageList.innerHTML = '<p class="chat-empty">Сообщений пока нет.</p>';
+            lastRenderedDateLabel = '';
+            updateScrollBottomButton();
             return;
         }
-        messageList.innerHTML = items.map(buildMessageRowHtml).join('');
+        messageList.innerHTML = buildMessagesWithDates(items);
 
         updateReactionsFromPayload(items);
-        messageList.scrollTop = messageList.scrollHeight;
+        scrollMessagesToBottom('auto');
+    }
+
+    function getMessageDateLabel(item) {
+        var raw = item.created_at || '';
+        var match = String(raw).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!match && item.created_at_human) {
+            var human = String(item.created_at_human).match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+            if (human) {
+                match = [human[0], human[3], human[2], human[1]];
+            }
+        }
+        if (!match) {
+            return '';
+        }
+        var date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        var today = new Date();
+        var startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        if (date.getTime() === startToday.getTime()) {
+            return 'Сегодня';
+        }
+        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function buildMessagesWithDates(items) {
+        var lastLabel = '';
+        lastRenderedDateLabel = '';
+        return (items || []).map(function (item) {
+            var label = getMessageDateLabel(item);
+            var separator = label && label !== lastLabel ? '<div class="chat-date-separator">' + escapeHtml(label) + '</div>' : '';
+            if (label) {
+                lastLabel = label;
+                lastRenderedDateLabel = label;
+            }
+            return separator + buildMessageRowHtml(item);
+        }).join('');
     }
 
     function renderReactionBadges(message) {
@@ -422,8 +698,37 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 
     function buildMessageRenderHash(items) {
         return (items || []).map(function (item) {
-            return [item.id, item.message_text, item.deleted_for_all ? 1 : 0, item.is_edited ? 1 : 0, item.reply_to_message_id, item.forwarded_from_message_id].join(':');
+            return [item.id, item.message_text, item.deleted_for_all ? 1 : 0, item.is_edited ? 1 : 0, item.is_pinned ? 1 : 0, item.attachment_url || '', item.attachment_type || '', item.reply_to_message_id, item.forwarded_from_message_id].join(':');
         }).join('|');
+    }
+
+    function formatDialogLastMessage(dialog) {
+        var rawText = String(dialog.last_message || '').trim();
+        var attachmentType = String(dialog.last_message_attachment_type || '');
+        if (!rawText && !attachmentType) {
+            return 'Нет сообщений';
+        }
+        if (dialog.last_message_preview) {
+            return dialog.last_message_preview;
+        }
+
+        var isMine = Number(dialog.last_message_sender_id || 0) === currentUserId;
+        var prefix = isMine ? 'Вы' : String(dialog.last_message_sender_login || dialog.partner_login || 'Пользователь');
+        var lowerText = rawText.toLowerCase();
+        var postId = Number(dialog.last_message_post_id || 0);
+        var preview = rawText;
+
+        if (!rawText && attachmentType) {
+            preview = attachmentType === 'gif' ? (isMine ? 'отправили GIF' : 'отправил(а) GIF') : (attachmentType === 'image' ? (isMine ? 'отправили фото' : 'отправил(а) фото') : (isMine ? 'отправили файл' : 'отправил(а) файл'));
+        } else if (postId > 0 || rawText.indexOf('[post_share]|') === 0) {
+            preview = isMine ? 'отправили публикацию' : 'отправил(а) публикацию';
+        } else if (lowerText.indexOf('[photo]') === 0 || lowerText.indexOf('[image]') === 0) {
+            preview = isMine ? 'отправили фото' : 'отправил(а) фото';
+        } else if (lowerText.indexOf('[gif]') === 0) {
+            preview = isMine ? 'отправили GIF' : 'отправил(а) GIF';
+        }
+
+        return prefix + ': ' + preview;
     }
 
     function renderDialogs(items) {
@@ -437,13 +742,15 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 : '<span class="dialog-avatar">' + escapeHtml(dialog.partner_login.slice(0, 1)) + '</span>';
             var unread = dialog.unread_count > 0 ? '<span class="dialog-unread">' + dialog.unread_count + '</span>' : '';
             var activeClass = Number(dialog.id) === activeChatId ? ' is-active' : '';
+            var lastMessageText = formatDialogLastMessage(dialog);
 
-            return '<a href="chat.php?chat_id=' + Number(dialog.id) + '" class="dialog-item' + activeClass + '" data-chat-id="' + Number(dialog.id) + '">' +
+            return '<a href="chat.php?chat_id=' + Number(dialog.id) + '" class="dialog-item' + activeClass + '" data-chat-id="' + Number(dialog.id) + '" data-dialog-login="' + escapeHtml((dialog.partner_login || '').toLowerCase()) + '" data-dialog-message="' + escapeHtml(lastMessageText.toLowerCase()) + '">' +
                 avatar +
-                '<span class="dialog-content"><strong>' + escapeHtml(dialog.partner_login) + '</strong><small>' + escapeHtml(dialog.last_message || 'Нет сообщений') + '</small></span>' +
+                '<span class="dialog-content"><strong>' + escapeHtml(dialog.partner_login) + '</strong><small>' + escapeHtml(lastMessageText) + '</small></span>' +
                 unread +
                 '</a>';
         }).join('');
+        applyDialogSearch();
     }
 
     function updateBadge(count) {
@@ -488,19 +795,201 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             });
     }
 
-    if (sendForm && messageInput) {
-        sendForm.addEventListener('submit', function (event) {
-            event.preventDefault();
-            var messageText = messageInput.value.trim();
+    if (messageList) {
+        messageList.addEventListener('scroll', updateScrollBottomButton);
+    }
 
-            if (messageText === '' || !activeChatId) {
+    if (scrollBottomButton) {
+        scrollBottomButton.addEventListener('click', function () {
+            scrollMessagesToBottom('smooth');
+        });
+    }
+
+    if (chatEmojiButton && chatEmojiPicker && messageInput) {
+        var chatEmojiWrap = chatEmojiButton.closest('.chat-emoji-tool');
+
+        function setChatEmojiPickerOpen(isOpen) {
+            chatEmojiPicker.hidden = !isOpen;
+            chatEmojiButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        function insertChatEmojiAtCursor(input, emoji) {
+            if (!input || !emoji) {
                 return;
             }
 
-            var body = new URLSearchParams();
+            input.focus();
+            var start = typeof input.selectionStart === 'number' ? input.selectionStart : input.value.length;
+            var end = typeof input.selectionEnd === 'number' ? input.selectionEnd : start;
+
+            if (typeof input.setRangeText === 'function') {
+                input.setRangeText(emoji, start, end, 'end');
+            } else {
+                input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+                input.selectionStart = input.selectionEnd = start + emoji.length;
+            }
+
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        chatEmojiButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            setChatEmojiPickerOpen(chatEmojiPicker.hidden);
+        });
+
+        chatEmojiPicker.addEventListener('mousedown', function (event) {
+            event.preventDefault();
+        });
+
+        chatEmojiPicker.querySelectorAll('[data-chat-emoji]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                insertChatEmojiAtCursor(messageInput, button.getAttribute('data-chat-emoji') || '');
+                setChatEmojiPickerOpen(false);
+            });
+        });
+
+        document.addEventListener('click', function (event) {
+            if (chatEmojiPicker.hidden || (chatEmojiWrap && chatEmojiWrap.contains(event.target))) {
+                return;
+            }
+            setChatEmojiPickerOpen(false);
+        });
+    }
+
+    function applyDialogSearch() {
+        console.log('search triggered');
+
+        if (!dialogSearch || !dialogList) {
+            return;
+        }
+
+        var query = dialogSearch.value.trim().toLowerCase();
+        console.log(query);
+
+        Array.prototype.forEach.call(dialogList.querySelectorAll('.dialog-item'), function (item, index) {
+            var login = (item.getAttribute('data-dialog-login') || '').toLowerCase();
+            var message = (item.getAttribute('data-dialog-message') || '').toLowerCase();
+
+            if (index === 0) {
+                console.log(login);
+                console.log(message);
+            }
+
+            var isMatch = query === '' ||
+                login.indexOf(query) !== -1 ||
+                message.indexOf(query) !== -1;
+
+            item.hidden = !isMatch;
+            item.style.display = isMatch ? '' : 'none';
+        });
+    }
+
+    if (dialogSearch && dialogList) {
+        dialogSearch.addEventListener('input', applyDialogSearch);
+        dialogSearch.addEventListener('keyup', applyDialogSearch);
+        dialogSearch.addEventListener('search', applyDialogSearch);
+    }
+
+    if (attachButton && attachmentInput && attachmentPreview) {
+        var selectedAttachmentUrl = '';
+        var selectedAttachmentFile = null;
+        var allowedAttachmentTypes = ['text/plain', 'image/gif', 'image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/x-matroska', 'audio/mpeg', 'audio/mp3', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/zip', 'application/x-zip-compressed', 'application/vnd.rar', 'application/x-rar', 'application/x-rar-compressed'];
+        var allowedAttachmentExtensions = ['txt', 'gif', 'jpg', 'jpeg', 'png', 'webp', 'mp4', 'mp3', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'mkv', 'zip', 'rar'];
+
+        clearChatAttachment = function () {
+            attachmentInput.value = '';
+            selectedAttachmentFile = null;
+            if (selectedAttachmentUrl) {
+                URL.revokeObjectURL(selectedAttachmentUrl);
+                selectedAttachmentUrl = '';
+            }
+            var previewImage = attachmentPreview.querySelector('img');
+            var previewName = attachmentPreview.querySelector('.chat-attachment-name');
+            if (previewImage) {
+                previewImage.removeAttribute('src');
+                previewImage.hidden = false;
+            }
+            if (previewName) {
+                previewName.textContent = '';
+                previewName.hidden = true;
+            }
+            attachmentPreview.hidden = true;
+            if (messageInput) {
+                messageInput.focus();
+            }
+        };
+
+        attachButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            attachmentInput.click();
+        });
+
+        attachmentInput.addEventListener('change', function () {
+            var file = attachmentInput.files && attachmentInput.files[0] ? attachmentInput.files[0] : null;
+            if (!file) {
+                clearChatAttachment();
+                return;
+            }
+
+            var extension = (file.name.split('.').pop() || '').toLowerCase();
+            if ((file.type && allowedAttachmentTypes.indexOf(file.type) === -1) || allowedAttachmentExtensions.indexOf(extension) === -1) {
+                clearChatAttachment();
+                return;
+            }
+
+            selectedAttachmentFile = file;
+            if (selectedAttachmentUrl) {
+                URL.revokeObjectURL(selectedAttachmentUrl);
+            }
+            selectedAttachmentUrl = URL.createObjectURL(file);
+            var previewImage = attachmentPreview.querySelector('img');
+            var previewName = attachmentPreview.querySelector('.chat-attachment-name');
+            var isImagePreview = ['gif', 'jpg', 'jpeg', 'png', 'webp'].indexOf(extension) !== -1;
+            if (previewImage) {
+                previewImage.hidden = !isImagePreview;
+                if (isImagePreview) {
+                    previewImage.src = selectedAttachmentUrl;
+                } else {
+                    previewImage.removeAttribute('src');
+                }
+            }
+            if (previewName) {
+                previewName.hidden = isImagePreview;
+                previewName.textContent = file.name;
+            }
+            attachmentPreview.hidden = false;
+            if (messageInput) {
+                messageInput.focus();
+            }
+        });
+
+        if (attachmentRemove) {
+            attachmentRemove.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                clearChatAttachment();
+            });
+        }
+    }
+
+    if (sendForm && messageInput) {
+        function submitChatMessage() {
+            var messageText = messageInput.value.trim();
+            var attachmentFile = attachmentInput && attachmentInput.files && attachmentInput.files[0] ? attachmentInput.files[0] : selectedAttachmentFile;
+
+            if ((messageText === '' && !attachmentFile) || !activeChatId) {
+                return;
+            }
+
+            var body = new FormData();
             body.set('action', 'send');
             body.set('chat_id', String(activeChatId));
             body.set('message_text', messageText);
+            if (attachmentFile) {
+                body.set('attachment', attachmentFile);
+            }
             if (replyingToMessage) {
                 body.set('reply_to_message_id', String(replyingToMessage.id));
             }
@@ -508,21 +997,20 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
             fetch('chat-api.php', {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: body.toString()
+                body: body
             })
                 .then(function (response) { return response.json(); })
                 .then(function (data) {
-                console.log('SEND RESPONSE:', data);
+                    console.log('SEND RESPONSE:', data);
                     if (data.ok) {
                         messageInput.value = '';
+                        if (clearChatAttachment) {
+                            clearChatAttachment();
+                        }
                         clearReply();
+                        refreshChatState();
                         if (Number(data.message_id || 0) > 0) {
                             notifySocketAboutNewMessage(Number(data.message_id));
-                        } else {
-                            refreshChatState();
                         }
                     } else {
                         lastError = data.error || 'send_failed';
@@ -533,6 +1021,19 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                     lastError = 'send_request_failed';
                     console.error('Chat send request failed:', error);
                 });
+        }
+
+        sendForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            submitChatMessage();
+        });
+
+        messageInput.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter' || event.shiftKey || event.isComposing) {
+                return;
+            }
+            event.preventDefault();
+            submitChatMessage();
         });
     }
 
@@ -602,8 +1103,11 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         if (canEdit) {
             items.push({ action: 'edit', label: 'Редактировать', icon: iconEdit });
         }
-        items.push({ action: 'delete', label: 'Удалить', icon: iconTrash });
-        items.push({ action: 'pin', label: 'Закрепить', icon: iconPin });
+        items.push({ action: 'delete', label: 'Удалить', icon: '<img class="chat-menu-icon" src="icon/trash.png" alt="">' });
+        var pinAction = message.is_pinned ? 'unpin' : 'pin';
+        var pinLabel = message.is_pinned ? 'Открепить' : 'Закрепить';
+        var pinIcon = message.is_pinned ? 'icon/dark theme/nopinn.png' : 'icon/dark theme/pinn.png';
+        items.push({ action: pinAction, label: pinLabel, icon: '<img class="chat-menu-icon" src="' + pinIcon + '" alt="">' });
         items.push({ action: 'reply', label: 'Ответить', icon: iconReply });
         items.push({ action: 'forward', label: 'Переслать', icon: iconForward });
         items.push({ action: 'copy', label: 'Копировать', icon: iconCopy });
@@ -710,8 +1214,15 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
                 closeMenus();
                 return;
             }
-            if (action === 'pin') {
-                sendMessageAction('pin', messageId, {}).then(refreshChatState);
+            if (action === 'pin' || action === 'unpin') {
+                var toggledMessage = activeMenuMessage;
+                sendMessageAction(action, messageId, {}).then(function () {
+                    if (toggledMessage && Number(toggledMessage.id) === messageId) {
+                        toggledMessage.is_pinned = action === 'pin';
+                        renderPinnedMessage(action === 'pin' ? toggledMessage : null);
+                    }
+                    refreshChatState();
+                });
                 closeMenus();
                 return;
             }
@@ -890,6 +1401,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
 
             if (data.type === 'new_message' && Number(data.chat_id) === activeChatId && data.message) {
                 appendMessage(data.message);
+                refreshChatState();
                 return;
             }
 
@@ -918,6 +1430,7 @@ $forwardRecipients = $forwardRecipientsStmt->fetchAll();
         });
     }
 
+    renderPinnedMessage(window.pinnedMessage || null);
     refreshChatState();
     initWebSocket();
 })();
