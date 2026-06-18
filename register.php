@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1>Создание аккаунта</h1>
             <p class="subtitle">Зарегистрируйтесь, чтобы пользоваться Snapix.</p>
 
-            <form class="auth-form" method="post" action="" id="register-form" novalidate>
+            <form class="auth-form" method="post" action="" id="register-form">
                 <label>
                     <input type="text" name="login" placeholder="Логин" value="<?php echo htmlspecialchars($_POST['login'] ?? ''); ?>" required>
                 </label>
