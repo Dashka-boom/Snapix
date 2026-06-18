@@ -13,9 +13,31 @@ function getCurrentUser(PDO $pdo): ?array
     return $user ?: null;
 }
 
-function isAdmin(array $user): bool
+function isAdmin(?array $user): bool
 {
-    return isset($user['role']) && $user['role'] === 'admin';
+    return $user && isset($user['role']) && $user['role'] === 'admin';
+}
+
+function isModerator(?array $user): bool
+{
+    return $user && isset($user['role']) && $user['role'] === 'moderator';
+}
+
+function canOpenAdminPanel(?array $user): bool
+{
+    return isAdmin($user) || isModerator($user);
+}
+
+function requireAdminPanel(PDO $pdo): array
+{
+    $user = getCurrentUser($pdo);
+
+    if (!$user || !canOpenAdminPanel($user)) {
+        header('Location: admin-login.php');
+        exit;
+    }
+
+    return $user;
 }
 
 function requireAdmin(PDO $pdo): array

@@ -2,6 +2,7 @@
 session_start();
 require './config/config.php';
 require_once './includes/side-menu.php';
+require_once './includes/hashtags.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -20,11 +21,16 @@ if (!$user) {
 
 $error = '';
 $caption = '';
+$hashtags = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $caption = trim($_POST['caption'] ?? '');
+    $hashtagError = null;
+    $hashtags = snapix_validate_and_normalize_hashtags((string) ($_POST['hashtags'] ?? ''), $hashtagError);
 
-    if (!isset($_FILES['media']) || $_FILES['media']['error'] === UPLOAD_ERR_NO_FILE) {
+    if ($hashtagError !== null) {
+        $error = $hashtagError;
+    } elseif (!isset($_FILES['media']) || $_FILES['media']['error'] === UPLOAD_ERR_NO_FILE) {
         $error = 'Выберите фото или видео для публикации.';
     } elseif ($_FILES['media']['error'] !== UPLOAD_ERR_OK) {
         $error = 'Не удалось загрузить файл. Попробуйте снова.';
@@ -71,10 +77,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         try {
                             $pdo->beginTransaction();
 
-                            $insertPostStmt = $pdo->prepare('INSERT INTO posts (user_id, caption) VALUES (:user_id, :caption)');
+                            $insertPostStmt = $pdo->prepare('INSERT INTO posts (user_id, caption, hashtags) VALUES (:user_id, :caption, :hashtags)');
                             $insertPostStmt->execute([
                                 'user_id' => $user['id'],
                                 'caption' => $caption !== '' ? $caption : null,
+                                'hashtags' => $hashtags !== '' ? $hashtags : null,
                             ]);
 
                             $postId = (int) $pdo->lastInsertId();
@@ -131,6 +138,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="field">
                     <label for="caption">Подпись</label>
                     <textarea id="caption" name="caption" rows="4" maxlength="1200" placeholder="Расскажите, что на публикации..."><?php echo htmlspecialchars($caption); ?></textarea>
+                </div>
+
+                <div class="field">
+                    <label for="hashtags">Хештеги</label>
+                    <input id="hashtags" name="hashtags" type="text" maxlength="300" placeholder="#snapix #photo #travel" value="<?php echo htmlspecialchars($hashtags, ENT_QUOTES, 'UTF-8'); ?>">
                 </div>
 
                 <p class="form-status<?php echo $error === '' ? '' : ' is-error'; ?>" aria-live="polite"><?php echo htmlspecialchars($error); ?></p>

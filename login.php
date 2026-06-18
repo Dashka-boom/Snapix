@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <p class="form-status" aria-live="polite"><?php echo htmlspecialchars($error); ?></p>
                 <button type="submit" class="submit-btn">Войти</button>
+                <p class="switch-text"><a href="forgot-password.php" class="link">Забыли пароль?</a></p>
             </form>
 
             <div class="divider"><span>или</span></div>

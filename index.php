@@ -5,6 +5,7 @@ require './includes/icons.php';
 require './includes/post-actions.php';
 require './includes/notifications.php';
 require_once './includes/side-menu.php';
+require_once './includes/hashtags.php';
 
 function buildProfileUrl(int $profileUserId, ?int $currentUserId): string
 {
@@ -344,7 +345,7 @@ $reportReasons = $reportReasonsStmt->fetchAll();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $user) {
     $action = $_POST['action'] ?? '';
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'delete_comment', 'report_comment', 'toggle_comment_like', 'get_post_counts', 'modal_follow_author'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'add_repost', 'delete_post', 'hide_post', 'block_user', 'report_post', 'delete_comment', 'report_comment', 'toggle_comment_like', 'get_post_counts', 'modal_follow_author'], true);
     $ajaxExtra = [];
 
     if ($action === 'modal_follow_author') {
@@ -857,6 +858,7 @@ $feedStmt = $pdo->query('
     SELECT
         posts.id,
         posts.caption,
+        posts.hashtags,
         posts.created_at,
         users.id AS user_id,
         users.login,
@@ -1019,6 +1021,18 @@ if ($feedPosts) {
         }
     }
 }
+
+$popularHashtags = [];
+$hashtagsStmt = $pdo->query("SELECT hashtags FROM posts WHERE is_deleted = 0 AND hashtags IS NOT NULL AND hashtags <> ''");
+
+foreach ($hashtagsStmt->fetchAll() as $hashtagRow) {
+    foreach (snapix_split_safe_hashtags((string) ($hashtagRow['hashtags'] ?? '')) as $hashtag) {
+        $popularHashtags[$hashtag] = ($popularHashtags[$hashtag] ?? 0) + 1;
+    }
+}
+
+arsort($popularHashtags);
+$popularHashtags = array_slice(array_keys($popularHashtags), 0, 5);
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -1048,7 +1062,7 @@ if ($feedPosts) {
                         <?php $postReposters = $repostMap[(int) $post['id']] ?? []; ?>
                         <?php $authorProfileUrl = $user ? buildProfileUrl((int) $post['user_id'], (int) $user['id']) : 'login.php'; ?>
                         <?php $feedScope = (int) $post['is_following_author'] > 0 ? 'following' : 'for-you'; ?>
-                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['login'] ?? '')); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['avatar'] ?? '')); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>" data-post-is-following-author="<?php echo (int) $post['is_following_author'] > 0 ? '1' : '0'; ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
+                        <article class="feed-card card-surface" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['login'] ?? '')); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['avatar'] ?? '')); ?>" data-post-caption="<?php echo htmlspecialchars((string) ($post['caption'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" data-post-hashtags="<?php echo htmlspecialchars(implode(' ', snapix_split_safe_hashtags((string) ($post['hashtags'] ?? ''))), ENT_QUOTES, 'UTF-8'); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>" data-post-is-following-author="<?php echo (int) $post['is_following_author'] > 0 ? '1' : '0'; ?>" data-feed-scope="<?php echo htmlspecialchars($feedScope); ?>">
                             <header class="feed-card-header">
                                 <div class="feed-header-main">
                                     <a href="<?php echo htmlspecialchars($authorProfileUrl); ?>" class="feed-author-avatar-link" aria-label="Открыть профиль <?php echo htmlspecialchars($post['login']); ?>">
@@ -1244,7 +1258,7 @@ if ($feedPosts) {
                                         <?php echo nl2br(htmlspecialchars($post['caption'])); ?>
                                     </div>
                                 <?php endif; ?>
-                                <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-<?php echo (int) $post['id']; ?>">
+                                <div class="comments-modal" id="comments-modal-<?php echo (int) $post['id']; ?>">
                                     <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-<?php echo (int) $post['id']; ?>"></div>
                                     <div class="comments-modal-dialog">
                                         <div class="comments-modal-header">
@@ -1303,11 +1317,13 @@ if ($feedPosts) {
                 <section class="home-sidebar-card home-sidebar-topics">
                     <h2>Популярные темы</h2>
                     <div class="home-sidebar-hashtags" aria-label="Популярные хештеги">
-                        <a href="search.php?q=%23snapix">#snapix</a>
-                        <a href="search.php?q=%23photo">#photo</a>
-                        <a href="search.php?q=%23travel">#travel</a>
-                        <a href="search.php?q=%23style">#style</a>
-                        <a href="search.php?q=%23art">#art</a>
+                        <?php if ($popularHashtags): ?>
+                            <?php foreach ($popularHashtags as $popularHashtag): ?>
+                                <a href="search.php?q=<?php echo urlencode($popularHashtag); ?>"><?php echo htmlspecialchars($popularHashtag); ?></a>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <span class="home-sidebar-empty">Пока нет хештегов</span>
+                        <?php endif; ?>
                     </div>
                 </section>
 
@@ -1323,6 +1339,39 @@ if ($feedPosts) {
 <div class="profile-post-viewer" id="profilePostViewer" aria-hidden="true">
     <div class="profile-post-viewer-overlay" data-post-viewer-close></div>
     <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Просмотр публикации">
+        <div class="post-viewer-menu-wrap" data-post-viewer-menu-wrap>
+            <button type="button" class="post-viewer-menu-toggle" data-post-viewer-menu-toggle aria-label="Действия с публикацией" aria-expanded="false">•••</button>
+            <div class="post-viewer-menu" data-post-viewer-menu hidden>
+                <div class="post-viewer-menu-own is-hidden">
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="edit_post">
+                        <img src="icon/dark theme/edd.png" alt="">
+                        <span>Редактировать</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="open_stats">
+                        <img src="icon/dark theme/analytic.png" alt="">
+                        <span>Кто посмотрел пост</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item post-viewer-menu-item-danger" data-post-viewer-menu-action="delete_post">
+                        <img src="icon/trash.png" alt="">
+                        <span>Удалить пост</span>
+                    </button>
+                </div>
+                <div class="post-viewer-menu-foreign is-hidden">
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="hide_post">
+                        <img src="icon/dark theme/dislike.png" alt="">
+                        <span>Не интересно</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="block_user">
+                        <img src="icon/dark theme/stop.png" alt="">
+                        <span data-post-viewer-block-label>Добавить пользователя в чёрный список</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item post-viewer-menu-item-danger" data-post-viewer-menu-action="report_post">
+                        <img src="icon/complaint.png" alt="">
+                        <span>Пожаловаться</span>
+                    </button>
+                </div>
+            </div>
+        </div>
         <button type="button" class="profile-post-viewer-close" data-post-viewer-close aria-label="Закрыть">×</button>
         <div class="profile-post-viewer-media" id="profilePostViewerMedia"></div>
         <aside class="profile-post-viewer-side">
@@ -1332,8 +1381,9 @@ if ($feedPosts) {
                     <a href="#" class="profile-post-viewer-login-link-name" id="profilePostViewerLoginLink"><strong id="profilePostViewerLogin"></strong></a>
                     <button type="button" class="profile-post-viewer-follow" id="profilePostViewerFollow">Подписаться</button>
                 </div>
-                <button type="button" class="profile-post-viewer-more" aria-label="Ещё">•••</button>
             </header>
+            <div class="post-viewer-caption" data-post-viewer-caption hidden></div>
+            <div class="post-viewer-hashtags" data-post-viewer-hashtags hidden></div>
             <div class="profile-post-viewer-comments" id="profilePostViewerComments">
                 <p class="profile-post-viewer-empty">Комментариев нет</p>
             </div>
@@ -1407,13 +1457,196 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     var login = document.getElementById('profilePostViewerLogin');
     var follow = document.getElementById('profilePostViewerFollow');
     var commentsHost = document.getElementById('profilePostViewerComments');
+    var postViewerCaption = viewer.querySelector('[data-post-viewer-caption]');
+    var postViewerHashtags = viewer.querySelector('[data-post-viewer-hashtags]');
     var commentForm = document.getElementById('profilePostViewerCommentForm');
+    var postViewerMenuToggle = viewer.querySelector('[data-post-viewer-menu-toggle]');
+    var postViewerMenu = viewer.querySelector('[data-post-viewer-menu]');
+    var postViewerMenuOwn = viewer.querySelector('.post-viewer-menu-own');
+    var postViewerMenuForeign = viewer.querySelector('.post-viewer-menu-foreign');
+    var postViewerBlockLabel = viewer.querySelector('[data-post-viewer-block-label]');
     var currentUserId = <?php echo (int) ($user['id'] ?? 0); ?>;
     var currentUserRole = <?php echo json_encode((string) ($user['role'] ?? 'user'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     var actionToEndpoint = { like: 'toggle_like', repost: 'add_repost', save: 'toggle_save' };
 
     if (!viewer || !mediaHost) {
         return;
+    }
+
+    function closePostViewerMenu() {
+        if (!postViewerMenu || !postViewerMenuToggle) return;
+        postViewerMenu.hidden = true;
+        postViewerMenuToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    function togglePostViewerMenu(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!postViewerMenu || !postViewerMenuToggle) return;
+        var shouldOpen = postViewerMenu.hidden;
+        postViewerMenu.hidden = !shouldOpen;
+        postViewerMenuToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    }
+
+    function updatePostViewerMenu(card, authorId) {
+        var isOwnPost = !!currentUserId && Number(authorId || 0) === Number(currentUserId);
+        if (postViewerMenuOwn) postViewerMenuOwn.classList.toggle('is-hidden', !isOwnPost);
+        if (postViewerMenuForeign) postViewerMenuForeign.classList.toggle('is-hidden', isOwnPost);
+        if (postViewerBlockLabel) {
+            var authorLogin = (card.dataset.postAuthorLogin || '').trim() || 'пользователя';
+            postViewerBlockLabel.textContent = 'Добавить ' + authorLogin + ' в чёрный список';
+        }
+    }
+
+
+    function escapeStatsHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+            return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[char];
+        });
+    }
+
+    function ensurePostViewerStatsModal() {
+        var modal = document.querySelector('[data-post-viewer-stats-modal]');
+        if (modal) return modal;
+        modal = document.createElement('div');
+        modal.className = 'clips-stats-modal';
+        modal.setAttribute('data-post-viewer-stats-modal', '');
+        modal.setAttribute('aria-hidden', 'true');
+        modal.innerHTML = '<button type="button" class="clips-stats-modal-overlay" data-post-viewer-stats-close aria-label="Закрыть статистику"></button>' +
+            '<div class="clips-stats-modal-dialog" role="dialog" aria-modal="true" aria-label="Статистика публикации">' +
+                '<div class="clips-stats-modal-header"><button type="button" class="clips-stats-modal-close" data-post-viewer-stats-close aria-label="Закрыть">×</button><h3>Статистика публикации</h3><span class="clips-stats-header-spacer" aria-hidden="true"></span></div>' +
+                '<div class="clips-stats-modal-body" data-post-viewer-stats-content><p class="clips-stats-status">Загрузка...</p></div>' +
+            '</div>';
+        document.body.appendChild(modal);
+        modal.querySelectorAll('[data-post-viewer-stats-close]').forEach(function (button) {
+            button.addEventListener('click', function () { closePostViewerStatsModal(); });
+        });
+        return modal;
+    }
+
+    function closePostViewerStatsModal() {
+        var modal = document.querySelector('[data-post-viewer-stats-modal]');
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function renderPostViewerStats(stats) {
+        var daily = Array.isArray(stats.daily) ? stats.daily : [];
+        var dailyRows = daily.length ? daily.map(function (row) {
+            return '<tr><td>' + escapeStatsHtml(row.date || '') + '</td><td>' + escapeStatsHtml(row.likes || 0) + '</td><td>' + escapeStatsHtml(row.comments || 0) + '</td><td>' + escapeStatsHtml(row.reposts || 0) + '</td><td>' + escapeStatsHtml(row.saves || 0) + '</td></tr>';
+        }).join('') : '<tr><td colspan="5">Данных за период пока нет</td></tr>';
+        var topPost = stats.top_post || {};
+        var topPostMedia = topPost.media_url ? '<div class="clips-stats-top-thumb">' + (topPost.media_type === 'video' ? '<video src="' + escapeStatsHtml(topPost.media_url) + '" muted playsinline></video>' : '<img src="' + escapeStatsHtml(topPost.media_url) + '" alt="">') + '</div>' : '<div class="clips-stats-top-thumb is-empty">#</div>';
+        var topPostMarkup = topPost.id ? '<div class="clips-stats-top-post">' + topPostMedia + '<div><strong>ID публикации: ' + escapeStatsHtml(topPost.id) + '</strong><span>Всего взаимодействий: ' + escapeStatsHtml(topPost.interactions_total || 0) + '</span></div></div>' : '<p class="clips-stats-status">Пока нет публикаций для сравнения.</p>';
+        return '<p class="clips-stats-period">Период: всё время</p>' +
+            '<div class="clips-stats-cards">' +
+                '<section class="clips-stats-card"><span>Всего лайков за период</span><strong>' + escapeStatsHtml(stats.likes_total || 0) + '</strong></section>' +
+                '<section class="clips-stats-card"><span>Всего комментариев</span><strong>' + escapeStatsHtml(stats.comments_total || 0) + '</strong></section>' +
+                '<section class="clips-stats-card"><span>Всего репостов</span><strong>' + escapeStatsHtml(stats.reposts_total || 0) + '</strong></section>' +
+                '<section class="clips-stats-card"><span>Всего добавлений в избранное</span><strong>' + escapeStatsHtml(stats.saves_total || 0) + '</strong></section>' +
+            '</div>' +
+            '<section class="clips-stats-section"><h4>Динамика по дням</h4><div class="clips-stats-table-wrap"><table class="clips-stats-table"><thead><tr><th>Дата</th><th>Лайки</th><th>Комментарии</th><th>Репосты</th><th>Избранное</th></tr></thead><tbody>' + dailyRows + '</tbody></table></div></section>' +
+            '<section class="clips-stats-section"><h4>Пост с наибольшим количеством взаимодействий</h4>' + topPostMarkup + '</section>';
+    }
+
+    function openPostViewerStatsModal(postId) {
+        if (typeof window.openStatsModal === 'function') {
+            window.openStatsModal(postId);
+            return;
+        }
+        var modal = ensurePostViewerStatsModal();
+        var content = modal.querySelector('[data-post-viewer-stats-content]');
+        if (content) content.innerHTML = '<p class="clips-stats-status">Загрузка...</p>';
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        var formData = new FormData();
+        formData.set('action', 'get_clip_post_stats');
+        formData.set('post_id', postId);
+        fetch('clips.php', { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })
+            .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+            .then(function (result) {
+                if (!result.ok || !result.data || !result.data.ok) throw new Error((result.data && result.data.error) || 'Не удалось загрузить статистику.');
+                if (content) content.innerHTML = renderPostViewerStats(result.data.stats || {});
+            })
+            .catch(function (error) {
+                if (content) content.innerHTML = '<p class="clips-stats-status is-error">' + escapeStatsHtml(error.message || 'Не удалось загрузить статистику.') + '</p>';
+            });
+    }
+
+    function isCurrentViewerOwnPost() {
+        return !!currentUserId && Number(viewer.dataset.postAuthorId || 0) === Number(currentUserId);
+    }
+
+    function removePostCardsFromPage(postId) {
+        var removed = false;
+        document.querySelectorAll('.feed-card[data-post-id="' + postId + '"], .post-card[data-post-id="' + postId + '"]').forEach(function (card) {
+            card.remove();
+            removed = true;
+        });
+        if (!removed) window.location.reload();
+    }
+
+    function removePostCardsByAuthor(authorId) {
+        var removed = false;
+        document.querySelectorAll('.feed-card[data-post-author-id="' + authorId + '"], .post-card[data-post-author-id="' + authorId + '"]').forEach(function (card) {
+            card.remove();
+            removed = true;
+        });
+        if (!removed) window.location.reload();
+    }
+
+    function sendPostViewerAction(action, extra) {
+        var postId = viewer.dataset.postId || '';
+        var authorId = viewer.dataset.postAuthorId || '';
+        var formData = new FormData();
+        formData.set('action', action);
+        formData.set('post_id', postId);
+        formData.set('owner_id', authorId);
+        Object.keys(extra || {}).forEach(function (key) {
+            formData.set(key, extra[key]);
+        });
+        return fetch(window.location.href, { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })
+            .then(function (response) {
+                return response.json().catch(function () { return {}; }).then(function (data) {
+                    if (!response.ok || (data && data.ok === false)) throw new Error((data && data.error) || 'Не удалось выполнить действие.');
+                    return data;
+                });
+            });
+    }
+
+    function deleteCurrentViewerPost(postId) {
+        if (!confirm('Удалить публикацию?')) return;
+        sendPostViewerAction('delete_post')
+            .then(function () { closeViewer(); removePostCardsFromPage(postId); })
+            .catch(function (error) { alert(error.message || 'Не удалось удалить публикацию.'); });
+    }
+
+    function hideCurrentViewerPost(postId) {
+        sendPostViewerAction('hide_post')
+            .then(function () { closePostViewerMenu(); closeViewer(); removePostCardsFromPage(postId); })
+            .catch(function (error) { alert(error.message || 'Не удалось скрыть публикацию.'); });
+    }
+
+    function blockCurrentViewerAuthor(authorId) {
+        sendPostViewerAction('block_user', { target_user_id: authorId })
+            .then(function () { closePostViewerMenu(); closeViewer(); removePostCardsByAuthor(authorId); })
+            .catch(function (error) { alert(error.message || 'Не удалось добавить пользователя в чёрный список.'); });
+    }
+
+    function reportCurrentViewerPost(postId, authorId, authorLogin) {
+        if (!window.SnapixReportModal) return;
+        window.SnapixReportModal.open({
+            login: authorLogin || 'user',
+            userId: authorId || 0,
+            postId: postId,
+            onSubmit: function (reason, api) {
+                sendPostViewerAction('report_post', { report_reason: reason }).then(function (data) {
+                    if (!data || data.ok === false) return;
+                    if (api && typeof api.showSuccess === 'function') api.showSuccess();
+                });
+            }
+        });
     }
 
     function postComments(postId) {
@@ -1722,7 +1955,22 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         });
     }
 
+
+    function renderPostViewerHashtags(container, hashtags) {
+        if (!container) return;
+        container.innerHTML = '';
+        var tags = (hashtags || '').trim().split(/\s+/).filter(Boolean);
+        container.hidden = tags.length === 0;
+        tags.forEach(function (tag) {
+            var link = document.createElement('a');
+            link.href = 'search.php?q=' + encodeURIComponent(tag);
+            link.textContent = tag;
+            container.appendChild(link);
+        });
+    }
+
     function openViewer(card) {
+        closePostViewerMenu();
         var postId = card.dataset.postId || '';
         var mediaUrl = card.dataset.postMediaUrl || '';
         var mediaType = card.dataset.postMediaType || 'image';
@@ -1750,6 +1998,11 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         var loginLink = document.getElementById('profilePostViewerLoginLink');
         if (avatarLink) avatarLink.href = authorUrl;
         if (loginLink) loginLink.href = authorUrl;
+        var caption = card.dataset.postCaption || '';
+        postViewerCaption.textContent = caption;
+        postViewerCaption.hidden = caption.trim() === '';
+        renderPostViewerHashtags(postViewerHashtags, card.dataset.postHashtags || '');
+        updatePostViewerMenu(card, authorId);
         if (follow) {
             follow.hidden = !currentUserId || currentUserId === authorId || card.dataset.postIsFollowingAuthor === '1';
             follow.disabled = false;
@@ -1783,6 +2036,7 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
     }
 
     function closeViewer() {
+        closePostViewerMenu();
         viewer.classList.remove('is-open');
         viewer.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('is-modal-open');
@@ -1790,7 +2044,9 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         mediaHost.innerHTML = '';
     }
 
-    document.querySelectorAll('body[data-page="home"] .feed-posts-grid .feed-card').forEach(function (card) {
+    window.snapixOpenPostViewer = openViewer;
+
+    document.querySelectorAll('body[data-page="home"] .feed-posts-grid .feed-card[data-post-id]').forEach(function (card) {
         card.addEventListener('click', function (event) {
             if (event.target.closest('button, form, a, input, textarea, select, label, .profile-hover-action-item, .post-menu-wrap')) {
                 return;
@@ -1799,14 +2055,71 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         });
     });
 
+    var linkedPostId = new URLSearchParams(window.location.search).get('open_post') || new URLSearchParams(window.location.search).get('comments_post');
+    if (linkedPostId) {
+        var safeLinkedPostId = String(linkedPostId).replace(/[^0-9]/g, '');
+        var linkedCard = safeLinkedPostId ? document.querySelector('body[data-page="home"] .feed-posts-grid .feed-card[data-post-id="' + safeLinkedPostId + '"]') : null;
+        if (linkedCard) openViewer(linkedCard);
+    }
+
+    if (postViewerMenuToggle) {
+        postViewerMenuToggle.addEventListener('click', togglePostViewerMenu);
+    }
     viewer.querySelectorAll('[data-post-viewer-close]').forEach(function (node) {
         node.addEventListener('click', closeViewer);
     });
+    if (postViewerMenu) {
+        postViewerMenu.addEventListener('click', function (event) {
+            var button = event.target.closest ? event.target.closest('[data-post-viewer-menu-action]') : null;
+            if (!button) return;
+            event.preventDefault();
+            event.stopPropagation();
+            var action = button.getAttribute('data-post-viewer-menu-action');
+            var postId = viewer.dataset.postId || '';
+            var authorId = viewer.dataset.postAuthorId || '';
+            var isOwnPost = isCurrentViewerOwnPost();
+            if (!postId) return;
+            if (['edit_post', 'open_stats', 'delete_post'].indexOf(action) !== -1) {
+                if (!isOwnPost) return;
+                closePostViewerMenu();
+                if (action === 'edit_post') {
+                    window.location.href = 'edit-post.php?id=' + encodeURIComponent(postId);
+                    return;
+                }
+                if (action === 'open_stats') {
+                    openPostViewerStatsModal(postId);
+                    return;
+                }
+                if (action === 'delete_post') {
+                    deleteCurrentViewerPost(postId);
+                }
+                return;
+            }
+            if (['hide_post', 'block_user', 'report_post'].indexOf(action) !== -1) {
+                if (isOwnPost) return;
+                if (action === 'hide_post') {
+                    hideCurrentViewerPost(postId);
+                    return;
+                }
+                if (action === 'block_user') {
+                    blockCurrentViewerAuthor(authorId);
+                    return;
+                }
+                if (action === 'report_post') {
+                    closePostViewerMenu();
+                    reportCurrentViewerPost(postId, authorId, login ? login.textContent : '');
+                }
+            }
+        });
+    }
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && viewer.classList.contains('is-open')) closeViewer();
     });
 
     document.addEventListener('click', function (event) {
+        if (viewer.classList.contains('is-open') && !(event.target.closest && event.target.closest('#profilePostViewer [data-post-viewer-menu-wrap]'))) {
+            closePostViewerMenu();
+        }
         closeCommentMenus(event.target.closest ? event.target.closest('#profilePostViewer .profile-viewer-comment-menu') : null);
 
         var replyButton = event.target.closest ? event.target.closest('#profilePostViewer .profile-viewer-comment-reply') : null;
@@ -2262,11 +2575,14 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
 })();
 
 document.querySelectorAll('.js-open-comments-modal').forEach(function (button) {
-    button.addEventListener('click', function () {
-        var modalId = button.getAttribute('data-modal');
-        var modal = modalId ? document.getElementById(modalId) : null;
-        if (modal) {
-            modal.classList.add('is-open');
+    button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var card = button.closest('[data-post-id]');
+        if (card && window.snapixOpenPostViewer) {
+            window.snapixOpenPostViewer(card);
+            var input = document.querySelector('#profilePostViewerCommentForm [name="comment_text"]');
+            if (input) input.focus();
         }
     });
 });

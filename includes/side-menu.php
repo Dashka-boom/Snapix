@@ -495,7 +495,7 @@ function render_side_menu(?array $sideMenuUser = null): void
                 <img src="icon/dark theme/notification.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Уведомления</span>
             </a>
-            <a href="#" class="side-menu-item" aria-label="Поиск">
+            <a href="search.php" class="side-menu-item" aria-label="Поиск">
                 <img src="icon/dark theme/search.png" alt="" class="side-menu-icon">
                 <span class="side-menu-label">Поиск</span>
             </a>
@@ -538,7 +538,6 @@ function render_side_menu(?array $sideMenuUser = null): void
         <?php endif; ?>
     </aside>
     <?php render_notifications_drawer($sideMenuUser); ?>
-
     <?php $moderationAlert = snapix_side_fetch_unread_moderation_notification($sideMenuUser); ?>
     <?php if ($moderationAlert): ?>
         <div class="moderation-alert-backdrop is-open" data-moderation-alert-backdrop></div>

@@ -2,6 +2,7 @@
 session_start();
 require './config/config.php';
 require_once './includes/side-menu.php';
+require_once './includes/hashtags.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -26,7 +27,7 @@ if ($postId <= 0) {
 }
 
 $postStmt = $pdo->prepare('
-    SELECT posts.id, posts.caption, post_media.media_type, post_media.media_url
+    SELECT posts.id, posts.caption, posts.hashtags, post_media.media_type, post_media.media_url
     FROM posts
     LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
     WHERE posts.id = :id AND posts.user_id = :user_id AND posts.is_deleted = 0
@@ -45,6 +46,7 @@ if (!$post) {
 
 $error = '';
 $caption = (string) ($post['caption'] ?? '');
+$hashtags = (string) ($post['hashtags'] ?? '');
 
 function removePostFile(?string $publicPath): void
 {
@@ -121,19 +123,26 @@ function storePostMedia(array $file): array
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $caption = trim($_POST['caption'] ?? '');
+    $hashtagError = null;
+    $hashtags = snapix_validate_and_normalize_hashtags((string) ($_POST['hashtags'] ?? ''), $hashtagError);
     $newMedia = null;
     $oldMediaUrl = (string) ($post['media_url'] ?? '');
 
     try {
+        if ($hashtagError !== null) {
+            throw new RuntimeException($hashtagError);
+        }
+
         if (isset($_FILES['media']) && ($_FILES['media']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
             $newMedia = storePostMedia($_FILES['media']);
         }
 
         $pdo->beginTransaction();
 
-        $updatePostStmt = $pdo->prepare('UPDATE posts SET caption = :caption WHERE id = :id AND user_id = :user_id');
+        $updatePostStmt = $pdo->prepare('UPDATE posts SET caption = :caption, hashtags = :hashtags WHERE id = :id AND user_id = :user_id');
         $updatePostStmt->execute([
             'caption' => $caption !== '' ? $caption : null,
+            'hashtags' => $hashtags !== '' ? $hashtags : null,
             'id' => $post['id'],
             'user_id' => $user['id'],
         ]);
@@ -230,6 +239,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="field">
                     <label for="caption">Подпись</label>
                     <textarea id="caption" name="caption" rows="4" maxlength="1200" placeholder="Расскажите, что на публикации..."><?php echo htmlspecialchars($caption); ?></textarea>
+                </div>
+
+                <div class="field">
+                    <label for="hashtags">Хештеги</label>
+                    <input id="hashtags" name="hashtags" type="text" maxlength="300" placeholder="#snapix #photo #travel" value="<?php echo htmlspecialchars($hashtags, ENT_QUOTES, 'UTF-8'); ?>">
                 </div>
 
                 <p class="form-status<?php echo $error === '' ? '' : ' is-error'; ?>" aria-live="polite"><?php echo htmlspecialchars($error); ?></p>

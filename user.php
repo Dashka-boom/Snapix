@@ -2,10 +2,32 @@
 session_start();
 require './config/config.php';
 require_once './includes/side-menu.php';
+require_once './includes/hashtags.php';
 require './includes/icons.php';
 require './includes/post-actions.php';
 require './includes/notifications.php';
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
+function e(?string $value): string
+{
+    return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function requireValidCsrf(): void
+{
+    $token = $_POST['csrf_token'] ?? '';
+
+    if (
+        !is_string($token)
+        || empty($_SESSION['csrf_token'])
+        || !hash_equals($_SESSION['csrf_token'], $token)
+    ) {
+        http_response_code(403);
+        exit('Недействительный CSRF-токен.');
+    }
+}
 function profileDestination(int $targetUserId, ?int $currentUserId): string
 {
     if ($currentUserId !== null && $targetUserId === $currentUserId) {
@@ -296,7 +318,7 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
             <?php $postComments = $commentMap[(int) $post['id']] ?? []; ?>
             <?php $authorLogin = (string) ($post['author_login'] ?? $profileUser['login']); ?>
             <?php $authorAvatar = (string) ($post['author_avatar'] ?? $profileUser['avatar'] ?? ''); ?>
-            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars($authorLogin); ?>" data-post-author-avatar="<?php echo htmlspecialchars($authorAvatar); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-viewer-follow-status="<?php echo htmlspecialchars((string) ($post['viewer_follow_status'] ?? '')); ?>">
+            <article class="post-card" id="post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars($authorLogin); ?>" data-post-author-avatar="<?php echo htmlspecialchars($authorAvatar); ?>" data-post-caption="<?php echo htmlspecialchars((string) ($post['caption'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" data-post-hashtags="<?php echo htmlspecialchars(implode(' ', snapix_split_safe_hashtags((string) ($post['hashtags'] ?? ''))), ENT_QUOTES, 'UTF-8'); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? '1' : '0'; ?>" data-post-is-following-author="<?php echo in_array((string) ($post['viewer_follow_status'] ?? ''), ['accepted', 'pending'], true) ? '1' : '0'; ?>" data-post-viewer-follow-status="<?php echo htmlspecialchars((string) ($post['viewer_follow_status'] ?? '')); ?>">
                 <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
                     <video class="post-card-media" preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
                 <?php elseif (!empty($post['media_url'])): ?>
@@ -312,7 +334,13 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                 <div class="post-hover-overlay" aria-hidden="true">
                     <div class="profile-hover-action-item">
                         <?php if ($currentUser): ?>
-                            <form method="post" class="inline-action-form profile-hover-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-like-btn<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? ' is-active' : ''; ?>" data-hover-like-post-id="<?php echo (int) $post['id']; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt="Лайк"></button></form>
+                            <form method="post" class="inline-action-form profile-hover-action-form">
+                                <input type="hidden" name="action" value="toggle_like">
+                                <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-like-btn<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? ' is-active' : ''; ?>" data-hover-like-post-id="<?php echo (int) $post['id']; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt="Лайк"></button>
+                            </form>
                         <?php else: ?>
                             <a href="login.php" class="feed-action-btn profile-hover-action-btn profile-hover-like-btn" aria-label="Войти для лайка"><img src="icon/dark theme/like.png" alt="Лайк"></a>
                         <?php endif; ?>
@@ -320,7 +348,13 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                     </div>
                     <div class="profile-hover-action-item">
                         <?php if ($currentUser): ?>
-                            <form method="post" class="inline-action-form profile-hover-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-repost-btn<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? ' is-reposted' : ''; ?>" data-hover-repost-post-id="<?php echo (int) $post['id']; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt="Репост"></button></form>
+                            <form method="post" class="inline-action-form profile-hover-action-form">
+                                <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="action" value="add_repost">
+                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-repost-btn<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? ' is-reposted' : ''; ?>" data-hover-repost-post-id="<?php echo (int) $post['id']; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt="Репост"></button>
+                            </form>
                         <?php else: ?>
                             <a href="login.php" class="feed-action-btn profile-hover-action-btn profile-hover-repost-btn" aria-label="Войти для репоста"><img src="icon/dark theme/repost.png" alt="Репост"></a>
                         <?php endif; ?>
@@ -328,7 +362,13 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                     </div>
                     <div class="profile-hover-action-item">
                         <?php if ($currentUser): ?>
-                            <form method="post" class="inline-action-form profile-hover-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-save-btn<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? ' is-saved' : ''; ?>" data-hover-save-post-id="<?php echo (int) $post['id']; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt="Избранное"></button></form>
+                            <form method="post" class="inline-action-form profile-hover-action-form">
+                                <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="action" value="toggle_save">
+                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-save-btn<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? ' is-saved' : ''; ?>" data-hover-save-post-id="<?php echo (int) $post['id']; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt="Избранное"></button>
+                            </form>
                         <?php else: ?>
                             <a href="login.php" class="feed-action-btn profile-hover-action-btn profile-hover-save-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt="Избранное"></a>
                         <?php endif; ?>
@@ -340,18 +380,26 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                     <div class="feed-card-header"><div class="feed-header-main"><strong><?php echo htmlspecialchars($authorLogin); ?></strong></div></div>
                     <div class="feed-card-buttons" style="margin-top: 10px;">
                         <?php if ($currentUser): ?>
-                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['likes_count'] ?? 0); ?></span></div>
+                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['likes_count'] ?? 0); ?></span></div>
                             <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button><span class="feed-action-count"><?php echo (int) ($post['comments_count'] ?? 0); ?></span></div>
-                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['saves_count'] ?? 0); ?></span></div>
-                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['reposts_count'] ?? 0); ?></span></div>
+                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['saves_count'] ?? 0); ?></span></div>
+                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['reposts_count'] ?? 0); ?></span></div>
                             <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" data-post-action="share" aria-label="Отправить в сообщения"><img src="icon/dark theme/share.png" alt=""></button><span class="feed-action-count" data-post-id="<?php echo (int) $post['id']; ?>" data-post-count="shares"><?php echo (int) ($post['shares_count'] ?? 0); ?></span></div>
                         <?php endif; ?>
                     </div>
-                    <div class="comments-modal<?php echo (isset($_GET['comments_post']) && (int) $_GET['comments_post'] === (int) $post['id']) ? ' is-open' : ''; ?>" id="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>">
+                    <div class="comments-modal" id="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>">
                         <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>"></div>
                         <div class="comments-modal-dialog"><div class="comments-modal-header"><h3>Комментарии</h3><button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button></div><div class="comments-modal-body">
                             <?php if ($postComments): ?><?php foreach ($postComments as $comment): ?><div class="comment-item"><strong><?php echo htmlspecialchars($comment['login']); ?></strong><p><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p></div><?php endforeach; ?><?php else: ?><p class="comments-empty">Пока нет комментариев.</p><?php endif; ?>
-                        </div><?php if ($currentUser): ?><form method="post" class="comment-form comments-modal-form"><input type="hidden" name="action" value="add_comment"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea><button type="submit" class="primary-link">Отправить</button></form><?php endif; ?></div>
+                        </div><?php if ($currentUser): ?><form method="post" class="comment-form comments-modal-form"><input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>"><input type="hidden" name="action" value="add_comment"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><textarea name="comment_text"
+          rows="2"
+          maxlength="1000"
+          placeholder="Напишите комментарий..."></textarea>
+
+<button type="submit"
+        class="primary-link">
+    Отправить
+</button></form><?php endif; ?></div>
                     </div>
                 </div>
             </article>
@@ -438,10 +486,11 @@ if ($currentUser && $targetUserId === (int) $currentUser['id']) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
+requireValidCsrf();
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
     $commentsPostId = 0;
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_comment', 'report_comment', 'toggle_comment_like', 'add_repost', 'get_post_counts'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_comment', 'delete_post', 'hide_post', 'block_user', 'report_post', 'delete_comment', 'report_comment', 'toggle_comment_like', 'add_repost', 'get_post_counts'], true);
     $ajaxExtra = [];
     $ownerId = (int) ($_POST['owner_id'] ?? 0);
     $postExists = false;
@@ -785,9 +834,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
             $ajaxExtra['reposted'] = $isRepostedNow;
         }
 
+        if ($postExists && $action === 'delete_post' && $ownerId === (int) $currentUser['id']) {
+            $deleteStmt = $pdo->prepare('UPDATE posts SET is_deleted = 1 WHERE id = :id AND user_id = :user_id');
+            $deleteStmt->execute([
+                'id' => $postId,
+                'user_id' => $currentUser['id'],
+            ]);
+        }
+
         if ($postExists && $action === 'hide_post' && $ownerId !== (int) $currentUser['id']) {
             $pdo->prepare('INSERT IGNORE INTO hidden_posts (user_id, post_id) VALUES (:user_id, :post_id)')
                 ->execute(['user_id' => $currentUser['id'], 'post_id' => $postId]);
+        }
+
+        if ($postExists && $action === 'block_user' && $ownerId > 0 && $ownerId !== (int) $currentUser['id']) {
+            $pdo->prepare('INSERT IGNORE INTO user_blocks (blocker_user_id, blocked_user_id) VALUES (:blocker_user_id, :blocked_user_id)')
+                ->execute(['blocker_user_id' => (int) $currentUser['id'], 'blocked_user_id' => $ownerId]);
         }
 
         if ($postExists && $action === 'report_post' && $ownerId !== (int) $currentUser['id']) {
@@ -1226,11 +1288,26 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                 <div class="follow-state-card"><strong>Заявка временно недоступна</strong><p>Повторную заявку можно будет отправить после <?php echo htmlspecialchars(formatBlockedUntil($followDeclinedUntil)); ?>.</p></div>
                             <?php elseif ($currentUser): ?>
                                 <?php if ($followStatus === 'accepted'): ?>
-                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="toggle_follow"><button type="submit" class="secondary-link profile-edit-btn profile-follow-btn">Отписаться</button></form>
+                                    <form method="post" class="follow-action-form">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                        <input type="hidden" name="action" value="toggle_follow">
+                                        <button type="submit" class="secondary-link profile-edit-btn profile-follow-btn">Отписаться</button>
+                                    </form>
                                 <?php elseif ($followStatus === 'pending'): ?>
-                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="cancel_follow_request"><button type="submit" class="secondary-link profile-edit-btn profile-follow-btn">Заявка отправлена</button></form>
+                                    <form method="post" class="follow-action-form">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                        <input type="hidden" name="action" value="cancel_follow_request">
+                                        <button type="submit" class="secondary-link profile-edit-btn profile-follow-btn">Заявка отправлена</button>
+                                    </form>
                                 <?php else: ?>
-                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="toggle_follow"><button type="submit" class="primary-link profile-edit-btn profile-follow-btn"><?php echo $isPrivateProfile ? 'Подписаться' : 'Подписаться'; ?></button></form>
+                                    <form method="post" class="follow-action-form">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                        <input type="hidden" name="action" value="toggle_follow">
+                                        <button type="submit" class="primary-link profile-edit-btn profile-follow-btn"><?php echo $isPrivateProfile ? 'Подписаться' : 'Подписаться'; ?></button>
+                                    </form>
                                 <?php endif; ?>
                             <?php else: ?>
                                 <a href="login.php" class="secondary-link profile-edit-btn">Войти</a>
@@ -1271,6 +1348,39 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
         <div class="profile-post-viewer" id="profilePostViewer" aria-hidden="true">
             <div class="profile-post-viewer-overlay" data-post-viewer-close></div>
             <div class="profile-post-viewer-dialog" role="dialog" aria-modal="true" aria-label="Просмотр публикации">
+                <div class="post-viewer-menu-wrap" data-post-viewer-menu-wrap>
+                    <button type="button" class="post-viewer-menu-toggle" data-post-viewer-menu-toggle aria-label="Действия с публикацией" aria-expanded="false">•••</button>
+                    <div class="post-viewer-menu" data-post-viewer-menu hidden>
+                <div class="post-viewer-menu-own is-hidden">
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="edit_post">
+                        <img src="icon/dark theme/edd.png" alt="">
+                        <span>Редактировать</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="open_stats">
+                        <img src="icon/dark theme/analytic.png" alt="">
+                        <span>Кто посмотрел пост</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item post-viewer-menu-item-danger" data-post-viewer-menu-action="delete_post">
+                        <img src="icon/trash.png" alt="">
+                        <span>Удалить пост</span>
+                    </button>
+                </div>
+                <div class="post-viewer-menu-foreign is-hidden">
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="hide_post">
+                        <img src="icon/dark theme/dislike.png" alt="">
+                        <span>Не интересно</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item" data-post-viewer-menu-action="block_user">
+                        <img src="icon/dark theme/stop.png" alt="">
+                        <span data-post-viewer-block-label>Добавить пользователя в чёрный список</span>
+                    </button>
+                    <button type="button" class="post-viewer-menu-item post-viewer-menu-item-danger" data-post-viewer-menu-action="report_post">
+                        <img src="icon/complaint.png" alt="">
+                        <span>Пожаловаться</span>
+                    </button>
+                </div>
+            </div>
+                </div>
                 <button type="button" class="profile-post-viewer-close" data-post-viewer-close aria-label="Закрыть">×</button>
                 <div class="profile-post-viewer-media" id="profilePostViewerMedia"></div>
                 <aside class="profile-post-viewer-side">
@@ -1280,8 +1390,9 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                             <a href="#" class="profile-post-viewer-login-link-name" id="profilePostViewerLoginLink"><strong id="profilePostViewerLogin"></strong></a>
                             <button type="button" class="profile-post-viewer-follow" id="profilePostViewerFollow">Подписаться</button>
                         </div>
-                        <button type="button" class="profile-post-viewer-more" aria-label="Ещё">•••</button>
                     </header>
+                    <div class="post-viewer-caption" data-post-viewer-caption hidden></div>
+                    <div class="post-viewer-hashtags" data-post-viewer-hashtags hidden></div>
                     <div class="profile-post-viewer-comments" id="profilePostViewerComments">
                         <p class="profile-post-viewer-empty">Комментариев нет</p>
                     </div>
@@ -1294,6 +1405,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     </div>
                     <?php if ($currentUser): ?>
                         <form method="post" class="profile-post-viewer-input-row" id="profilePostViewerCommentForm">
+                            <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
                             <input type="hidden" name="action" value="add_comment">
                             <input type="hidden" name="post_id" value="">
                             <input type="hidden" name="parent_comment_id" value="">
@@ -1393,10 +1505,192 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
             const shares = document.getElementById('viewerSharesCount');
             const saves = document.getElementById('viewerSavesCount');
             const commentsHost = document.getElementById('profilePostViewerComments');
+            const postViewerCaption = viewer ? viewer.querySelector('[data-post-viewer-caption]') : null;
+            const postViewerHashtags = viewer ? viewer.querySelector('[data-post-viewer-hashtags]') : null;
             const commentForm = document.getElementById('profilePostViewerCommentForm');
+            const postViewerMenuToggle = viewer ? viewer.querySelector('[data-post-viewer-menu-toggle]') : null;
+            const postViewerMenu = viewer ? viewer.querySelector('[data-post-viewer-menu]') : null;
+            const postViewerMenuOwn = viewer ? viewer.querySelector('.post-viewer-menu-own') : null;
+            const postViewerMenuForeign = viewer ? viewer.querySelector('.post-viewer-menu-foreign') : null;
+            const postViewerBlockLabel = viewer ? viewer.querySelector('[data-post-viewer-block-label]') : null;
             if (!viewer || !mediaHost) return;
 
+            function closePostViewerMenu() {
+                if (!postViewerMenu || !postViewerMenuToggle) return;
+                postViewerMenu.hidden = true;
+                postViewerMenuToggle.setAttribute('aria-expanded', 'false');
+            }
+
+            function togglePostViewerMenu(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!postViewerMenu || !postViewerMenuToggle) return;
+                const shouldOpen = postViewerMenu.hidden;
+                postViewerMenu.hidden = !shouldOpen;
+                postViewerMenuToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+            }
+
+            function updatePostViewerMenu(card, authorId) {
+                const currentUserId = Number((window.snapixCurrentUser || {}).id || 0);
+                const isOwnPost = !!currentUserId && Number(authorId || 0) === currentUserId;
+                if (postViewerMenuOwn) postViewerMenuOwn.classList.toggle('is-hidden', !isOwnPost);
+                if (postViewerMenuForeign) postViewerMenuForeign.classList.toggle('is-hidden', isOwnPost);
+                if (postViewerBlockLabel) {
+                    const authorLogin = (card.dataset.postAuthorLogin || '').trim() || 'пользователя';
+                    postViewerBlockLabel.textContent = `Добавить ${authorLogin} в чёрный список`;
+                }
+            }
+
+
+            function escapeStatsHtml(value) {
+                return String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
+            }
+
+            function ensurePostViewerStatsModal() {
+                let modal = document.querySelector('[data-post-viewer-stats-modal]');
+                if (modal) return modal;
+                modal = document.createElement('div');
+                modal.className = 'clips-stats-modal';
+                modal.setAttribute('data-post-viewer-stats-modal', '');
+                modal.setAttribute('aria-hidden', 'true');
+                modal.innerHTML = '<button type="button" class="clips-stats-modal-overlay" data-post-viewer-stats-close aria-label="Закрыть статистику"></button>' +
+                    '<div class="clips-stats-modal-dialog" role="dialog" aria-modal="true" aria-label="Статистика публикации">' +
+                        '<div class="clips-stats-modal-header"><button type="button" class="clips-stats-modal-close" data-post-viewer-stats-close aria-label="Закрыть">×</button><h3>Статистика публикации</h3><span class="clips-stats-header-spacer" aria-hidden="true"></span></div>' +
+                        '<div class="clips-stats-modal-body" data-post-viewer-stats-content><p class="clips-stats-status">Загрузка...</p></div>' +
+                    '</div>';
+                document.body.appendChild(modal);
+                modal.querySelectorAll('[data-post-viewer-stats-close]').forEach((button) => button.addEventListener('click', closePostViewerStatsModal));
+                return modal;
+            }
+
+            function closePostViewerStatsModal() {
+                const modal = document.querySelector('[data-post-viewer-stats-modal]');
+                if (!modal) return;
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+
+            function renderPostViewerStats(stats) {
+                const daily = Array.isArray(stats.daily) ? stats.daily : [];
+                const dailyRows = daily.length ? daily.map((row) => '<tr><td>' + escapeStatsHtml(row.date || '') + '</td><td>' + escapeStatsHtml(row.likes || 0) + '</td><td>' + escapeStatsHtml(row.comments || 0) + '</td><td>' + escapeStatsHtml(row.reposts || 0) + '</td><td>' + escapeStatsHtml(row.saves || 0) + '</td></tr>').join('') : '<tr><td colspan="5">Данных за период пока нет</td></tr>';
+                const topPost = stats.top_post || {};
+                const topPostMedia = topPost.media_url ? '<div class="clips-stats-top-thumb">' + (topPost.media_type === 'video' ? '<video src="' + escapeStatsHtml(topPost.media_url) + '" muted playsinline></video>' : '<img src="' + escapeStatsHtml(topPost.media_url) + '" alt="">') + '</div>' : '<div class="clips-stats-top-thumb is-empty">#</div>';
+                const topPostMarkup = topPost.id ? '<div class="clips-stats-top-post">' + topPostMedia + '<div><strong>ID публикации: ' + escapeStatsHtml(topPost.id) + '</strong><span>Всего взаимодействий: ' + escapeStatsHtml(topPost.interactions_total || 0) + '</span></div></div>' : '<p class="clips-stats-status">Пока нет публикаций для сравнения.</p>';
+                return '<p class="clips-stats-period">Период: всё время</p>' +
+                    '<div class="clips-stats-cards">' +
+                        '<section class="clips-stats-card"><span>Всего лайков за период</span><strong>' + escapeStatsHtml(stats.likes_total || 0) + '</strong></section>' +
+                        '<section class="clips-stats-card"><span>Всего комментариев</span><strong>' + escapeStatsHtml(stats.comments_total || 0) + '</strong></section>' +
+                        '<section class="clips-stats-card"><span>Всего репостов</span><strong>' + escapeStatsHtml(stats.reposts_total || 0) + '</strong></section>' +
+                        '<section class="clips-stats-card"><span>Всего добавлений в избранное</span><strong>' + escapeStatsHtml(stats.saves_total || 0) + '</strong></section>' +
+                    '</div>' +
+                    '<section class="clips-stats-section"><h4>Динамика по дням</h4><div class="clips-stats-table-wrap"><table class="clips-stats-table"><thead><tr><th>Дата</th><th>Лайки</th><th>Комментарии</th><th>Репосты</th><th>Избранное</th></tr></thead><tbody>' + dailyRows + '</tbody></table></div></section>' +
+                    '<section class="clips-stats-section"><h4>Пост с наибольшим количеством взаимодействий</h4>' + topPostMarkup + '</section>';
+            }
+
+            function openPostViewerStatsModal(postId) {
+                if (typeof window.openStatsModal === 'function') {
+                    window.openStatsModal(postId);
+                    return;
+                }
+                const modal = ensurePostViewerStatsModal();
+                const content = modal.querySelector('[data-post-viewer-stats-content]');
+                if (content) content.innerHTML = '<p class="clips-stats-status">Загрузка...</p>';
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                const formData = new FormData();
+                formData.set('action', 'get_clip_post_stats');
+                formData.set('post_id', postId);
+                formData.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
+                fetch('clips.php', { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })
+                    .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+                    .then((result) => {
+                        if (!result.ok || !result.data || !result.data.ok) throw new Error((result.data && result.data.error) || 'Не удалось загрузить статистику.');
+                        if (content) content.innerHTML = renderPostViewerStats(result.data.stats || {});
+                    })
+                    .catch((error) => {
+                        if (content) content.innerHTML = '<p class="clips-stats-status is-error">' + escapeStatsHtml(error.message || 'Не удалось загрузить статистику.') + '</p>';
+                    });
+            }
+
+            function removePostCardsFromPage(postId) {
+                let removed = false;
+                document.querySelectorAll('.feed-card[data-post-id="' + postId + '"], .post-card[data-post-id="' + postId + '"]').forEach((card) => {
+                    card.remove();
+                    removed = true;
+                });
+                if (!removed) window.location.reload();
+            }
+
+            function removePostCardsByAuthor(authorId) {
+                let removed = false;
+                document.querySelectorAll('.feed-card[data-post-author-id="' + authorId + '"], .post-card[data-post-author-id="' + authorId + '"]').forEach((card) => {
+                    card.remove();
+                    removed = true;
+                });
+                if (!removed) window.location.reload();
+            }
+
+            function sendPostViewerAction(action, extra = {}) {
+                const formData = new FormData();
+                formData.set('action', action);
+                formData.set('post_id', viewer.dataset.postId || '');
+                formData.set('owner_id', viewer.dataset.postAuthorId || '');
+                formData.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
+                Object.keys(extra || {}).forEach((key) => formData.set(key, extra[key]));
+                return fetch(window.location.href, { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })
+                    .then((response) => response.json().catch(() => ({})).then((data) => {
+                        if (!response.ok || (data && data.ok === false)) throw new Error((data && data.error) || 'Не удалось выполнить действие.');
+                        return data;
+                    }));
+            }
+
+            function deleteCurrentViewerPost(postId) {
+                if (!confirm('Удалить публикацию?')) return;
+                sendPostViewerAction('delete_post')
+                    .then(() => {
+                        closeViewer();
+                        removePostCardsFromPage(postId);
+                    })
+                    .catch((error) => alert(error.message || 'Не удалось удалить публикацию.'));
+            }
+
+            function hideCurrentViewerPost(postId) {
+                sendPostViewerAction('hide_post')
+                    .then(() => {
+                        closePostViewerMenu();
+                        closeViewer();
+                        removePostCardsFromPage(postId);
+                    })
+                    .catch((error) => alert(error.message || 'Не удалось скрыть публикацию.'));
+            }
+
+            function blockCurrentViewerAuthor(authorId) {
+                sendPostViewerAction('block_user', { target_user_id: authorId })
+                    .then(() => {
+                        closePostViewerMenu();
+                        closeViewer();
+                        removePostCardsByAuthor(authorId);
+                    })
+                    .catch((error) => alert(error.message || 'Не удалось добавить пользователя в чёрный список.'));
+            }
+
+            function reportCurrentViewerPost(postId, authorId, authorLogin) {
+                if (!window.SnapixReportModal) return;
+                window.SnapixReportModal.open({
+                    login: authorLogin || 'user',
+                    userId: authorId || 0,
+                    postId: postId,
+                    onSubmit: (reason, api) => {
+                        sendPostViewerAction('report_post', { report_reason: reason }).then((data) => {
+                            if (!data || data.ok === false) return;
+                            if (api && typeof api.showSuccess === 'function') api.showSuccess();
+                        });
+                    }
+                });
+            }
+
             function closeViewer() {
+                closePostViewerMenu();
                 viewer.classList.remove('is-open');
                 viewer.setAttribute('aria-hidden', 'true');
                 document.body.classList.remove('is-modal-open');
@@ -1605,7 +1899,22 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 grouped.roots.forEach((comment) => commentsHost.appendChild(buildViewerComment(comment, grouped.repliesByParent)));
             };
 
+
+            function renderPostViewerHashtags(container, hashtags) {
+                if (!container) return;
+                container.innerHTML = '';
+                const tags = (hashtags || '').trim().split(/\s+/).filter(Boolean);
+                container.hidden = tags.length === 0;
+                tags.forEach((tag) => {
+                    const link = document.createElement('a');
+                    link.href = 'search.php?q=' + encodeURIComponent(tag);
+                    link.textContent = tag;
+                    container.appendChild(link);
+                });
+            }
+
             function openViewer(card) {
+                closePostViewerMenu();
                 const mediaUrl = card.dataset.postMediaUrl || '';
                 const mediaType = card.dataset.postMediaType || 'image';
                 mediaHost.innerHTML = '';
@@ -1634,8 +1943,15 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 const authorUrl = authorId && authorId === currentUserId ? 'profile.php' : 'user.php?id=' + encodeURIComponent(String(authorId));
                 if (avatarLink) avatarLink.href = authorUrl;
                 if (loginLink) loginLink.href = authorUrl;
+                const caption = card.dataset.postCaption || '';
+                if (postViewerCaption) {
+                    postViewerCaption.textContent = caption;
+                    postViewerCaption.hidden = caption.trim() === '';
+                }
+                renderPostViewerHashtags(postViewerHashtags, card.dataset.postHashtags || '');
+                updatePostViewerMenu(card, authorId);
                 if (follow) {
-                    follow.hidden = !authorId || authorId === currentUserId || ['accepted', 'pending'].indexOf(card.dataset.postViewerFollowStatus || '') !== -1;
+                    follow.hidden = !authorId || authorId === currentUserId || card.dataset.postIsFollowingAuthor === '1';
                     follow.disabled = false;
                     follow.dataset.authorId = String(authorId || '');
                 }
@@ -1667,16 +1983,79 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 document.body.style.overflow = 'hidden';
             }
 
+            window.snapixOpenPostViewer = openViewer;
+
             document.querySelectorAll('.profile-media-grid .post-card').forEach((card) => {
                 card.addEventListener('click', (event) => {
-                    if (event.target.closest('button, a, form, .post-hover-overlay, .post-menu-wrap, .comments-modal')) return;
+                    if (event.target.closest('button, a, form, .profile-hover-action-item, .post-menu-wrap, .comments-modal')) return;
                     openViewer(card);
                 });
             });
 
+            const linkedPostId = new URLSearchParams(window.location.search).get('open_post') || new URLSearchParams(window.location.search).get('comments_post');
+            if (linkedPostId) {
+                const safeLinkedPostId = String(linkedPostId).replace(/[^0-9]/g, '');
+                const linkedCard = safeLinkedPostId ? document.querySelector('.profile-media-grid .post-card[data-post-id="' + safeLinkedPostId + '"]') : null;
+                if (linkedCard) openViewer(linkedCard);
+            }
+
+            if (postViewerMenuToggle) {
+                postViewerMenuToggle.addEventListener('click', togglePostViewerMenu);
+            }
             viewer.querySelectorAll('[data-post-viewer-close]').forEach((node) => node.addEventListener('click', closeViewer));
+            if (postViewerMenu) {
+                postViewerMenu.addEventListener('click', (event) => {
+                    const button = event.target.closest('[data-post-viewer-menu-action]');
+                    if (!button) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const action = button.getAttribute('data-post-viewer-menu-action');
+                    const postId = viewer.dataset.postId || '';
+                    const authorId = viewer.dataset.postAuthorId || '';
+                    const currentUserId = Number((window.snapixCurrentUser || {}).id || 0);
+                    const isOwnPost = !!currentUserId && Number(authorId || 0) === currentUserId;
+                    if (!postId) return;
+                    if (['edit_post', 'open_stats', 'delete_post'].indexOf(action) !== -1) {
+                        if (!isOwnPost) return;
+                        closePostViewerMenu();
+                        if (action === 'edit_post') {
+                            window.location.href = 'edit-post.php?id=' + encodeURIComponent(postId);
+                            return;
+                        }
+                        if (action === 'open_stats') {
+                            openPostViewerStatsModal(postId);
+                            return;
+                        }
+                        if (action === 'delete_post') {
+                            deleteCurrentViewerPost(postId);
+                        }
+                        return;
+                    }
+                    if (['hide_post', 'block_user', 'report_post'].indexOf(action) !== -1) {
+                        if (isOwnPost) return;
+                        if (action === 'hide_post') {
+                            hideCurrentViewerPost(postId);
+                            return;
+                        }
+                        if (action === 'block_user') {
+                            blockCurrentViewerAuthor(authorId);
+                            return;
+                        }
+                        if (action === 'report_post') {
+                            closePostViewerMenu();
+                            reportCurrentViewerPost(postId, authorId, login ? login.textContent : '');
+                        }
+                    }
+                });
+            }
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape' && viewer.classList.contains('is-open')) closeViewer();
+            });
+
+            document.addEventListener('click', (event) => {
+                if (viewer.classList.contains('is-open') && !event.target.closest('#profilePostViewer [data-post-viewer-menu-wrap]')) {
+                    closePostViewerMenu();
+                }
             });
 
             viewer.querySelectorAll('[data-post-action]').forEach((button) => {
@@ -1716,6 +2095,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     params.set('action', 'toggle_comment_like');
                     params.set('comment_id', commentId);
                     params.set('target_user_id', String(<?php echo (int) $profileUser['id']; ?>));
+                    params.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
 
                     likeButton.dataset.liking = '1';
                     fetch(window.location.pathname + window.location.search, {
@@ -1759,6 +2139,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                 params.set('post_id', reportCommentNode?.dataset.postId || viewer.dataset.postId || '');
                                 params.set('target_user_id', String(<?php echo (int) $profileUser['id']; ?>));
                                 params.set('reason', reason);
+                                params.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
                                 fetch(window.location.pathname + window.location.search, {
                                     method: 'POST',
                                     credentials: 'same-origin',
@@ -1794,7 +2175,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     params.set('comment_id', commentId);
                     params.set('post_id', postId);
                     params.set('target_user_id', String(<?php echo (int) $profileUser['id']; ?>));
-
+                    params.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
                     deleteButton.dataset.deleting = '1';
                     fetch(window.location.pathname + window.location.search, {
                         method: 'POST',
@@ -1973,11 +2354,14 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
         })();
 
         document.querySelectorAll('.js-open-comments-modal').forEach((button) => {
-            button.addEventListener('click', () => {
-                const modalId = button.getAttribute('data-modal');
-                const modal = modalId ? document.getElementById(modalId) : null;
-                if (modal) {
-                    modal.classList.add('is-open');
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const card = button.closest('[data-post-id]');
+                if (card) {
+                    card.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                    const input = document.querySelector('#profilePostViewerCommentForm [name="comment_text"]');
+                    if (input) input.focus();
                 }
             });
         });
@@ -2005,6 +2389,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
         (function () {
     function sendPostActionForm(form) {
         var formData = new FormData(form);
+        formData.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
         return fetch(form.getAttribute('action') || window.location.href, {
             method: 'POST',
             credentials: 'same-origin',
@@ -2180,6 +2565,7 @@ document.addEventListener('click', (event) => {
                     const params = new URLSearchParams();
                     params.set('post_id', String(activePostId));
                     params.set('receiver_id', String(button.getAttribute('data-recipient-id')));
+                    params.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
 
                     fetch('share-post.php', {
                         method: 'POST',

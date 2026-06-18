@@ -38,6 +38,14 @@ try {
     }
 
     try {
+        $pdo->exec("ALTER TABLE posts ADD COLUMN hashtags TEXT NULL AFTER caption");
+    } catch (PDOException $e) {
+        if (!in_array(($e->errorInfo[1] ?? null), [1060, 1146], true)) {
+            throw $e;
+        }
+    }
+
+    try {
         $pdo->exec("ALTER TABLE comments ADD COLUMN status ENUM('published','pending_review','rejected') NOT NULL DEFAULT 'published' AFTER is_deleted");
     } catch (PDOException $e) {
         if (!in_array(($e->errorInfo[1] ?? null), [1060, 1146], true)) {

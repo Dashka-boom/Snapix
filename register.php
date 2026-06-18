@@ -2,6 +2,25 @@
 session_start();
 require './config/config.php';
 
+function snapix_generate_registration_captcha(int $length = 5): string
+{
+    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    $maxIndex = strlen($alphabet) - 1;
+    $code = '';
+
+    for ($i = 0; $i < $length; $i++) {
+        $code .= $alphabet[random_int(0, $maxIndex)];
+    }
+
+    $_SESSION['captcha_code'] = $code;
+
+    return $code;
+}
+
+if (empty($_SESSION['captcha_code'])) {
+    snapix_generate_registration_captcha();
+}
+
 $error = '';
 $authSuccess = false;
 $redirectUrl = 'login.php';
@@ -14,9 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $birthDate = $_POST['birth_date'] ?? '';
+    $captcha = trim($_POST['captcha'] ?? '');
+    $captchaCode = (string) ($_SESSION['captcha_code'] ?? '');
 
-    if ($login === '' || $email === '' || $password === '' || $birthDate === '') {
+    if ($login === '' || $email === '' || $password === '' || $birthDate === '' || $captcha === '') {
         $error = 'Заполните все поля.';
+    } elseif ($captchaCode === '' || strcasecmp($captcha, $captchaCode) !== 0) {
+        $error = 'Неверный код с картинки';
     } else {
         $birthDateObject = DateTime::createFromFormat('Y-m-d', $birthDate);
         $birthDateErrors = DateTime::getLastErrors();
@@ -63,6 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+
+    unset($_SESSION['captcha_code']);
+    snapix_generate_registration_captcha();
 }
 ?>
 <!DOCTYPE html>
@@ -84,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1>Создание аккаунта</h1>
             <p class="subtitle">Зарегистрируйтесь, чтобы пользоваться Snapix.</p>
 
-            <form class="auth-form" method="post" action="" id="register-form" novalidate>
+            <form class="auth-form" method="post" action="" id="register-form">
                 <label>
                     <input type="text" name="login" placeholder="Логин" value="<?php echo htmlspecialchars($_POST['login'] ?? ''); ?>" required>
                 </label>
@@ -108,6 +134,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="password" name="password" placeholder="Пароль" required>
                 </label>
 
+                <div class="auth-captcha" aria-label="Проверка капчи">
+                    <span class="auth-captcha-title">Введите код с картинки</span>
+                    <div class="auth-captcha-preview">
+                        <img src="captcha.php" alt="Код капчи" class="auth-captcha-image" id="captcha-image" width="190" height="66">
+                        <button type="button" class="auth-captcha-refresh" id="captcha-refresh">Обновить капчу</button>
+                    </div>
+                    <label class="auth-captcha-input">
+                        <input type="text" name="captcha" placeholder="Введите код с картинки" autocomplete="off" maxlength="5" required>
+                    </label>
+                </div>
+
                 <p class="form-status" id="form-status" aria-live="polite"><?php echo htmlspecialchars($error); ?></p>
                 <button type="submit" class="submit-btn">Зарегистрироваться</button>
             </form>
@@ -130,6 +167,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const registerForm = document.getElementById('register-form');
         const birthDateInput = document.getElementById('birth_date');
         const formStatus = document.getElementById('form-status');
+        const captchaImage = document.getElementById('captcha-image');
+        const captchaRefresh = document.getElementById('captcha-refresh');
+        const captchaInput = registerForm.querySelector('input[name="captcha"]');
         const minAllowedBirthDate = '<?php echo htmlspecialchars($maximumBirthDateValue, ENT_QUOTES); ?>';
 
         function validateBirthDate() {
@@ -163,6 +203,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         birthDateInput.addEventListener('input', validateBirthDate);
         birthDateInput.addEventListener('change', validateBirthDate);
+
+        if (captchaRefresh && captchaImage) {
+            captchaRefresh.addEventListener('click', function () {
+                captchaImage.src = 'captcha.php?t=' + Date.now();
+                if (captchaInput) {
+                    captchaInput.value = '';
+                    captchaInput.focus();
+                }
+            });
+        }
 
         registerForm.addEventListener('submit', function (event) {
             if (!validateBirthDate() || !registerForm.checkValidity()) {

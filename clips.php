@@ -93,10 +93,135 @@ function clips_fetch_follow_relation_map(PDO $pdo, int $currentUserId): array
     return $relationMap;
 }
 
+
+function clips_fetch_post_stats(PDO $pdo, int $postId, int $ownerUserId): array
+{
+    $totalsStmt = $pdo->prepare('
+        SELECT
+            (SELECT COUNT(*) FROM likes WHERE post_id = :likes_post_id) AS likes_total,
+            (SELECT COUNT(*) FROM comments WHERE post_id = :comments_post_id AND is_deleted = 0) AS comments_total,
+            (SELECT COUNT(*) FROM reposts WHERE post_id = :reposts_post_id) AS reposts_total,
+            (SELECT COUNT(*) FROM saved_posts WHERE post_id = :saves_post_id) AS saves_total
+    ');
+    $totalsStmt->execute([
+        'likes_post_id' => $postId,
+        'comments_post_id' => $postId,
+        'reposts_post_id' => $postId,
+        'saves_post_id' => $postId,
+    ]);
+    $totals = $totalsStmt->fetch() ?: [];
+
+    $dailyStmt = $pdo->prepare('
+        SELECT
+            event_day,
+            SUM(likes_count) AS likes,
+            SUM(comments_count) AS comments,
+            SUM(reposts_count) AS reposts,
+            SUM(saves_count) AS saves
+        FROM (
+            SELECT DATE(created_at) AS event_day, COUNT(*) AS likes_count, 0 AS comments_count, 0 AS reposts_count, 0 AS saves_count
+            FROM likes
+            WHERE post_id = :daily_likes_post_id
+            GROUP BY DATE(created_at)
+            UNION ALL
+            SELECT DATE(created_at) AS event_day, 0 AS likes_count, COUNT(*) AS comments_count, 0 AS reposts_count, 0 AS saves_count
+            FROM comments
+            WHERE post_id = :daily_comments_post_id AND is_deleted = 0
+            GROUP BY DATE(created_at)
+            UNION ALL
+            SELECT DATE(created_at) AS event_day, 0 AS likes_count, 0 AS comments_count, COUNT(*) AS reposts_count, 0 AS saves_count
+            FROM reposts
+            WHERE post_id = :daily_reposts_post_id
+            GROUP BY DATE(created_at)
+            UNION ALL
+            SELECT DATE(created_at) AS event_day, 0 AS likes_count, 0 AS comments_count, 0 AS reposts_count, COUNT(*) AS saves_count
+            FROM saved_posts
+            WHERE post_id = :daily_saves_post_id
+            GROUP BY DATE(created_at)
+        ) AS events
+        WHERE event_day IS NOT NULL
+        GROUP BY event_day
+        ORDER BY event_day ASC
+    ');
+    $dailyStmt->execute([
+        'daily_likes_post_id' => $postId,
+        'daily_comments_post_id' => $postId,
+        'daily_reposts_post_id' => $postId,
+        'daily_saves_post_id' => $postId,
+    ]);
+
+    $daily = [];
+    foreach (($dailyStmt->fetchAll() ?: []) as $row) {
+        $daily[] = [
+            'date' => (string) ($row['event_day'] ?? ''),
+            'likes' => (int) ($row['likes'] ?? 0),
+            'comments' => (int) ($row['comments'] ?? 0),
+            'reposts' => (int) ($row['reposts'] ?? 0),
+            'saves' => (int) ($row['saves'] ?? 0),
+        ];
+    }
+
+    $topPostStmt = $pdo->prepare('
+        SELECT
+            posts.id,
+            post_media.media_url,
+            post_media.media_type,
+            (
+                COALESCE(likes_agg.likes_count, 0) +
+                COALESCE(comments_agg.comments_count, 0) +
+                COALESCE(reposts_agg.reposts_count, 0) +
+                COALESCE(saves_agg.saves_count, 0)
+            ) AS interactions_total
+        FROM posts
+        LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
+        LEFT JOIN (
+            SELECT post_id, COUNT(*) AS likes_count
+            FROM likes
+            GROUP BY post_id
+        ) AS likes_agg ON likes_agg.post_id = posts.id
+        LEFT JOIN (
+            SELECT post_id, COUNT(*) AS comments_count
+            FROM comments
+            WHERE is_deleted = 0
+            GROUP BY post_id
+        ) AS comments_agg ON comments_agg.post_id = posts.id
+        LEFT JOIN (
+            SELECT post_id, COUNT(*) AS reposts_count
+            FROM reposts
+            GROUP BY post_id
+        ) AS reposts_agg ON reposts_agg.post_id = posts.id
+        LEFT JOIN (
+            SELECT post_id, COUNT(*) AS saves_count
+            FROM saved_posts
+            GROUP BY post_id
+        ) AS saves_agg ON saves_agg.post_id = posts.id
+        WHERE posts.user_id = :owner_user_id
+          AND posts.is_deleted = 0
+        ORDER BY interactions_total DESC, posts.created_at DESC, posts.id DESC
+        LIMIT 1
+    ');
+    $topPostStmt->execute(['owner_user_id' => $ownerUserId]);
+    $topPost = $topPostStmt->fetch() ?: [];
+
+    return [
+        'likes_total' => (int) ($totals['likes_total'] ?? 0),
+        'comments_total' => (int) ($totals['comments_total'] ?? 0),
+        'reposts_total' => (int) ($totals['reposts_total'] ?? 0),
+        'saves_total' => (int) ($totals['saves_total'] ?? 0),
+        'daily' => $daily,
+        'top_post' => $topPost ? [
+            'id' => (int) ($topPost['id'] ?? 0),
+            'media_url' => (string) ($topPost['media_url'] ?? ''),
+            'media_type' => (string) ($topPost['media_type'] ?? ''),
+            'interactions_total' => (int) ($topPost['interactions_total'] ?? 0),
+        ] : [],
+    ];
+}
+
 $user = null;
 
 if (isset($_SESSION['user_id'])) {
-    $stmt = $pdo->prepare('SELECT id, login, avatar FROM users WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, login, avatar, role FROM users WHERE id = :id');
     $stmt->execute(['id' => $_SESSION['user_id']]);
     $user = $stmt->fetch() ?: null;
 }
@@ -104,8 +229,8 @@ if (isset($_SESSION['user_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
-    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'toggle_pin', 'toggle_comments_visibility', 'delete_post', 'toggle_follow_user'], true);
-    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment', 'toggle_pin', 'toggle_comments_visibility', 'delete_post', 'toggle_follow_user', 'get_follow_relations'], true);
+    $isAjaxPostAction = snapix_is_ajax_request() && in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'delete_post', 'toggle_follow_user', 'get_clip_post_stats'], true);
+    $requiresAuth = in_array($action, ['toggle_like', 'toggle_save', 'add_repost', 'hide_post', 'block_user', 'report_post', 'add_comment', 'delete_post', 'toggle_follow_user', 'get_follow_relations', 'get_clip_post_stats'], true);
 
     if ($requiresAuth && !$user) {
         snapix_send_post_action_error('login_required', 401);
@@ -235,42 +360,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ajaxExtra['reported'] = true;
     }
 
-    if ($postExists && $action === 'toggle_pin' && $postOwnerId === (int) $user['id']) {
-        $pinExistsStmt = $pdo->prepare('SELECT id FROM pinned_posts WHERE user_id = :user_id AND post_id = :post_id LIMIT 1');
-        $pinExistsStmt->execute([
-            'user_id' => (int) $user['id'],
-            'post_id' => $postId,
-        ]);
-        $pinId = $pinExistsStmt->fetchColumn();
-        if ($pinId) {
-            $pdo->prepare('DELETE FROM pinned_posts WHERE id = :id AND user_id = :user_id')
-                ->execute(['id' => (int) $pinId, 'user_id' => (int) $user['id']]);
-            $ajaxExtra['is_pinned'] = false;
-        } else {
-            $pdo->prepare('INSERT IGNORE INTO pinned_posts (user_id, post_id) VALUES (:user_id, :post_id)')
-                ->execute(['user_id' => (int) $user['id'], 'post_id' => $postId]);
-            $ajaxExtra['is_pinned'] = true;
-        }
-    }
-
-    if ($postExists && $action === 'toggle_comments_visibility' && $postOwnerId === (int) $user['id']) {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS clips_post_settings (
-            post_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-            comments_closed TINYINT(1) NOT NULL DEFAULT 0,
-            updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-        $settingsStmt = $pdo->prepare('SELECT comments_closed FROM clips_post_settings WHERE post_id = :post_id LIMIT 1');
-        $settingsStmt->execute(['post_id' => $postId]);
-        $isClosed = (int) $settingsStmt->fetchColumn() > 0;
-        $nextState = $isClosed ? 0 : 1;
-        $pdo->prepare('INSERT INTO clips_post_settings (post_id, comments_closed) VALUES (:post_id, :comments_closed)
-            ON DUPLICATE KEY UPDATE comments_closed = VALUES(comments_closed)')
-            ->execute(['post_id' => $postId, 'comments_closed' => $nextState]);
-        $ajaxExtra['comments_closed'] = $nextState === 1;
-    }
     if ($postExists && $action === 'delete_post' && $postOwnerId === (int) $user['id']) {
         $pdo->prepare('UPDATE posts SET is_deleted = 1 WHERE id = :id LIMIT 1')->execute(['id' => $postId]);
         $ajaxExtra['deleted'] = true;
+    }
+
+    if ($action === 'get_clip_post_stats') {
+        if ($postId <= 0 || !$postExists) {
+            snapix_send_post_action_error('post_not_found', 404);
+        }
+
+        $canViewStats = $postOwnerId === (int) $user['id'] || in_array((string) ($user['role'] ?? ''), ['admin', 'moderator'], true);
+        if (!$canViewStats) {
+            snapix_send_post_action_error('forbidden', 403);
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'stats' => clips_fetch_post_stats($pdo, $postId, $postOwnerId),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
     }
 
     if ($action === 'get_comments') {
@@ -388,12 +498,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $currentUserId = (int) ($user['id'] ?? 0);
 $relatedUserIds = clips_fetch_follow_relation_map($pdo, $currentUserId);
-
-$pdo->exec("CREATE TABLE IF NOT EXISTS clips_post_settings (
-    post_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-    comments_closed TINYINT(1) NOT NULL DEFAULT 0,
-    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+$canModerateClips = in_array((string) ($user['role'] ?? ''), ['admin', 'moderator'], true);
 
 $clipsStmt = $pdo->query('
     SELECT
@@ -441,19 +546,7 @@ $clipsStmt = $pdo->query('
             FROM reposts
             WHERE reposts.post_id = posts.id
               AND reposts.user_id = ' . $currentUserId . '
-        ) AS is_reposted,
-        (
-            SELECT COUNT(*)
-            FROM pinned_posts
-            WHERE pinned_posts.post_id = posts.id
-              AND pinned_posts.user_id = ' . $currentUserId . '
-        ) AS is_pinned,
-        (
-            SELECT settings.comments_closed
-            FROM clips_post_settings settings
-            WHERE settings.post_id = posts.id
-            LIMIT 1
-        ) AS comments_closed
+        ) AS is_reposted
     FROM posts
     INNER JOIN users ON users.id = posts.user_id
     INNER JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
@@ -509,8 +602,6 @@ foreach ($clipsRows as $clip) {
             'liked' => (int) $clip['is_liked'] > 0,
             'saved' => (int) $clip['is_saved'] > 0,
             'reposted' => (int) $clip['is_reposted'] > 0,
-            'pinned' => (int) $clip['is_pinned'] > 0,
-            'commentsClosed' => (int) ($clip['comments_closed'] ?? 0) > 0,
         ],
         'isOwn' => $clipUserId === $currentUserId,
     ];
@@ -580,24 +671,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                                         <img src="icon/trash.png" alt="">
                                         <span>Удалить</span>
                                     </button>
-                                    
-                                    <a href="#" class="post-menu-item" data-clips-edit-link>
-                                        <img src="icon/dark theme/edd.png" alt="">
-                                        <span>Редактировать</span>
-                                    </a>
-                                    <button type="button" class="post-menu-item" data-clips-menu-action="toggle_pin">
-                                        <img src="icon/dark theme/pinn.png" alt="" data-clips-pin-icon>
-                                        <span data-clips-pin-label>Закрепить</span>
-                                    </button>
-                                    <button type="button" class="post-menu-item" data-clips-menu-action="toggle_comments_visibility">
-                                        <img src="icon/dark theme/close comments.png" alt="" data-clips-comments-toggle-icon>
-                                        <span data-clips-comments-toggle-label>Закрыть комментарии</span>
-                                    </button>
-                                    <button type="button" class="post-menu-item" data-clips-copy-link>
-                                        <img src="icon/dark theme/copy.png" alt="">
-                                        <span>Поделиться</span>
-                                    </button>
-                                    <button type="button" class="post-menu-item">
+                                    <button type="button" class="post-menu-item" data-clips-menu-action="open_stats" data-clips-stats-btn data-post-id="">
                                         <img src="icon/dark theme/analytic.png" alt="">
                                         <span>Кто посмотрел пост</span>
                                     </button>
@@ -607,6 +681,12 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                                         <img src="icon/dark theme/об аккаунте.png" alt="">
                                         <span>Об аккаунте</span>
                                     </a>
+                                    <?php if ($canModerateClips): ?>
+                                        <button type="button" class="post-menu-item" data-clips-menu-action="open_stats" data-clips-stats-btn data-post-id="">
+                                            <img src="icon/dark theme/analytic.png" alt="">
+                                            <span>Кто посмотрел пост</span>
+                                        </button>
+                                    <?php endif; ?>
                                     <?php if ($user): ?>
                                         <button type="button" class="post-menu-item" data-clips-menu-action="hide_post">
                                             <img src="icon/dark theme/dislike.png" alt="">
@@ -626,10 +706,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                                             <span data-clips-block-label>Добавить в чёрный список</span>
                                         </a>
                                     <?php endif; ?>
-                                    <button type="button" class="post-menu-item" data-clips-copy-link-foreign>
-                                        <img src="icon/dark theme/copy.png" alt="">
-                                        <span>Поделиться</span>
-                                    </button>
                                     <?php if ($user): ?>
                                         <button type="button" class="post-menu-item post-menu-item-danger" data-clips-menu-action="report_post">
                                             <img src="icon/complaint.png" alt="">
@@ -700,65 +776,24 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 <div class="clips-comment-actions-modal" data-clips-comment-actions-modal>
                     <button type="button" class="clips-comment-actions-overlay" data-clips-comment-actions-close aria-label="Закрыть меню"></button>
                     <div class="post-menu clips-comment-actions-dialog" data-clips-comment-actions-dialog>
-                        <button type="button" class="post-menu-item" data-clips-comment-action="share">
-                            <img src="icon/dark theme/addcommunication.png" alt="">
-                            <span>Поделиться</span>
-                        </button>
-                        <button type="button" class="post-menu-item" data-clips-comment-action="toggle_save" data-clips-comment-favorite-btn data-save-post-id="">
-                            <img src="icon/dark theme/favourites.png" alt="">
-                            <span>Избранное</span>
-                        </button>
                         <button type="button" class="post-menu-item post-menu-item-danger" data-clips-comment-action="report_post">
                             <img src="icon/complaint.png" alt="">
                             <span>Пожаловаться</span>
                         </button>
                     </div>
                 </div>
-                <div class="clips-share-modal" data-clips-share-modal>
-                    <button type="button" class="clips-share-modal-overlay" data-clips-share-close aria-label="Закрыть отправку"></button>
-                    <div class="clips-share-modal-dialog" role="dialog" aria-modal="true" aria-label="Отправить">
-                        <div class="clips-share-modal-header">
-                            <button type="button" class="clips-share-modal-close" data-clips-share-close aria-label="Закрыть">×</button>
-                            <h3>Отправить</h3>
-                            <span class="clips-share-header-spacer" aria-hidden="true"></span>
+                <div class="clips-stats-modal" data-clips-stats-modal aria-hidden="true">
+                    <button type="button" class="clips-stats-modal-overlay" data-clips-stats-close aria-label="Закрыть статистику"></button>
+                    <div class="clips-stats-modal-dialog" role="dialog" aria-modal="true" aria-label="Статистика публикации">
+                        <div class="clips-stats-modal-header">
+                            <button type="button" class="clips-stats-modal-close" data-clips-stats-close aria-label="Закрыть">×</button>
+                            <h3>Статистика публикации</h3>
+                            <span class="clips-stats-header-spacer" aria-hidden="true"></span>
                         </div>
-                        <div class="home-feed-tabs clips-share-tabs" role="tablist" aria-label="Категории отправки">
-                            <button type="button" class="home-feed-tab is-active" data-clips-share-tab="followers">Подписчики</button>
-                            <button type="button" class="home-feed-tab" data-clips-share-tab="following">Подписки</button>
-                            <button type="button" class="home-feed-tab" data-clips-share-tab="search">Поиск</button>
-                        </div>
-                        <div class="clips-share-modal-content">
-                            <section class="clips-share-panel is-active" data-clips-share-panel="followers">
-                                <div class="clips-share-users">
-                                    <div class="clips-share-user"><span class="clips-share-avatar">A</span><span class="clips-share-login">alex_follow</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">M</span><span class="clips-share-login">mira_follower</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">N</span><span class="clips-share-login">niko_88</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                </div>
-                            </section>
-                            <section class="clips-share-panel" data-clips-share-panel="following">
-                                <div class="clips-share-users">
-                                    <div class="clips-share-user"><span class="clips-share-avatar">L</span><span class="clips-share-login">luna_following</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">R</span><span class="clips-share-login">roma_artist</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <div class="clips-share-user"><span class="clips-share-avatar">D</span><span class="clips-share-login">diana_clip</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                </div>
-                            </section>
-                            <section class="clips-share-panel" data-clips-share-panel="search">
-                                <div class="clips-share-search-wrap">
-                                    <input type="text" class="clips-share-search-input" placeholder="Поиск" aria-label="Поиск">
-                                    <img src="icon/dark theme/search.png" alt="" class="clips-share-search-icon">
-                                </div>
-                                <div class="clips-share-users">
-                                    <div class="clips-share-user"><span class="clips-share-avatar">S</span><span class="clips-share-login">search_user</span><button type="button" class="clips-share-send-btn">Отправить</button></div>
-                                    <p class="clips-share-empty">Такого пользователя нет</p>
-                                </div>
-                            </section>
+                        <div class="clips-stats-modal-body" data-clips-stats-content>
+                            <p class="clips-stats-status">Загрузка...</p>
                         </div>
                     </div>
-                </div>
-
-                <div class="clips-nav" aria-label="Навигация Clips">
-                    <button type="button" class="clips-nav-btn" data-clips-prev aria-label="Предыдущий clips">↑</button>
-                    <button type="button" class="clips-nav-btn" data-clips-next aria-label="Следующий clips">↓</button>
                 </div>
             </section>
         <?php else: ?>
@@ -830,13 +865,9 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         var clipsMenuForeign = document.querySelector('[data-clips-menu-foreign]');
         var clipsMenuAccount = document.querySelector('[data-clips-menu-account]');
         var clipsBlockLabel = document.querySelector('[data-clips-block-label]');
-        var clipsCopyLink = document.querySelector('[data-clips-copy-link]');
-        var clipsCopyLinkForeign = document.querySelector('[data-clips-copy-link-foreign]');
-        var clipsPinLabel = document.querySelector('[data-clips-pin-label]');
-        var clipsPinIcon = document.querySelector('[data-clips-pin-icon]');
-        var clipsCommentsToggleLabel = document.querySelector('[data-clips-comments-toggle-label]');
-        var clipsCommentsToggleIcon = document.querySelector('[data-clips-comments-toggle-icon]');
-        var clipsEditLink = document.querySelector('[data-clips-edit-link]');
+        var clipsStatsButtons = document.querySelectorAll('[data-clips-stats-btn]');
+        var statsModal = document.querySelector('[data-clips-stats-modal]');
+        var statsContent = document.querySelector('[data-clips-stats-content]');
         var commentLinks = document.querySelectorAll('[data-clips-comment-link]');
         var commentsModal = document.querySelector('[data-clips-comments-modal]');
         var commentsList = document.querySelector('[data-clips-comments-list]');
@@ -857,11 +888,7 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
         };
         var commentActionsModal = document.querySelector('[data-clips-comment-actions-modal]');
         var commentActionsDialog = document.querySelector('[data-clips-comment-actions-dialog]');
-        var commentFavoriteButton = document.querySelector('[data-clips-comment-favorite-btn]');
-        var shareModal = document.querySelector('[data-clips-share-modal]');
         var followButton = document.querySelector('[data-clips-follow-btn]');
-        var shareTabButtons = document.querySelectorAll('[data-clips-share-tab]');
-        var sharePanels = document.querySelectorAll('[data-clips-share-panel]');
         var followRelationMap = <?php echo json_encode($relatedUserIds, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?> || {};
 
         function getEmptyStateMarkup() {
@@ -948,15 +975,6 @@ $hasAnyClips = !empty($clipsByCategory['recommended'])
                 button.classList.remove('is-activating');
             }, 260);
         }
-function themedIcon(path) {
-    var isLight =
-        document.body.classList.contains('theme-light') ||
-        document.documentElement.classList.contains('theme-light');
-
-    return isLight
-        ? path.replace('icon/dark theme/', 'icon/light theme/')
-        : path;
-}
 
         function renderClip(index) {
             var clip = clips[index];
@@ -1012,42 +1030,21 @@ function themedIcon(path) {
                     buttons.save.classList.toggle('is-saved', !!clip.state.saved);
                     buttons.save.setAttribute('data-save-post-id', String(clip.id));
                 }
-                if (commentFavoriteButton) {
-                    commentFavoriteButton.setAttribute('data-save-post-id', String(clip.id));
-                    commentFavoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
-                }
-                syncCommentFavoriteUi();
 
                 if (clipsMenuAccount) {
                     clipsMenuAccount.href = clip.author.profileUrl;
                 }
-                if (clipsEditLink) {
-                    clipsEditLink.href = 'post.php?id=' + clip.id;
-                }
                 if (clipsBlockLabel) {
                     clipsBlockLabel.textContent = 'Добавить ' + clip.author.login + ' в чёрный список';
                 }
+                clipsStatsButtons.forEach(function (button) {
+                    button.setAttribute('data-post-id', String(clip.id));
+                });
                 if (clipsMenuOwn) {
                     clipsMenuOwn.classList.toggle('is-hidden', !isOwnClip);
                 }
                 if (clipsMenuForeign) {
                     clipsMenuForeign.classList.toggle('is-hidden', isOwnClip);
-                }
-                if (clipsPinLabel && clipsPinIcon) {
-                    clipsPinLabel.textContent = clip.state.pinned ? 'Открепить' : 'Закрепить';
-                    clipsPinIcon.src = themedIcon(
-    clip.state.pinned
-        ? 'icon/dark theme/nopinn.png'
-        : 'icon/dark theme/pinn.png'
-);
-                }
-                if (clipsCommentsToggleLabel && clipsCommentsToggleIcon) {
-                    clipsCommentsToggleLabel.textContent = clip.state.commentsClosed ? 'Открыть комментарии' : 'Закрыть комментарии';
-                    clipsCommentsToggleIcon.src = themedIcon(
-    clip.state.commentsClosed
-        ? 'icon/dark theme/addcommunication.png'
-        : 'icon/dark theme/close comments.png'
-);
                 }
                 if (clipsMenu) {
                     clipsMenu.classList.remove('is-open');
@@ -1127,26 +1124,12 @@ function themedIcon(path) {
             }).join('');
         }
 
-        function syncCommentFavoriteUi() {
-            if (!commentsList || !clips.length) {
-                return;
-            }
-            var clip = clips[currentIndex];
-            var nodes = commentsList.querySelectorAll('.clips-comment-item .clips-comment-menu-btn');
-            nodes.forEach(function (favoriteButton) {
-                favoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
-            });
-        }
 
         function openCommentActionsModal(commentIndex) {
             if (!commentActionsModal || !clips.length) {
                 return;
             }
             activeCommentIndex = commentIndex;
-            if (commentFavoriteButton) {
-                var clip = clips[currentIndex];
-                commentFavoriteButton.classList.toggle('is-favorited', !!clip.state.saved);
-            }
             commentActionsModal.classList.add('is-open');
         }
 
@@ -1158,27 +1141,97 @@ function themedIcon(path) {
             commentActionsModal.classList.remove('is-open');
         }
 
-        function openShareModal() {
-            if (!shareModal) {
-                return;
+
+        function formatStatsDate(value) {
+            var parts = String(value || '').split('-');
+            if (parts.length !== 3) {
+                return value || '';
             }
-            shareModal.classList.add('is-open');
+            return parts[2] + '.' + parts[1] + '.' + parts[0];
         }
 
-        function closeShareModal() {
-            if (!shareModal) {
+        function renderStatsLoading() {
+            if (!statsContent) {
                 return;
             }
-            shareModal.classList.remove('is-open');
+            statsContent.innerHTML = '<p class="clips-stats-status">Загрузка...</p>';
         }
 
-        function setShareTab(nextTab) {
-            shareTabButtons.forEach(function (tabButton) {
-                var isActive = tabButton.getAttribute('data-clips-share-tab') === nextTab;
-                tabButton.classList.toggle('is-active', isActive);
-            });
-            sharePanels.forEach(function (panel) {
-                panel.classList.toggle('is-active', panel.getAttribute('data-clips-share-panel') === nextTab);
+        function renderStatsError(message) {
+            if (!statsContent) {
+                return;
+            }
+            statsContent.innerHTML = '<p class="clips-stats-status is-error">' + escapeHtml(message || 'Не удалось загрузить статистику.') + '</p>';
+        }
+
+        function renderStats(stats) {
+            if (!statsContent) {
+                return;
+            }
+            var daily = Array.isArray(stats.daily) ? stats.daily : [];
+            var dailyRows = daily.length ? daily.map(function (day) {
+                return '<tr><td>' + escapeHtml(formatStatsDate(day.date)) + '</td><td>' + escapeHtml(day.likes || 0) + '</td><td>' + escapeHtml(day.comments || 0) + '</td><td>' + escapeHtml(day.reposts || 0) + '</td><td>' + escapeHtml(day.saves || 0) + '</td></tr>';
+            }).join('') : '<tr><td colspan="5">Данных по дням пока нет.</td></tr>';
+            var topPost = stats.top_post || {};
+            var topPostMedia = topPost.media_url ? '<div class="clips-stats-top-thumb">' + (topPost.media_type === 'video' ? '<video src="' + escapeHtml(topPost.media_url) + '" muted playsinline></video>' : '<img src="' + escapeHtml(topPost.media_url) + '" alt="">') + '</div>' : '<div class="clips-stats-top-thumb is-empty">#</div>';
+            var topPostMarkup = topPost.id
+                ? '<div class="clips-stats-top-post">' + topPostMedia + '<div><strong>ID публикации: ' + escapeHtml(topPost.id) + '</strong><span>Всего взаимодействий: ' + escapeHtml(topPost.interactions_total || 0) + '</span></div></div>'
+                : '<p class="clips-stats-status">Пока нет публикаций для сравнения.</p>';
+
+            statsContent.innerHTML =
+                '<p class="clips-stats-period">Период: всё время</p>' +
+                '<div class="clips-stats-cards">' +
+                    '<section class="clips-stats-card"><span>Всего лайков за период</span><strong>' + escapeHtml(stats.likes_total || 0) + '</strong></section>' +
+                    '<section class="clips-stats-card"><span>Всего комментариев</span><strong>' + escapeHtml(stats.comments_total || 0) + '</strong></section>' +
+                    '<section class="clips-stats-card"><span>Всего репостов</span><strong>' + escapeHtml(stats.reposts_total || 0) + '</strong></section>' +
+                    '<section class="clips-stats-card"><span>Всего добавлений в избранное</span><strong>' + escapeHtml(stats.saves_total || 0) + '</strong></section>' +
+                '</div>' +
+                '<section class="clips-stats-section"><h4>Динамика по дням</h4><div class="clips-stats-table-wrap"><table class="clips-stats-table"><thead><tr><th>Дата</th><th>Лайки</th><th>Комментарии</th><th>Репосты</th><th>Избранное</th></tr></thead><tbody>' + dailyRows + '</tbody></table></div></section>' +
+                '<section class="clips-stats-section"><h4>Пост с наибольшим количеством взаимодействий</h4>' + topPostMarkup + '</section>';
+        }
+
+        function closeStatsModal() {
+            if (!statsModal) {
+                return;
+            }
+            statsModal.classList.remove('is-open');
+            statsModal.setAttribute('aria-hidden', 'true');
+        }
+
+        function openStatsModal(postId) {
+            if (!statsModal || !statsContent || !postId) {
+                return;
+            }
+            statsModal.classList.add('is-open');
+            statsModal.setAttribute('aria-hidden', 'false');
+            renderStatsLoading();
+            var formData = new URLSearchParams();
+            formData.set('action', 'get_clip_post_stats');
+            formData.set('post_id', String(postId));
+            fetch('clips.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'Accept': 'application/json'
+                },
+                body: formData.toString()
+            }).then(function (response) {
+                if (!response.ok) {
+                    return response.json().catch(function () { return {}; }).then(function (payload) {
+                        throw new Error(payload.error || 'Не удалось загрузить статистику.');
+                    });
+                }
+                return response.json();
+            }).then(function (payload) {
+                if (!payload || !payload.ok) {
+                    renderStatsError('Не удалось загрузить статистику.');
+                    return;
+                }
+                renderStats(payload.stats || {});
+            }).catch(function (error) {
+                renderStatsError(error && error.message ? error.message : 'Не удалось загрузить статистику.');
             });
         }
 
@@ -1225,7 +1278,6 @@ function themedIcon(path) {
                 }
 
                 renderComments(data.comments || []);
-                syncCommentFavoriteUi();
             }).catch(function () {
                 commentsList.innerHTML = '<p class="comments-empty">Не удалось загрузить комментарии.</p>';
             });
@@ -1269,11 +1321,6 @@ function themedIcon(path) {
                     var clip = clips[currentIndex];
                     var comment = commentsCache[activeCommentIndex] || null;
 
-                    if (action === 'share') {
-                        openShareModal();
-                        closeCommentActionsModal();
-                        return;
-                    }
                     if (action === 'report_post' && window.SnapixReportModal) {
                         window.SnapixReportModal.open({
                             login: (clip.author && clip.author.login) ? clip.author.login : 'user',
@@ -1292,12 +1339,6 @@ function themedIcon(path) {
                     sendClipAction(action).then(function (data) {
                         if (!data || !data.ok) {
                             return;
-                        }
-                        clip.counts.saves = data.saves_count;
-                        clip.state.saved = !!data.saved;
-                        updateSavedStateEverywhere(clip.id, !!data.saved, data.saves_count);
-                        if (action === 'toggle_save') {
-                            animateButton(buttons.save, !!data.saved);
                         }
                         closeCommentActionsModal();
                     }).catch(function () {});
@@ -1420,62 +1461,31 @@ function themedIcon(path) {
             renderClip(currentIndex);
         }
 
-        function copyCurrentClipLink(button) {
-            if (!clips.length) {
-                return;
-            }
-            var clip = clips[currentIndex];
-            var absoluteUrl = new URL('post.php?id=' + clip.id, window.location.href).toString();
-            var label = button ? button.querySelector('span') : null;
-            var defaultText = label ? label.textContent : '';
-
-            function markCopied() {
-                if (label) {
-                    label.textContent = 'Ссылка скопирована';
-                    window.setTimeout(function () {
-                        label.textContent = defaultText;
-                    }, 1400);
-                }
-            }
-
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(absoluteUrl).then(markCopied).catch(function () {});
-                return;
-            }
-
-            var field = document.createElement('textarea');
-            field.value = absoluteUrl;
-            field.setAttribute('readonly', 'readonly');
-            field.style.position = 'fixed';
-            field.style.opacity = '0';
-            document.body.appendChild(field);
-            field.select();
-            try {
-                document.execCommand('copy');
-                markCopied();
-            } catch (error) {}
-            field.remove();
-        }
 
         function updateSavedStateEverywhere(postId, isSaved, savesCount) {
             var selectorPostId = String(postId || '');
             document.querySelectorAll('[data-save-post-id="' + selectorPostId + '"]').forEach(function (node) {
                 node.classList.toggle('is-saved', !!isSaved);
-                node.classList.toggle('is-favorited', !!isSaved);
             });
             if (typeof savesCount !== 'undefined' && counts.saves) {
                 counts.saves.textContent = formatCount(savesCount);
             }
-            syncCommentFavoriteUi();
         }
 
-        document.querySelector('[data-clips-prev]').addEventListener('click', function () {
-            navigateClip(-1);
-        });
+        var clipsPrevButton = document.querySelector('[data-clips-prev]');
+        var clipsNextButton = document.querySelector('[data-clips-next]');
 
-        document.querySelector('[data-clips-next]').addEventListener('click', function () {
-            navigateClip(1);
-        });
+        if (clipsPrevButton) {
+            clipsPrevButton.addEventListener('click', function () {
+                navigateClip(-1);
+            });
+        }
+
+        if (clipsNextButton) {
+            clipsNextButton.addEventListener('click', function () {
+                navigateClip(1);
+            });
+        }
 
         document.querySelectorAll('[data-clips-action]').forEach(function (button) {
             button.addEventListener('click', function () {
@@ -1519,23 +1529,32 @@ function themedIcon(path) {
         });
 
         if (clipsMenuToggle && clipsMenu) {
-            clipsMenuToggle.addEventListener('click', function () {
-                clipsMenu.classList.toggle('is-open');
+            clipsMenuToggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                var isOpen = clipsMenu.classList.toggle('is-open');
+                clipsMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
             });
         }
 
         document.querySelectorAll('[data-clips-menu-action]').forEach(function (button) {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
                 var action = button.getAttribute('data-clips-menu-action');
                 var clip = clips[currentIndex];
 
-                if (action === 'share') {
-                    openShareModal();
+                if (action === 'open_stats') {
+                    openStatsModal(button.getAttribute('data-post-id') || (clip ? clip.id : ''));
                     if (clipsMenu) {
                         clipsMenu.classList.remove('is-open');
                     }
+                    if (clipsMenuToggle) {
+                        clipsMenuToggle.setAttribute('aria-expanded', 'false');
+                    }
                     return;
                 }
+
                 if (action === 'report_post' && window.SnapixReportModal) {
                     window.SnapixReportModal.open({
                         login: (clip.author && clip.author.login) ? clip.author.login : 'user',
@@ -1550,6 +1569,9 @@ function themedIcon(path) {
                     if (clipsMenu) {
                         clipsMenu.classList.remove('is-open');
                     }
+                    if (clipsMenuToggle) {
+                        clipsMenuToggle.setAttribute('aria-expanded', 'false');
+                    }
                     return;
                 }
 
@@ -1561,6 +1583,9 @@ function themedIcon(path) {
 
                         if (clipsMenu) {
                             clipsMenu.classList.remove('is-open');
+                        }
+                        if (clipsMenuToggle) {
+                            clipsMenuToggle.setAttribute('aria-expanded', 'false');
                         }
 
                         if (action === 'hide_post' || action === 'delete_post') {
@@ -1584,68 +1609,33 @@ function themedIcon(path) {
                             renderClip(currentIndex);
                         }
 
-                        if (action === 'toggle_pin') {
-                            clip.state.pinned = !!data.is_pinned;
-                            if (clipsPinLabel && clipsPinIcon) {
-                                clipsPinLabel.textContent = clip.state.pinned ? 'Открепить' : 'Закрепить';
-                                clipsPinIcon.src = themedIcon(
-    clip.state.pinned
-        ? 'icon/dark theme/nopinn.png'
-        : 'icon/dark theme/pinn.png'
-);
-                            }
-                        }
-                        if (action === 'toggle_comments_visibility') {
-                            clip.state.commentsClosed = !!data.comments_closed;
-                            if (clipsCommentsToggleLabel && clipsCommentsToggleIcon) {
-                                clipsCommentsToggleLabel.textContent = clip.state.commentsClosed ? 'Открыть комментарии' : 'Закрыть комментарии';
-                                clipsCommentsToggleIcon.src = themedIcon(
-    clip.state.commentsClosed
-        ? 'icon/dark theme/addcommunication.png'
-        : 'icon/dark theme/close comments.png'
-);
-                            }
-                        }
                     })
                     .catch(function () {});
             });
         });
 
-        document.querySelectorAll('[data-clips-share-close]').forEach(function (button) {
-            button.addEventListener('click', closeShareModal);
-        });
-        shareTabButtons.forEach(function (button) {
-            button.addEventListener('click', function () {
-                setShareTab(button.getAttribute('data-clips-share-tab') || 'followers');
-            });
+        document.querySelectorAll('[data-clips-stats-close]').forEach(function (button) {
+            button.addEventListener('click', closeStatsModal);
         });
 
-        if (clipsCopyLink) {
-            clipsCopyLink.addEventListener('click', function () {
-                openShareModal();
-                if (clipsMenu) {
-                    clipsMenu.classList.remove('is-open');
-                }
-            });
-        }
-        if (clipsCopyLinkForeign) {
-            clipsCopyLinkForeign.addEventListener('click', function () {
-                openShareModal();
-                if (clipsMenu) {
-                    clipsMenu.classList.remove('is-open');
-                }
-            });
-        }
 
         document.addEventListener('click', function (event) {
             var wrap = event.target.closest('.clips-menu-wrap');
 
             if (!wrap && clipsMenu) {
                 clipsMenu.classList.remove('is-open');
+                if (clipsMenuToggle) {
+                    clipsMenuToggle.setAttribute('aria-expanded', 'false');
+                }
             }
         });
 
         document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && statsModal && statsModal.classList.contains('is-open')) {
+                closeStatsModal();
+                return;
+            }
+
             if (event.key === 'ArrowUp') {
                 event.preventDefault();
                 navigateClip(-1);
