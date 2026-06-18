@@ -16,6 +16,7 @@ $query = trim((string) ($_GET['q'] ?? ''));
 $searchHashtag = snapix_normalize_hashtag_search_query($query);
 
 $posts = [];
+$users = [];
 $activeSearchTab = $searchHashtag !== '' ? 'hashtags' : 'users';
 
 if ($searchHashtag !== '') {
@@ -41,6 +42,20 @@ if ($searchHashtag !== '') {
     $searchStmt->execute(['hashtag' => ' ' . $searchHashtag . ' ']);
     $posts = $searchStmt->fetchAll();
 }
+
+if ($query !== '') {
+    $userSearchStmt = $pdo->prepare('
+        SELECT id, login, avatar
+        FROM users
+        WHERE login LIKE :query
+        ORDER BY login ASC
+        LIMIT 40
+    ');
+    $userSearchStmt->execute([
+        'query' => '%' . $query . '%'
+    ]);
+    $users = $userSearchStmt->fetchAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -59,7 +74,7 @@ if ($searchHashtag !== '') {
             <form class="hashtag-search-form search-page-form" method="get" action="search.php">
                 <div class="hashtag-search-row search-page-input-row">
                     <input id="hashtag-search-input" type="search" name="q" maxlength="300" placeholder="Поиск" value="<?php echo htmlspecialchars($query, ENT_QUOTES, 'UTF-8'); ?>" aria-label="Поиск">
-                    <button type="submit" class="primary-link">Найти</button>
+                    <button type="submit" class="primary-link">Поиск</button>
                 </div>
             </form>
 
@@ -75,9 +90,38 @@ if ($searchHashtag !== '') {
 
             <div class="search-results">
                 <div class="search-results-panel<?php echo $activeSearchTab === 'users' ? ' is-active' : ''; ?>" data-search-panel="users">
-                    <p class="hashtag-search-empty">Введите запрос, чтобы найти пользователей.</p>
-                </div>
+    <?php if ($query !== ''): ?>
+        <?php if ($users): ?>
+            <div class="search-users-grid">
+                <?php foreach ($users as $foundUser): ?>
+                    <a
+                        href="<?php echo $user && (int) $user['id'] === (int) $foundUser['id'] ? 'profile.php' : 'user.php?id=' . (int) $foundUser['id']; ?>"
+                        class="search-user-card card-surface"
+                    >
+                        <span
+                            class="search-user-avatar"
+                            <?php if (!empty($foundUser['avatar'])): ?>
+                                style="background-image: url('<?php echo htmlspecialchars((string) $foundUser['avatar'], ENT_QUOTES, 'UTF-8'); ?>');"
+                            <?php endif; ?>
+                        >
+                            <?php if (empty($foundUser['avatar'])): ?>
+                                <?php echo htmlspecialchars(mb_substr((string) $foundUser['login'], 0, 1), ENT_QUOTES, 'UTF-8'); ?>
+                            <?php endif; ?>
+                        </span>
 
+                        <span class="search-user-login">
+                            <?php echo htmlspecialchars((string) $foundUser['login'], ENT_QUOTES, 'UTF-8'); ?>
+                        </span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <p class="hashtag-search-empty">Пользователи не найдены.</p>
+        <?php endif; ?>
+    <?php else: ?>
+        <p class="hashtag-search-empty">Введите запрос, чтобы найти пользователей.</p>
+    <?php endif; ?>
+</div>
                 <div class="search-results-panel<?php echo $activeSearchTab === 'hashtags' ? ' is-active' : ''; ?>" data-search-panel="hashtags">
                     <?php if ($searchHashtag !== ''): ?>
                         <section class="hashtag-search-results" aria-label="Результаты поиска">

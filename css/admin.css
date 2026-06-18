@@ -235,3 +235,114 @@ a {
 a:hover {
     color: var(--home-accent) !important;
 }
+
+.admin-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 18px 0 8px;
+}
+
+.admin-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--home-accent) !important;
+    border: 1px solid var(--home-accent) !important;
+    color: var(--home-bg) !important;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.admin-tab:hover,
+.admin-tab:focus-visible,
+.admin-tab.is-active {
+    background: #7AD0E4 !important;
+    border-color: #7AD0E4 !important;
+    color: var(--home-bg) !important;
+}
+
+
+/* Admin extended tools */
+.admin-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin: 16px 0 22px;
+}
+
+.admin-tool-card {
+    display: grid;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--home-border);
+    border-radius: 12px;
+    background: var(--home-panel);
+}
+
+.admin-tool-card h3 {
+    margin: 0;
+}
+
+.admin-tool-card p {
+    margin: 0;
+    color: var(--home-secondary-text);
+}
+
+.admin-tool-card input,
+.admin-role-form select {
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--home-border);
+    background: var(--home-bg);
+    color: var(--home-text);
+}
+
+.admin-small-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--home-accent);
+    background: var(--home-accent);
+    color: var(--home-bg) !important;
+    text-decoration: none;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-small-btn:hover,
+.admin-small-btn:focus-visible {
+    background: #7AD0E4;
+    border-color: #7AD0E4;
+    color: var(--home-bg) !important;
+}
+
+.admin-role-form {
+    display: grid;
+    gap: 8px;
+}
+
+code {
+    color: var(--home-accent);
+}
+
+.admin-comments-text {
+    max-width: 520px;
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+}
+
+@media (max-width: 720px) {
+    .admin-tools-grid {
+        grid-template-columns: 1fr;
+    }
+}

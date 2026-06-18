@@ -18,7 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($login === '' || $password === '') {
         $error = 'Введите логин/email и пароль администратора.';
     } else {
-        $stmt = $pdo->prepare("SELECT id, login, password, role FROM users WHERE (login = :login OR email = :login) AND role = 'admin' LIMIT 1");
+        $stmt = $pdo->prepare("
+    SELECT id, login, password, role
+    FROM users
+    WHERE (login = :login OR email = :login)
+      AND role IN ('admin', 'moderator')
+    LIMIT 1
+");
         $stmt->execute(['login' => $login]);
         $admin = $stmt->fetch();
 
@@ -28,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $error = 'Доступ запрещён: неверные данные или нет прав администратора.';
+        $error = 'Доступ запрещён: неверные данные или нет прав доступа.';
     }
 }
 ?>
@@ -45,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <main class="admin-auth-page">
         <section class="admin-card">
             <h1>Вход в админ-панель</h1>
-            <p class="subtitle">Только для пользователей с ролью admin.</p>
+            <p class="subtitle">Только для администраторов и модераторов.</p>
 
             <form method="post" class="admin-form">
                 <label>

@@ -265,6 +265,8 @@ h2 {
     background: linear-gradient(135deg, #ffffff 0%, #f2f8ff 60%, #fff7ef 100%);
 }
 
+
+
 .home-lead {
     max-width: 680px;
     color: #4b5563;
@@ -295,11 +297,20 @@ h2 {
 }
 
 .primary-link {
-    background: linear-gradient(135deg, #0095f6 0%, #0072cf 100%);
-    color: #fff;
-    border: none;
-    box-shadow: 0 14px 24px rgba(0, 149, 246, 0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 12px;
+    background: #68C5DB;
+    color: #040607;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
     cursor: pointer;
+    transition: background-color .2s ease, transform .2s ease;
 }
 
 .primary-link:hover,
@@ -1447,9 +1458,9 @@ h2 {
     min-height: 42px;
     padding: 0 16px;
     border-radius: 999px;
-    border: 1px solid #d7dee5;
-    background: #f3f6f9;
-    color: #1f2937;
+    border: 1px solid #68C5DB !important;
+    background: #68C5DB !important;
+    color: #040607 !important;
     text-decoration: none;
     font-weight: 700;
     display: inline-flex;
@@ -1457,13 +1468,18 @@ h2 {
     justify-content: center;
     gap: 8px;
 }
-
-.connections-tab.is-active {
-    background: #eef7ff;
-    border-color: #67b7f7;
-    color: #0072cf;
+.connections-tab:hover,
+.connections-tab:focus,
+.connections-tab:focus-visible,
+.connections-tab.is-active,
+.connections-tab.is-active:hover,
+.connections-tab.is-active:focus-visible {
+    background: #68C5DB !important;
+    border-color: #68C5DB !important;
+    color: #040607 !important;
+    filter: none !important;
+    box-shadow: none !important;
 }
-
 .edit-post-preview {
     margin-bottom: 18px;
     overflow: hidden;
@@ -9220,10 +9236,20 @@ body.light-theme .hashtag-search-row input {
 }
 
 .search-tab:hover,
-.search-tab:focus-visible,
+.search-tab:focus-visible {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: rgba(255, 255, 255, 0.72) !important;
+    outline: none;
+    filter: none !important;
+}
+
 .search-tab.is-active {
+    background: transparent !important;
+    background-color: transparent !important;
     color: #ffffff !important;
     outline: none;
+    filter: none !important;
 }
 
 .search-tab.is-active::after {
@@ -9269,20 +9295,29 @@ body.light-theme .search-tab {
 
 html.theme-light .search-tab:hover,
 html.theme-light .search-tab:focus-visible,
-html.theme-light .search-tab.is-active,
 html[data-theme="light"] .search-tab:hover,
 html[data-theme="light"] .search-tab:focus-visible,
-html[data-theme="light"] .search-tab.is-active,
 body.theme-light .search-tab:hover,
 body.theme-light .search-tab:focus-visible,
-body.theme-light .search-tab.is-active,
 body[data-theme="light"] .search-tab:hover,
 body[data-theme="light"] .search-tab:focus-visible,
-body[data-theme="light"] .search-tab.is-active,
 body.light-theme .search-tab:hover,
-body.light-theme .search-tab:focus-visible,
+body.light-theme .search-tab:focus-visible {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: rgba(4, 6, 7, 0.62) !important;
+    filter: none !important;
+}
+
+html.theme-light .search-tab.is-active,
+html[data-theme="light"] .search-tab.is-active,
+body.theme-light .search-tab.is-active,
+body[data-theme="light"] .search-tab.is-active,
 body.light-theme .search-tab.is-active {
+    background: transparent !important;
+    background-color: transparent !important;
     color: #040607 !important;
+    filter: none !important;
 }
 
 html.theme-light .search-page-input-row input[type="search"],
@@ -9307,4 +9342,75 @@ body.light-theme .search-page-input-row input[type="search"]::placeholder {
     .search-page-input-row {
         flex-direction: column;
     }
+}
+.search-users-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.search-user-card {
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    background: #0b0f11 !important;
+    border: 1px solid rgba(104, 197, 219, 0.2) !important;
+    border-radius: 18px;
+}
+
+.search-user-card:hover {
+    background: rgba(104, 197, 219, 0.08) !important;
+}
+
+.search-user-avatar {
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1f2937 0%, #68C5DB 100%);
+    background-size: cover;
+    background-position: center;
+    color: #fff !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.search-user-login {
+    color: #fff !important;
+    font-size: 15px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .search-users-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Шапка страниц Политики и Условий */
+
+.legal-hero {
+    background: #000 !important;
+    border: 1px solid #262626 !important;
+    border-radius: 20px;
+}
+
+.legal-hero .page-eyebrow {
+    color: #8e8e8e;
+}
+
+.legal-hero h1 {
+    color: #ffffff;
+}
+
+.legal-hero .legal-lead {
+    color: #e0e0e0;
 }

@@ -6,7 +6,28 @@ require_once './includes/hashtags.php';
 require './includes/icons.php';
 require './includes/post-actions.php';
 require './includes/notifications.php';
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
+function e(?string $value): string
+{
+    return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function requireValidCsrf(): void
+{
+    $token = $_POST['csrf_token'] ?? '';
+
+    if (
+        !is_string($token)
+        || empty($_SESSION['csrf_token'])
+        || !hash_equals($_SESSION['csrf_token'], $token)
+    ) {
+        http_response_code(403);
+        exit('Недействительный CSRF-токен.');
+    }
+}
 function profileDestination(int $targetUserId, ?int $currentUserId): string
 {
     if ($currentUserId !== null && $targetUserId === $currentUserId) {
@@ -313,7 +334,13 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                 <div class="post-hover-overlay" aria-hidden="true">
                     <div class="profile-hover-action-item">
                         <?php if ($currentUser): ?>
-                            <form method="post" class="inline-action-form profile-hover-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-like-btn<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? ' is-active' : ''; ?>" data-hover-like-post-id="<?php echo (int) $post['id']; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt="Лайк"></button></form>
+                            <form method="post" class="inline-action-form profile-hover-action-form">
+                                <input type="hidden" name="action" value="toggle_like">
+                                <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-like-btn<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? ' is-active' : ''; ?>" data-hover-like-post-id="<?php echo (int) $post['id']; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt="Лайк"></button>
+                            </form>
                         <?php else: ?>
                             <a href="login.php" class="feed-action-btn profile-hover-action-btn profile-hover-like-btn" aria-label="Войти для лайка"><img src="icon/dark theme/like.png" alt="Лайк"></a>
                         <?php endif; ?>
@@ -321,7 +348,13 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                     </div>
                     <div class="profile-hover-action-item">
                         <?php if ($currentUser): ?>
-                            <form method="post" class="inline-action-form profile-hover-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-repost-btn<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? ' is-reposted' : ''; ?>" data-hover-repost-post-id="<?php echo (int) $post['id']; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt="Репост"></button></form>
+                            <form method="post" class="inline-action-form profile-hover-action-form">
+                                <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="action" value="add_repost">
+                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-repost-btn<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? ' is-reposted' : ''; ?>" data-hover-repost-post-id="<?php echo (int) $post['id']; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt="Репост"></button>
+                            </form>
                         <?php else: ?>
                             <a href="login.php" class="feed-action-btn profile-hover-action-btn profile-hover-repost-btn" aria-label="Войти для репоста"><img src="icon/dark theme/repost.png" alt="Репост"></a>
                         <?php endif; ?>
@@ -329,7 +362,13 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                     </div>
                     <div class="profile-hover-action-item">
                         <?php if ($currentUser): ?>
-                            <form method="post" class="inline-action-form profile-hover-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-save-btn<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? ' is-saved' : ''; ?>" data-hover-save-post-id="<?php echo (int) $post['id']; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt="Избранное"></button></form>
+                            <form method="post" class="inline-action-form profile-hover-action-form">
+                                <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="action" value="toggle_save">
+                                <input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>">
+                                <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                <button type="submit" class="feed-action-btn profile-hover-action-btn profile-hover-save-btn<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? ' is-saved' : ''; ?>" data-hover-save-post-id="<?php echo (int) $post['id']; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt="Избранное"></button>
+                            </form>
                         <?php else: ?>
                             <a href="login.php" class="feed-action-btn profile-hover-action-btn profile-hover-save-btn" aria-label="Войти для избранного"><img src="icon/dark theme/favourites.png" alt="Избранное"></a>
                         <?php endif; ?>
@@ -341,10 +380,10 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                     <div class="feed-card-header"><div class="feed-header-main"><strong><?php echo htmlspecialchars($authorLogin); ?></strong></div></div>
                     <div class="feed-card-buttons" style="margin-top: 10px;">
                         <?php if ($currentUser): ?>
-                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['likes_count'] ?? 0); ?></span></div>
+                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>"><input type="hidden" name="action" value="toggle_like"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn<?php echo (int) ($post['is_liked'] ?? 0) > 0 ? ' is-active' : ''; ?>" aria-label="Лайк"><img src="icon/dark theme/like.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['likes_count'] ?? 0); ?></span></div>
                             <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>" aria-label="Комментарии"><img src="icon/dark theme/comment.png" alt=""></button><span class="feed-action-count"><?php echo (int) ($post['comments_count'] ?? 0); ?></span></div>
-                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['saves_count'] ?? 0); ?></span></div>
-                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['reposts_count'] ?? 0); ?></span></div>
+                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>"><input type="hidden" name="action" value="toggle_save"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-save<?php echo (int) ($post['is_saved'] ?? 0) > 0 ? ' is-saved' : ''; ?>" aria-label="Избранное"><img src="icon/dark theme/favourites.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['saves_count'] ?? 0); ?></span></div>
+                            <div class="feed-action-item"><form method="post" class="inline-action-form"><input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>"><input type="hidden" name="action" value="add_repost"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><button type="submit" class="feed-action-btn feed-icon-btn feed-action-btn-repost<?php echo (int) ($post['is_reposted'] ?? 0) > 0 ? ' is-reposted' : ''; ?>" aria-label="Репост"><img src="icon/dark theme/repost.png" alt=""></button></form><span class="feed-action-count"><?php echo (int) ($post['reposts_count'] ?? 0); ?></span></div>
                             <div class="feed-action-item"><button type="button" class="feed-action-btn feed-icon-btn js-open-share-modal" data-post-id="<?php echo (int) $post['id']; ?>" data-post-action="share" aria-label="Отправить в сообщения"><img src="icon/dark theme/share.png" alt=""></button><span class="feed-action-count" data-post-id="<?php echo (int) $post['id']; ?>" data-post-count="shares"><?php echo (int) ($post['shares_count'] ?? 0); ?></span></div>
                         <?php endif; ?>
                     </div>
@@ -352,7 +391,15 @@ function renderOtherProfilePostGrid(array $posts, array $profileUser, ?array $cu
                         <div class="comments-modal-overlay js-close-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>"></div>
                         <div class="comments-modal-dialog"><div class="comments-modal-header"><h3>Комментарии</h3><button type="button" class="feed-action-btn feed-icon-btn js-close-comments-modal" data-modal="comments-modal-<?php echo htmlspecialchars($modalPrefix); ?>-<?php echo (int) $post['id']; ?>" aria-label="Закрыть"><?php echo snapix_icon('x'); ?></button></div><div class="comments-modal-body">
                             <?php if ($postComments): ?><?php foreach ($postComments as $comment): ?><div class="comment-item"><strong><?php echo htmlspecialchars($comment['login']); ?></strong><p><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p></div><?php endforeach; ?><?php else: ?><p class="comments-empty">Пока нет комментариев.</p><?php endif; ?>
-                        </div><?php if ($currentUser): ?><form method="post" class="comment-form comments-modal-form"><input type="hidden" name="action" value="add_comment"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><textarea name="comment_text" rows="2" maxlength="1000" placeholder="Напишите комментарий..."></textarea><button type="submit" class="primary-link">Отправить</button></form><?php endif; ?></div>
+                        </div><?php if ($currentUser): ?><form method="post" class="comment-form comments-modal-form"><input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>"><input type="hidden" name="action" value="add_comment"><input type="hidden" name="post_id" value="<?php echo (int) $post['id']; ?>"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><textarea name="comment_text"
+          rows="2"
+          maxlength="1000"
+          placeholder="Напишите комментарий..."></textarea>
+
+<button type="submit"
+        class="primary-link">
+    Отправить
+</button></form><?php endif; ?></div>
                     </div>
                 </div>
             </article>
@@ -439,6 +486,7 @@ if ($currentUser && $targetUserId === (int) $currentUser['id']) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
+requireValidCsrf();
     $action = $_POST['action'] ?? '';
     $postId = (int) ($_POST['post_id'] ?? 0);
     $commentsPostId = 0;
@@ -1240,11 +1288,26 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                 <div class="follow-state-card"><strong>Заявка временно недоступна</strong><p>Повторную заявку можно будет отправить после <?php echo htmlspecialchars(formatBlockedUntil($followDeclinedUntil)); ?>.</p></div>
                             <?php elseif ($currentUser): ?>
                                 <?php if ($followStatus === 'accepted'): ?>
-                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="toggle_follow"><button type="submit" class="secondary-link profile-edit-btn profile-follow-btn">Отписаться</button></form>
+                                    <form method="post" class="follow-action-form">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                        <input type="hidden" name="action" value="toggle_follow">
+                                        <button type="submit" class="secondary-link profile-edit-btn profile-follow-btn">Отписаться</button>
+                                    </form>
                                 <?php elseif ($followStatus === 'pending'): ?>
-                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="cancel_follow_request"><button type="submit" class="secondary-link profile-edit-btn profile-follow-btn">Заявка отправлена</button></form>
+                                    <form method="post" class="follow-action-form">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                        <input type="hidden" name="action" value="cancel_follow_request">
+                                        <button type="submit" class="secondary-link profile-edit-btn profile-follow-btn">Заявка отправлена</button>
+                                    </form>
                                 <?php else: ?>
-                                    <form method="post" class="follow-action-form"><input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>"><input type="hidden" name="action" value="toggle_follow"><button type="submit" class="primary-link profile-edit-btn profile-follow-btn"><?php echo $isPrivateProfile ? 'Подписаться' : 'Подписаться'; ?></button></form>
+                                    <form method="post" class="follow-action-form">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="target_user_id" value="<?php echo (int) $profileUser['id']; ?>">
+                                        <input type="hidden" name="action" value="toggle_follow">
+                                        <button type="submit" class="primary-link profile-edit-btn profile-follow-btn"><?php echo $isPrivateProfile ? 'Подписаться' : 'Подписаться'; ?></button>
+                                    </form>
                                 <?php endif; ?>
                             <?php else: ?>
                                 <a href="login.php" class="secondary-link profile-edit-btn">Войти</a>
@@ -1342,6 +1405,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     </div>
                     <?php if ($currentUser): ?>
                         <form method="post" class="profile-post-viewer-input-row" id="profilePostViewerCommentForm">
+                            <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']); ?>">
                             <input type="hidden" name="action" value="add_comment">
                             <input type="hidden" name="post_id" value="">
                             <input type="hidden" name="parent_comment_id" value="">
@@ -1536,6 +1600,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 const formData = new FormData();
                 formData.set('action', 'get_clip_post_stats');
                 formData.set('post_id', postId);
+                formData.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
                 fetch('clips.php', { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })
                     .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
                     .then((result) => {
@@ -1570,6 +1635,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 formData.set('action', action);
                 formData.set('post_id', viewer.dataset.postId || '');
                 formData.set('owner_id', viewer.dataset.postAuthorId || '');
+                formData.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
                 Object.keys(extra || {}).forEach((key) => formData.set(key, extra[key]));
                 return fetch(window.location.href, { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })
                     .then((response) => response.json().catch(() => ({})).then((data) => {
@@ -2029,6 +2095,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     params.set('action', 'toggle_comment_like');
                     params.set('comment_id', commentId);
                     params.set('target_user_id', String(<?php echo (int) $profileUser['id']; ?>));
+                    params.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
 
                     likeButton.dataset.liking = '1';
                     fetch(window.location.pathname + window.location.search, {
@@ -2072,6 +2139,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                                 params.set('post_id', reportCommentNode?.dataset.postId || viewer.dataset.postId || '');
                                 params.set('target_user_id', String(<?php echo (int) $profileUser['id']; ?>));
                                 params.set('reason', reason);
+                                params.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
                                 fetch(window.location.pathname + window.location.search, {
                                     method: 'POST',
                                     credentials: 'same-origin',
@@ -2107,7 +2175,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                     params.set('comment_id', commentId);
                     params.set('post_id', postId);
                     params.set('target_user_id', String(<?php echo (int) $profileUser['id']; ?>));
-
+                    params.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
                     deleteButton.dataset.deleting = '1';
                     fetch(window.location.pathname + window.location.search, {
                         method: 'POST',
@@ -2321,6 +2389,7 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
         (function () {
     function sendPostActionForm(form) {
         var formData = new FormData(form);
+        formData.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
         return fetch(form.getAttribute('action') || window.location.href, {
             method: 'POST',
             credentials: 'same-origin',
@@ -2496,6 +2565,7 @@ document.addEventListener('click', (event) => {
                     const params = new URLSearchParams();
                     params.set('post_id', String(activePostId));
                     params.set('receiver_id', String(button.getAttribute('data-recipient-id')));
+                    params.set('csrf_token', '<?php echo e($_SESSION["csrf_token"]); ?>');
 
                     fetch('share-post.php', {
                         method: 'POST',
