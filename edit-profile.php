@@ -273,11 +273,14 @@ $coverStyle = !empty($user['background_image'])
 </div>
 
 <div class="field full">
-    <label class="checkbox-field">
-        <input type="checkbox" name="is_private"
+    <div class="profile-private-row">
+        <input type="checkbox" id="is_private" name="is_private"
             <?php echo !empty($user['is_private']) ? 'checked' : ''; ?>>
-        Закрытый аккаунт
-    </label>
+
+        <label for="is_private">
+            Закрытый аккаунт
+        </label>
+    </div>
 </div>
             </div>
 
