@@ -53,10 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'video/mp4' => ['type' => 'video', 'ext' => 'mp4'],
                 'video/webm' => ['type' => 'video', 'ext' => 'webm'],
                 'video/quicktime' => ['type' => 'video', 'ext' => 'mov'],
+                'video/x-matroska' => ['type' => 'video', 'ext' => 'mkv'],
+                'video/matroska' => ['type' => 'video', 'ext' => 'mkv'],
             ];
 
             if (!isset($allowedTypes[$mimeType])) {
-                $error = 'Поддерживаются только JPG, PNG, WEBP, MP4, WEBM или MOV.';
+                $error = 'Поддерживаются только JPG, PNG, WEBP, MP4, WEBM, MOV или MKV.';
             } else {
                 $uploadDirectory = __DIR__ . '/uploads/posts';
 
@@ -132,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="post" enctype="multipart/form-data" class="create-post-form">
                 <div class="field">
                     <label for="media">Фото или видео</label>
-                    <input id="media" name="media" type="file" accept="image/*,video/*" required>
+                    <input id="media" name="media" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,video/x-matroska,video/matroska,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov,.mkv" required>
                 </div>
 
                 <div class="field">
