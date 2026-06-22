@@ -2446,6 +2446,87 @@ window.snapixProfileComments = <?php echo json_encode($commentMap, JSON_UNESCAPE
         });
     }
 
+
+    (function () {
+        var emojiButton = document.getElementById('profilePostViewerEmojiButton');
+        var emojiPicker = document.getElementById('profilePostViewerEmojiPicker');
+        var commentForm = document.getElementById('profilePostViewerCommentForm');
+        var commentInput = commentForm ? commentForm.querySelector('.profile-post-viewer-input, [name="comment_text"]') : null;
+
+        if (!emojiButton || !emojiPicker || !commentInput) {
+            return;
+        }
+
+        function setEmojiPickerOpen(isOpen) {
+            emojiPicker.hidden = !isOpen;
+            emojiButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        function closeEmojiPicker() {
+            setEmojiPickerOpen(false);
+        }
+
+        function insertEmoji(emoji) {
+            if (!emoji) return;
+
+            if (commentInput.isContentEditable) {
+                commentInput.focus();
+                var selection = window.getSelection();
+                if (!selection) return;
+                var range = selection.rangeCount ? selection.getRangeAt(0) : null;
+
+                if (!range || !commentInput.contains(range.commonAncestorContainer)) {
+                    range = document.createRange();
+                    range.selectNodeContents(commentInput);
+                    range.collapse(false);
+                }
+
+                range.deleteContents();
+                var node = document.createTextNode(emoji);
+                range.insertNode(node);
+                range.setStartAfter(node);
+                range.setEndAfter(node);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                commentInput.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: emoji }));
+                return;
+            }
+
+            var value = commentInput.value || '';
+            var start = typeof commentInput.selectionStart === 'number' ? commentInput.selectionStart : value.length;
+            var end = typeof commentInput.selectionEnd === 'number' ? commentInput.selectionEnd : value.length;
+            commentInput.value = value.slice(0, start) + emoji + value.slice(end);
+            var nextCursorPosition = start + emoji.length;
+            commentInput.focus();
+            if (typeof commentInput.setSelectionRange === 'function') {
+                commentInput.setSelectionRange(nextCursorPosition, nextCursorPosition);
+            }
+            commentInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        emojiButton.addEventListener('click', function (event) {
+            event.stopPropagation();
+            setEmojiPickerOpen(emojiPicker.hidden);
+        });
+
+        emojiPicker.addEventListener('click', function (event) {
+            var emojiNode = event.target.closest ? event.target.closest('[data-emoji]') : null;
+            if (!emojiNode) return;
+
+            insertEmoji(emojiNode.getAttribute('data-emoji') || '');
+            closeEmojiPicker();
+        });
+
+        document.addEventListener('click', function (event) {
+            if (emojiPicker.hidden || emojiPicker.contains(event.target) || emojiButton.contains(event.target)) return;
+            closeEmojiPicker();
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') closeEmojiPicker();
+        });
+    })();
+
     (function () {
         var attachmentButton = document.getElementById('profilePostViewerAttachmentButton');
         var attachmentInput = document.getElementById('profilePostViewerAttachmentInput');

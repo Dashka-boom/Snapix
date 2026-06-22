@@ -2784,38 +2784,64 @@ $showFollowingPanel = $panel === 'following';
             const emojiButton = document.getElementById('profilePostViewerEmojiButton');
             const emojiPicker = document.getElementById('profilePostViewerEmojiPicker');
             const commentForm = document.getElementById('profilePostViewerCommentForm');
-            const commentInput = commentForm ? commentForm.querySelector('[name="comment_text"]') : null;
+            const commentInput = commentForm ? commentForm.querySelector('.profile-post-viewer-input, [name="comment_text"]') : null;
             if (!emojiButton || !emojiPicker || !commentInput) return;
 
-            const closeEmojiPicker = () => {
-                emojiPicker.hidden = true;
-                emojiButton.setAttribute('aria-expanded', 'false');
+            const setEmojiPickerOpen = (isOpen) => {
+                emojiPicker.hidden = !isOpen;
+                emojiButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
             };
 
-            const openEmojiPicker = () => {
-                emojiPicker.hidden = false;
-                emojiButton.setAttribute('aria-expanded', 'true');
+            const closeEmojiPicker = () => setEmojiPickerOpen(false);
+
+            const insertEmoji = (emoji) => {
+                if (!emoji) return;
+
+                if (commentInput.isContentEditable) {
+                    commentInput.focus();
+                    const selection = window.getSelection();
+                    if (!selection) return;
+                    let range = selection.rangeCount ? selection.getRangeAt(0) : null;
+
+                    if (!range || !commentInput.contains(range.commonAncestorContainer)) {
+                        range = document.createRange();
+                        range.selectNodeContents(commentInput);
+                        range.collapse(false);
+                    }
+
+                    range.deleteContents();
+                    const node = document.createTextNode(emoji);
+                    range.insertNode(node);
+                    range.setStartAfter(node);
+                    range.setEndAfter(node);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    commentInput.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: emoji }));
+                    return;
+                }
+
+                const value = commentInput.value || '';
+                const start = typeof commentInput.selectionStart === 'number' ? commentInput.selectionStart : value.length;
+                const end = typeof commentInput.selectionEnd === 'number' ? commentInput.selectionEnd : value.length;
+                commentInput.value = value.slice(0, start) + emoji + value.slice(end);
+                const nextCursorPosition = start + emoji.length;
+                commentInput.focus();
+                if (typeof commentInput.setSelectionRange === 'function') {
+                    commentInput.setSelectionRange(nextCursorPosition, nextCursorPosition);
+                }
+                commentInput.dispatchEvent(new Event('input', { bubbles: true }));
             };
 
             emojiButton.addEventListener('click', (event) => {
                 event.stopPropagation();
-                if (emojiPicker.hidden) {
-                    openEmojiPicker();
-                } else {
-                    closeEmojiPicker();
-                }
+                setEmojiPickerOpen(emojiPicker.hidden);
             });
 
             emojiPicker.addEventListener('click', (event) => {
-                const emoji = event.target.closest('[data-emoji]')?.getAttribute('data-emoji');
-                if (!emoji) return;
+                const emojiButtonNode = event.target.closest('[data-emoji]');
+                if (!emojiButtonNode) return;
 
-                const start = commentInput.selectionStart ?? commentInput.value.length;
-                const end = commentInput.selectionEnd ?? commentInput.value.length;
-                commentInput.value = commentInput.value.slice(0, start) + emoji + commentInput.value.slice(end);
-                const nextCursorPosition = start + emoji.length;
-                commentInput.focus();
-                commentInput.setSelectionRange(nextCursorPosition, nextCursorPosition);
+                insertEmoji(emojiButtonNode.getAttribute('data-emoji') || '');
                 closeEmojiPicker();
             });
 
