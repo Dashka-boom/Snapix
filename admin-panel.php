@@ -46,6 +46,36 @@ function ensureAdminStorage(PDO $pdo): void
             KEY idx_admin_logs_action (action)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     ");
+
+    $columnsStmt = $pdo->query('SHOW COLUMNS FROM admin_logs');
+    $columns = [];
+    foreach ($columnsStmt->fetchAll(PDO::FETCH_ASSOC) as $column) {
+        $columns[$column['Field']] = true;
+    }
+
+    $missingColumns = [];
+    if (!isset($columns['target_type'])) {
+        $missingColumns[] = 'ADD COLUMN target_type VARCHAR(100) NULL AFTER action';
+    }
+    if (!isset($columns['target_id'])) {
+        $missingColumns[] = 'ADD COLUMN target_id BIGINT UNSIGNED NULL AFTER target_type';
+    }
+    if (!isset($columns['details'])) {
+        $missingColumns[] = 'ADD COLUMN details TEXT NULL AFTER target_id';
+    }
+    if (!isset($columns['ip_address'])) {
+        $missingColumns[] = 'ADD COLUMN ip_address VARCHAR(64) NULL AFTER details';
+    }
+
+    foreach ($missingColumns as $alterSql) {
+        try {
+            $pdo->exec('ALTER TABLE admin_logs ' . $alterSql);
+        } catch (PDOException $exception) {
+            if (($exception->errorInfo[1] ?? null) !== 1060) {
+                throw $exception;
+            }
+        }
+    }
 }
 
 function writeAdminLog(PDO $pdo, array $admin, string $action, ?string $targetType = null, ?int $targetId = null, string $details = ''): void
