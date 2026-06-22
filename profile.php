@@ -993,6 +993,10 @@ $stmt = $pdo->prepare('SELECT COUNT(*) FROM saved_posts WHERE user_id = :id');
 $stmt->execute(['id' => $user['id']]);
 $savedPostsCount = (int) $stmt->fetchColumn();
 
+$stmt = $pdo->prepare('SELECT COUNT(*) FROM likes WHERE user_id = :id');
+$stmt->execute(['id' => $user['id']]);
+$likedPostsCount = (int) $stmt->fetchColumn();
+
 $stmt = $pdo->prepare('SELECT COUNT(*) FROM reposts WHERE user_id = :id');
 $stmt->execute(['id' => $user['id']]);
 $repostsCount = (int) $stmt->fetchColumn();
@@ -1041,6 +1045,22 @@ $stmt->execute([
     'viewer_id' => $user['id'],
 ]);
 $savedPosts = $stmt->fetchAll();
+
+$stmt = $pdo->prepare("
+    SELECT posts.*, post_media.media_url, post_media.media_type, users.id AS author_user_id, users.login AS author_login, users.avatar AS author_avatar,
+           $postStatsSql
+    FROM likes
+    INNER JOIN posts ON posts.id = likes.post_id AND posts.is_deleted = 0
+    INNER JOIN users ON users.id = posts.user_id
+    LEFT JOIN post_media ON post_media.post_id = posts.id AND post_media.position = 1
+    WHERE likes.user_id = :id
+    ORDER BY likes.created_at DESC
+");
+$stmt->execute([
+    'id' => $user['id'],
+    'viewer_id' => $user['id'],
+]);
+$likedPosts = $stmt->fetchAll();
 
 $stmt = $pdo->prepare("
     SELECT
@@ -1103,7 +1123,7 @@ $followingList = $stmt->fetchAll();
 $commentMap = [];
 $viewerCommentMap = [];
 $repostMap = [];
-$allProfilePosts = array_merge($posts, $savedPosts, $repostedPosts);
+$allProfilePosts = array_merge($posts, $savedPosts, $likedPosts, $repostedPosts);
 if ($allProfilePosts) {
     $postIds = array_values(array_unique(array_map(static fn($post): int => (int) $post['id'], $allProfilePosts)));
     $placeholders = implode(',', array_fill(0, count($postIds), '?'));
@@ -1707,7 +1727,32 @@ $showFollowingPanel = $panel === 'following';
             <?php endif; ?>
         </section>
         <section class="profile-posts card-surface" data-profile-tab-panel="likes" hidden>
-            <p class="empty-state">Понравившиеся публикации появятся здесь</p>
+            <?php if ($likedPosts): ?>
+                <div class="posts-grid profile-media-grid">
+                    <?php foreach ($likedPosts as $post): ?>
+                        <article class="post-card" id="liked-post-<?php echo (int) $post['id']; ?>" data-post-card-id="<?php echo (int) $post['id']; ?>" data-post-id="<?php echo (int) $post['id']; ?>" data-post-author-id="<?php echo (int) ($post['author_user_id'] ?? $post['user_id'] ?? 0); ?>" data-post-media-url="<?php echo htmlspecialchars((string) ($post['media_url'] ?? '')); ?>" data-post-media-type="<?php echo htmlspecialchars((string) ($post['media_type'] ?? 'image')); ?>" data-post-author-login="<?php echo htmlspecialchars((string) ($post['author_login'] ?? $user['login'])); ?>" data-post-author-avatar="<?php echo htmlspecialchars((string) ($post['author_avatar'] ?? $user['avatar'] ?? '')); ?>" data-post-caption="<?php echo htmlspecialchars((string) ($post['caption'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" data-post-hashtags="<?php echo htmlspecialchars(implode(' ', snapix_split_safe_hashtags((string) ($post['hashtags'] ?? ''))), ENT_QUOTES, 'UTF-8'); ?>" data-post-likes-count="<?php echo (int) ($post['likes_count'] ?? 0); ?>" data-post-comments-count="<?php echo (int) ($post['comments_count'] ?? 0); ?>" data-post-reposts-count="<?php echo (int) ($post['reposts_count'] ?? 0); ?>" data-post-shares-count="<?php echo (int) ($post['shares_count'] ?? 0); ?>" data-post-saves-count="<?php echo (int) ($post['saves_count'] ?? 0); ?>" data-post-liked="<?php echo (int) $post['is_liked'] > 0 ? '1' : '0'; ?>" data-post-saved="<?php echo (int) $post['is_saved'] > 0 ? '1' : '0'; ?>" data-post-reposted="<?php echo (int) $post['is_reposted'] > 0 ? '1' : '0'; ?>" data-post-is-following-author="<?php echo in_array((string) ($post['viewer_follow_status'] ?? ''), ['accepted', 'pending'], true) ? '1' : '0'; ?>" data-post-viewer-follow-status="<?php echo htmlspecialchars((string) ($post['viewer_follow_status'] ?? '')); ?>">
+                            <span class="post-type-badge" aria-hidden="true">
+                                <img src="<?php echo (($post['media_type'] ?? '') === 'video') ? 'icon/light theme/video.png' : 'icon/light theme/images.png'; ?>" alt="">
+                            </span>
+                            <?php if (($post['media_type'] ?? '') === 'video' && !empty($post['media_url'])): ?>
+                                <video class="post-card-media" controls preload="metadata" src="<?php echo htmlspecialchars($post['media_url']); ?>"></video>
+                            <?php elseif (!empty($post['media_url'])): ?>
+                                <div class="post-card-media" style="background-image: url('<?php echo htmlspecialchars($post['media_url']); ?>');"></div>
+                            <?php else: ?>
+                                <div class="post-card-media"></div>
+                            <?php endif; ?>
+                            <div class="post-card-copy">
+                                <div class="feed-card-header">
+                                    <div class="feed-header-main"><strong><?php echo htmlspecialchars($post['author_login']); ?></strong></div>
+                                </div>
+                                <a href="<?php echo htmlspecialchars(buildProfileUrl((int) $post['author_user_id'], (int) $user['id'])); ?>" class="saved-post-author"><?php echo htmlspecialchars($post['author_login']); ?></a>
+                            </div>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p class="empty-state">Понравившиеся публикации появятся здесь</p>
+            <?php endif; ?>
         </section>
         <section class="profile-posts card-surface" data-profile-tab-panel="archives" hidden>
             <p class="empty-state">Здесь будут архивы историй</p>
