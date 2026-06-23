@@ -681,7 +681,6 @@ CREATE TABLE `user_notifications` (
   `id` bigint UNSIGNED NOT NULL,
   `user_id` bigint UNSIGNED NOT NULL,
   `actor_user_id` bigint UNSIGNED DEFAULT NULL,
-  `target_user_id` bigint UNSIGNED DEFAULT NULL,
   `notification_type` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `post_id` bigint UNSIGNED DEFAULT NULL,
   `comment_id` bigint UNSIGNED DEFAULT NULL,
@@ -897,7 +896,6 @@ ALTER TABLE `user_notifications`
   ADD KEY `idx_notifications_report` (`report_id`),
   ADD KEY `idx_notifications_type_post` (`notification_type`,`post_id`,`created_at`),
   ADD KEY `idx_notifications_actor` (`actor_user_id`),
-  ADD KEY `idx_notifications_target` (`target_user_id`),
   ADD KEY `idx_notifications_post` (`post_id`),
   ADD KEY `idx_notifications_comment` (`comment_id`);
 

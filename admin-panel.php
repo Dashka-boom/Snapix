@@ -448,7 +448,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $deleteReportsStmt = $pdo->prepare('DELETE FROM moderation_reports WHERE reporter_user_id = :user_id OR target_user_id = :user_id');
                 $deleteReportsStmt->execute(['user_id' => $userId]);
 
-                $deleteNotificationsStmt = $pdo->prepare('DELETE FROM user_notifications WHERE user_id = :user_id');
+                $deleteNotificationsStmt = $pdo->prepare('DELETE FROM user_notifications WHERE user_id = :user_id OR actor_user_id = :user_id');
                 $deleteNotificationsStmt->execute(['user_id' => $userId]);
 
                 $deleteUserStmt = $pdo->prepare('DELETE FROM users WHERE id = :id LIMIT 1');
