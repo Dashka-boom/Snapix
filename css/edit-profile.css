@@ -409,3 +409,81 @@ body.theme-light .profile-private-row label,
 html.theme-light body .profile-private-row label {
     color: #040607 !important;
 }
+
+.blocked-users-card {
+    width: min(100%, 860px);
+    justify-self: center;
+}
+
+.blocked-users-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--home-text);
+}
+
+.blocked-users-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.blocked-user-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid var(--home-border);
+    border-radius: 14px;
+    padding: 0.8rem;
+    background: var(--home-bg);
+}
+
+.blocked-user-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.blocked-user-main strong {
+    color: var(--home-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.blocked-user-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #d9efff 0%, #f3f4f6 100%);
+    background-size: cover;
+    background-position: center;
+    color: #334155;
+    font-weight: 700;
+}
+
+.blocked-user-action {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.blocked-users-empty {
+    margin: 0;
+    color: var(--home-secondary-text);
+}
+
+@media (max-width: 560px) {
+    .blocked-user-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .blocked-user-action .secondary-link {
+        width: 100%;
+        justify-content: center;
+    }
+}

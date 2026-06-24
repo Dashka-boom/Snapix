@@ -46,6 +46,36 @@ function ensureAdminStorage(PDO $pdo): void
             KEY idx_admin_logs_action (action)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     ");
+
+    $columnsStmt = $pdo->query('SHOW COLUMNS FROM admin_logs');
+    $columns = [];
+    foreach ($columnsStmt->fetchAll(PDO::FETCH_ASSOC) as $column) {
+        $columns[$column['Field']] = true;
+    }
+
+    $missingColumns = [];
+    if (!isset($columns['target_type'])) {
+        $missingColumns[] = 'ADD COLUMN target_type VARCHAR(100) NULL AFTER action';
+    }
+    if (!isset($columns['target_id'])) {
+        $missingColumns[] = 'ADD COLUMN target_id BIGINT UNSIGNED NULL AFTER target_type';
+    }
+    if (!isset($columns['details'])) {
+        $missingColumns[] = 'ADD COLUMN details TEXT NULL AFTER target_id';
+    }
+    if (!isset($columns['ip_address'])) {
+        $missingColumns[] = 'ADD COLUMN ip_address VARCHAR(64) NULL AFTER details';
+    }
+
+    foreach ($missingColumns as $alterSql) {
+        try {
+            $pdo->exec('ALTER TABLE admin_logs ' . $alterSql);
+        } catch (PDOException $exception) {
+            if (($exception->errorInfo[1] ?? null) !== 1060) {
+                throw $exception;
+            }
+        }
+    }
 }
 
 function writeAdminLog(PDO $pdo, array $admin, string $action, ?string $targetType = null, ?int $targetId = null, string $details = ''): void
@@ -62,6 +92,109 @@ function writeAdminLog(PDO $pdo, array $admin, string $action, ?string $targetTy
         'details' => mb_substr($details, 0, 2000),
         'ip_address' => mb_substr((string) ($_SERVER['REMOTE_ADDR'] ?? ''), 0, 64),
     ]);
+}
+
+function adminTableColumns(PDO $pdo, string $table): array
+{
+    static $cache = [];
+
+    if (array_key_exists($table, $cache)) {
+        return $cache[$table];
+    }
+
+    $stmt = $pdo->prepare('
+        SELECT COLUMN_NAME
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = :table_name
+    ');
+    $stmt->execute(['table_name' => $table]);
+
+    $columns = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $column) {
+        $columns[(string) $column] = true;
+    }
+
+    $cache[$table] = $columns;
+    return $columns;
+}
+
+function adminTableExists(PDO $pdo, string $table): bool
+{
+    return adminTableColumns($pdo, $table) !== [];
+}
+
+function adminExistingColumns(PDO $pdo, string $table, array $columns): array
+{
+    $availableColumns = adminTableColumns($pdo, $table);
+    return array_values(array_filter($columns, static fn(string $column): bool => isset($availableColumns[$column])));
+}
+
+function adminPlaceholders(array $values): string
+{
+    return implode(',', array_fill(0, count($values), '?'));
+}
+
+function adminFetchIdsByColumns(PDO $pdo, string $table, string $idColumn, array $columns, int $userId): array
+{
+    if (!adminTableExists($pdo, $table) || !isset(adminTableColumns($pdo, $table)[$idColumn])) {
+        return [];
+    }
+
+    $columns = adminExistingColumns($pdo, $table, $columns);
+    if ($columns === []) {
+        return [];
+    }
+
+    $where = implode(' OR ', array_map(static fn(string $column): string => "$column = :user_id", $columns));
+    $stmt = $pdo->prepare("SELECT $idColumn FROM $table WHERE $where");
+    $stmt->execute(['user_id' => $userId]);
+
+    return array_values(array_unique(array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN))));
+}
+
+function adminFetchIdsByValues(PDO $pdo, string $table, string $idColumn, string $column, array $values): array
+{
+    if ($values === [] || !adminTableExists($pdo, $table)) {
+        return [];
+    }
+
+    $columns = adminTableColumns($pdo, $table);
+    if (!isset($columns[$idColumn], $columns[$column])) {
+        return [];
+    }
+
+    $stmt = $pdo->prepare("SELECT $idColumn FROM $table WHERE $column IN (" . adminPlaceholders($values) . ")");
+    $stmt->execute(array_values($values));
+
+    return array_values(array_unique(array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN))));
+}
+
+function adminDeleteByUserColumns(PDO $pdo, string $table, array $columns, int $userId): void
+{
+    if (!adminTableExists($pdo, $table)) {
+        return;
+    }
+
+    $columns = adminExistingColumns($pdo, $table, $columns);
+    if ($columns === []) {
+        return;
+    }
+
+    $where = implode(' OR ', array_map(static fn(string $column): string => "$column = :user_id", $columns));
+    $stmt = $pdo->prepare("DELETE FROM $table WHERE $where");
+    $stmt->execute(['user_id' => $userId]);
+}
+
+function adminDeleteByIds(PDO $pdo, string $table, string $column, array $ids): void
+{
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+    if ($ids === [] || !adminTableExists($pdo, $table) || !isset(adminTableColumns($pdo, $table)[$column])) {
+        return;
+    }
+
+    $stmt = $pdo->prepare("DELETE FROM $table WHERE $column IN (" . adminPlaceholders($ids) . ")");
+    $stmt->execute($ids);
 }
 
 function adminBackupDirectory(): string
@@ -371,55 +504,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $pdo->beginTransaction();
             try {
-                $postIdsStmt = $pdo->prepare('SELECT id FROM posts WHERE user_id = :user_id');
-                $postIdsStmt->execute(['user_id' => $userId]);
-                $postIds = array_map('intval', $postIdsStmt->fetchAll(PDO::FETCH_COLUMN));
+                $postIds = adminFetchIdsByColumns($pdo, 'posts', 'id', ['user_id'], $userId);
+                $commentIds = array_merge(
+                    adminFetchIdsByColumns($pdo, 'comments', 'id', ['user_id'], $userId),
+                    adminFetchIdsByValues($pdo, 'comments', 'id', 'post_id', $postIds)
+                );
+                $commentIds = array_values(array_unique(array_map('intval', $commentIds)));
+                $chatIds = adminFetchIdsByColumns($pdo, 'chats', 'id', ['user_one_id', 'user_two_id'], $userId);
+                $messageIds = array_merge(
+                    adminFetchIdsByColumns($pdo, 'messages', 'id', ['sender_id'], $userId),
+                    adminFetchIdsByValues($pdo, 'messages', 'id', 'chat_id', $chatIds),
+                    adminFetchIdsByValues($pdo, 'messages', 'id', 'post_id', $postIds)
+                );
+                $messageIds = array_values(array_unique(array_map('intval', $messageIds)));
 
-                if ($postIds) {
-                    $placeholders = implode(',', array_fill(0, count($postIds), '?'));
+                adminDeleteByUserColumns($pdo, 'user_notifications', ['user_id', 'actor_user_id', 'target_user_id'], $userId);
+                adminDeleteByUserColumns($pdo, 'notifications', ['user_id', 'actor_user_id', 'target_user_id'], $userId);
+                adminDeleteByUserColumns($pdo, 'user_blocks', ['blocker_user_id', 'blocked_user_id'], $userId);
+                adminDeleteByUserColumns($pdo, 'blocked_users', ['user_id', 'blocked_user_id', 'blocker_user_id'], $userId);
+                adminDeleteByUserColumns($pdo, 'followers', ['follower_id', 'following_id'], $userId);
+                adminDeleteByUserColumns($pdo, 'follow_requests', ['sender_id', 'receiver_id'], $userId);
+                adminDeleteByUserColumns($pdo, 'sessions', ['user_id'], $userId);
+                adminDeleteByUserColumns($pdo, 'password_reset_tokens', ['user_id'], $userId);
 
-                    $deletePostMediaStmt = $pdo->prepare("DELETE FROM post_media WHERE post_id IN ($placeholders)");
-                    $deletePostMediaStmt->execute($postIds);
+                adminDeleteByIds($pdo, 'pinned_messages', 'message_id', $messageIds);
+                adminDeleteByIds($pdo, 'pinned_messages', 'chat_id', $chatIds);
+                adminDeleteByUserColumns($pdo, 'pinned_messages', ['pinned_by_user_id'], $userId);
+                adminDeleteByIds($pdo, 'message_reactions', 'message_id', $messageIds);
+                adminDeleteByUserColumns($pdo, 'message_reactions', ['user_id'], $userId);
+                adminDeleteByIds($pdo, 'message_hidden', 'message_id', $messageIds);
+                adminDeleteByUserColumns($pdo, 'message_hidden', ['user_id'], $userId);
+                adminDeleteByIds($pdo, 'messages', 'id', $messageIds);
+                adminDeleteByIds($pdo, 'chat_members', 'chat_id', $chatIds);
+                adminDeleteByUserColumns($pdo, 'chat_members', ['user_id'], $userId);
+                adminDeleteByIds($pdo, 'chats', 'id', $chatIds);
 
-                    $deleteLikesByPostsStmt = $pdo->prepare("DELETE FROM likes WHERE post_id IN ($placeholders)");
-                    $deleteLikesByPostsStmt->execute($postIds);
+                adminDeleteByIds($pdo, 'moderation_queue', 'comment_id', $commentIds);
+                adminDeleteByIds($pdo, 'comment_likes', 'comment_id', $commentIds);
+                adminDeleteByUserColumns($pdo, 'comment_likes', ['user_id'], $userId);
+                adminDeleteByIds($pdo, 'moderation_reports', 'target_comment_id', $commentIds);
+                adminDeleteByUserColumns($pdo, 'moderation_reports', ['reporter_user_id', 'target_user_id'], $userId);
 
-                    $deleteSavedByPostsStmt = $pdo->prepare("DELETE FROM saved_posts WHERE post_id IN ($placeholders)");
-                    $deleteSavedByPostsStmt->execute($postIds);
+                adminDeleteByIds($pdo, 'post_media', 'post_id', $postIds);
+                adminDeleteByIds($pdo, 'likes', 'post_id', $postIds);
+                adminDeleteByUserColumns($pdo, 'likes', ['user_id'], $userId);
+                adminDeleteByIds($pdo, 'saved_posts', 'post_id', $postIds);
+                adminDeleteByUserColumns($pdo, 'saved_posts', ['user_id'], $userId);
+                adminDeleteByIds($pdo, 'reposts', 'post_id', $postIds);
+                adminDeleteByUserColumns($pdo, 'reposts', ['user_id'], $userId);
+                adminDeleteByIds($pdo, 'hidden_posts', 'post_id', $postIds);
+                adminDeleteByUserColumns($pdo, 'hidden_posts', ['user_id'], $userId);
+                adminDeleteByIds($pdo, 'pinned_posts', 'post_id', $postIds);
+                adminDeleteByUserColumns($pdo, 'pinned_posts', ['user_id'], $userId);
+                adminDeleteByIds($pdo, 'post_views', 'post_id', $postIds);
+                adminDeleteByUserColumns($pdo, 'post_views', ['user_id'], $userId);
 
-                    $deleteCommentsByPostsStmt = $pdo->prepare("DELETE FROM comments WHERE post_id IN ($placeholders)");
-                    $deleteCommentsByPostsStmt->execute($postIds);
-                }
-
-                $deleteUserPostsStmt = $pdo->prepare('DELETE FROM posts WHERE user_id = :user_id');
-                $deleteUserPostsStmt->execute(['user_id' => $userId]);
-
-                $deleteUserLikesStmt = $pdo->prepare('DELETE FROM likes WHERE user_id = :user_id');
-                $deleteUserLikesStmt->execute(['user_id' => $userId]);
-
-                $deleteUserSavedStmt = $pdo->prepare('DELETE FROM saved_posts WHERE user_id = :user_id');
-                $deleteUserSavedStmt->execute(['user_id' => $userId]);
-
-                $deleteUserCommentsStmt = $pdo->prepare('DELETE FROM comments WHERE user_id = :user_id');
-                $deleteUserCommentsStmt->execute(['user_id' => $userId]);
-
-                $deleteFollowersStmt = $pdo->prepare('DELETE FROM followers WHERE follower_id = :user_id OR following_id = :user_id');
-                $deleteFollowersStmt->execute(['user_id' => $userId]);
-
-                $deleteFollowRequestsStmt = $pdo->prepare('DELETE FROM follow_requests WHERE sender_id = :user_id OR receiver_id = :user_id');
-                $deleteFollowRequestsStmt->execute(['user_id' => $userId]);
-
-                $deleteSessionsStmt = $pdo->prepare('DELETE FROM sessions WHERE user_id = :user_id');
-                $deleteSessionsStmt->execute(['user_id' => $userId]);
-
-                $deleteResetTokensStmt = $pdo->prepare('DELETE FROM password_reset_tokens WHERE user_id = :user_id');
-                $deleteResetTokensStmt->execute(['user_id' => $userId]);
-
-                $deleteReportsStmt = $pdo->prepare('DELETE FROM moderation_reports WHERE reporter_user_id = :user_id OR target_user_id = :user_id');
-                $deleteReportsStmt->execute(['user_id' => $userId]);
-
-                $deleteNotificationsStmt = $pdo->prepare('DELETE FROM user_notifications WHERE user_id = :user_id');
-                $deleteNotificationsStmt->execute(['user_id' => $userId]);
+                adminDeleteByIds($pdo, 'comments', 'id', $commentIds);
+                adminDeleteByIds($pdo, 'posts', 'id', $postIds);
+                adminDeleteByUserColumns($pdo, 'posts', ['user_id'], $userId);
 
                 $deleteUserStmt = $pdo->prepare('DELETE FROM users WHERE id = :id LIMIT 1');
                 $deleteUserStmt->execute(['id' => $userId]);
@@ -436,7 +578,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($pdo->inTransaction()) {
                     $pdo->rollBack();
                 }
-                $error = 'Не удалось удалить пользователя.';
+                $error = 'Не удалось удалить пользователя: ' . $exception->getMessage();
             }
         }
     }

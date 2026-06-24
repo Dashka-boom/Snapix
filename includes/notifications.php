@@ -80,17 +80,16 @@ function snapix_create_notification(PDO $pdo, array $data): void
 
     $insertStmt = $pdo->prepare('
         INSERT INTO user_notifications (
-            user_id, actor_user_id, target_user_id, notification_type, post_id, comment_id, report_id,
+            user_id, actor_user_id, notification_type, post_id, comment_id, report_id,
             title, message, comment_text, report_reason
         ) VALUES (
-            :user_id, :actor_user_id, :target_user_id, :notification_type, :post_id, :comment_id, :report_id,
+            :user_id, :actor_user_id, :notification_type, :post_id, :comment_id, :report_id,
             :title, :message, :comment_text, :report_reason
         )
     ');
     $insertStmt->execute([
         'user_id' => $targetUserId,
         'actor_user_id' => $actorUserId ?: null,
-        'target_user_id' => $targetUserId,
         'notification_type' => mb_substr($type, 0, 50),
         'post_id' => $postId ?: null,
         'comment_id' => $commentId ?: null,

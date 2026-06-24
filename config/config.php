@@ -107,8 +107,7 @@ try {
 
     $notificationColumns = [
         'actor_user_id' => 'ALTER TABLE user_notifications ADD COLUMN actor_user_id BIGINT UNSIGNED DEFAULT NULL AFTER user_id',
-        'target_user_id' => 'ALTER TABLE user_notifications ADD COLUMN target_user_id BIGINT UNSIGNED DEFAULT NULL AFTER actor_user_id',
-        'notification_type' => 'ALTER TABLE user_notifications ADD COLUMN notification_type VARCHAR(50) DEFAULT NULL AFTER target_user_id',
+        'notification_type' => 'ALTER TABLE user_notifications ADD COLUMN notification_type VARCHAR(50) DEFAULT NULL AFTER actor_user_id',
         'post_id' => 'ALTER TABLE user_notifications ADD COLUMN post_id BIGINT UNSIGNED DEFAULT NULL AFTER notification_type',
         'comment_id' => 'ALTER TABLE user_notifications ADD COLUMN comment_id BIGINT UNSIGNED DEFAULT NULL AFTER post_id',
         'comment_text' => 'ALTER TABLE user_notifications ADD COLUMN comment_text TEXT NULL AFTER message',
@@ -128,7 +127,6 @@ try {
     $notificationIndexes = [
         'ALTER TABLE user_notifications ADD KEY idx_notifications_type_post (notification_type, post_id, created_at)',
         'ALTER TABLE user_notifications ADD KEY idx_notifications_actor (actor_user_id)',
-        'ALTER TABLE user_notifications ADD KEY idx_notifications_target (target_user_id)',
         'ALTER TABLE user_notifications ADD KEY idx_notifications_post (post_id)',
         'ALTER TABLE user_notifications ADD KEY idx_notifications_comment (comment_id)',
     ];

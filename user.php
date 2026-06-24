@@ -2252,21 +2252,47 @@ $followBlockedMessage = isset($_GET['follow_blocked']) && $_GET['follow_blocked'
                 }, 4000);
             }
 
-            emojiButton?.addEventListener('click', () => {
-                if (!emojiPicker) return;
-                emojiPicker.hidden = !emojiPicker.hidden;
-                emojiButton.setAttribute('aria-expanded', emojiPicker.hidden ? 'false' : 'true');
-            });
-            emojiPicker?.querySelectorAll('[data-emoji]').forEach((button) => {
-                button.addEventListener('click', () => {
-                    const input = commentForm?.querySelector('[name="comment_text"]');
-                    if (!input) return;
-                    input.value += button.dataset.emoji || '';
-                    input.focus();
-                    emojiPicker.hidden = true;
-                    emojiButton?.setAttribute('aria-expanded', 'false');
-                });
-            });
+            if (emojiButton && emojiPicker && commentForm) {
+                const commentInput = commentForm.querySelector('.profile-post-viewer-input, [name="comment_text"]');
+                if (commentInput) {
+                    const setEmojiPickerOpen = (isOpen) => {
+                        emojiPicker.hidden = !isOpen;
+                        emojiButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    };
+                    const closeEmojiPicker = () => setEmojiPickerOpen(false);
+                    const insertEmoji = (emoji) => {
+                        if (!emoji) return;
+                        const value = commentInput.value || '';
+                        const start = typeof commentInput.selectionStart === 'number' ? commentInput.selectionStart : value.length;
+                        const end = typeof commentInput.selectionEnd === 'number' ? commentInput.selectionEnd : value.length;
+                        commentInput.value = value.slice(0, start) + emoji + value.slice(end);
+                        const nextCursorPosition = start + emoji.length;
+                        commentInput.focus();
+                        if (typeof commentInput.setSelectionRange === 'function') {
+                            commentInput.setSelectionRange(nextCursorPosition, nextCursorPosition);
+                        }
+                        commentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    };
+
+                    emojiButton.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        setEmojiPickerOpen(emojiPicker.hidden);
+                    });
+                    emojiPicker.addEventListener('click', (event) => {
+                        const emojiNode = event.target.closest('[data-emoji]');
+                        if (!emojiNode) return;
+                        insertEmoji(emojiNode.getAttribute('data-emoji') || '');
+                        closeEmojiPicker();
+                    });
+                    document.addEventListener('click', (event) => {
+                        if (emojiPicker.hidden || emojiPicker.contains(event.target) || emojiButton.contains(event.target)) return;
+                        closeEmojiPicker();
+                    });
+                    document.addEventListener('keydown', (event) => {
+                        if (event.key === 'Escape') closeEmojiPicker();
+                    });
+                }
+            }
             attachmentButton?.addEventListener('click', () => attachmentInput?.click());
             attachmentInput?.addEventListener('change', () => {
                 const file = attachmentInput.files && attachmentInput.files[0];

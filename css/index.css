@@ -9414,3 +9414,33 @@ body.light-theme .search-page-input-row input[type="search"]::placeholder {
 .legal-hero .legal-lead {
     color: #e0e0e0;
 }
+/* Dark theme private profile notice: keep light theme overrides untouched. */
+body[data-page="profile"][data-theme="dark"] .private-profile-notice,
+html[data-theme="dark"] body[data-page="profile"] .private-profile-notice,
+body.theme-dark[data-page="profile"] .private-profile-notice,
+body.dark-theme[data-page="profile"] .private-profile-notice,
+body[data-page="profile"]:not(.theme-light):not([data-theme="light"]) .private-profile-notice {
+    background: rgba(4, 6, 7, 0.95) !important;
+    border: 1px solid rgba(104, 197, 219, 0.15) !important;
+    border-radius: 28px !important;
+}
+
+body[data-page="profile"][data-theme="dark"] .private-profile-notice h3,
+html[data-theme="dark"] body[data-page="profile"] .private-profile-notice h3,
+body.theme-dark[data-page="profile"] .private-profile-notice h3,
+body.dark-theme[data-page="profile"] .private-profile-notice h3,
+body[data-page="profile"]:not(.theme-light):not([data-theme="light"]) .private-profile-notice h3 {
+    color: #FFFFFF !important;
+    font-weight: 800 !important;
+    font-size: 34px !important;
+}
+
+body[data-page="profile"][data-theme="dark"] .private-profile-notice p,
+html[data-theme="dark"] body[data-page="profile"] .private-profile-notice p,
+body.theme-dark[data-page="profile"] .private-profile-notice p,
+body.dark-theme[data-page="profile"] .private-profile-notice p,
+body[data-page="profile"]:not(.theme-light):not([data-theme="light"]) .private-profile-notice p {
+    color: rgba(255, 255, 255, 0.78) !important;
+    font-size: 18px !important;
+    line-height: 1.6 !important;
+}

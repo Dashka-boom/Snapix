@@ -27,6 +27,10 @@ if (!$user) {
     exit;
 }
 
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $unreadMessagesStmt = $pdo->prepare('
     SELECT COUNT(*)
     FROM messages m
@@ -86,101 +90,135 @@ function saveUploadedImage(array $file, string $prefix): ?string
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nextLogin = trim($_POST['login'] ?? '');
-    $nextEmail = trim($_POST['email'] ?? '');
-    $nextBio = trim($_POST['bio'] ?? '');
-    $nextWebsite = trim($_POST['website'] ?? '');
-    $nextBirthDate = trim($_POST['birth_date'] ?? '');
-    $nextGender = trim($_POST['gender'] ?? '');
-    $nextCity = trim($_POST['city'] ?? '');
-    $nextIsPrivate = isset($_POST['is_private']) ? 1 : 0;
+    $token = $_POST['csrf_token'] ?? '';
 
-    $nextLogin = $nextLogin !== '' ? $nextLogin : $user['login'];
-    $nextEmail = $nextEmail !== '' ? $nextEmail : $user['email'];
+    if (!is_string($token) || empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
+        $statusMessage = 'Сессия истекла. Обновите страницу и попробуйте снова.';
+        $statusType = 'is-error';
+    } elseif (($_POST['action'] ?? '') === 'unblock_user') {
+        $blockedUserId = (int) ($_POST['blocked_user_id'] ?? 0);
 
-    if ($nextBirthDate !== '') {
-        $birthDateObj = DateTime::createFromFormat('Y-m-d', $nextBirthDate);
-        $today = new DateTime();
+        if ($blockedUserId > 0) {
+            $deleteBlockStmt = $pdo->prepare('
+                DELETE FROM user_blocks
+                WHERE blocker_user_id = :current_user_id
+                  AND blocked_user_id = :blocked_user_id
+            ');
+            $deleteBlockStmt->execute([
+                'current_user_id' => (int) $user['id'],
+                'blocked_user_id' => $blockedUserId,
+            ]);
+        }
 
-        if (!$birthDateObj || $birthDateObj->format('Y-m-d') !== $nextBirthDate) {
-            $statusMessage = 'Введите корректную дату рождения.';
-            $statusType = 'is-error';
-        } elseif ($birthDateObj > $today) {
-            $statusMessage = 'Дата рождения не может быть в будущем.';
-            $statusType = 'is-error';
-        } else {
-            $age = $today->diff($birthDateObj)->y;
+        $statusMessage = 'Пользователь разблокирован.';
+        $statusType = 'is-success';
+    } else {
+        $nextLogin = trim($_POST['login'] ?? '');
+        $nextEmail = trim($_POST['email'] ?? '');
+        $nextBio = trim($_POST['bio'] ?? '');
+        $nextWebsite = trim($_POST['website'] ?? '');
+        $nextBirthDate = trim($_POST['birth_date'] ?? '');
+        $nextGender = trim($_POST['gender'] ?? '');
+        $nextCity = trim($_POST['city'] ?? '');
+        $nextIsPrivate = isset($_POST['is_private']) ? 1 : 0;
 
-            if ($age < 13) {
-                $statusMessage = 'Пользователю должно быть не меньше 13 лет.';
+        $nextLogin = $nextLogin !== '' ? $nextLogin : $user['login'];
+        $nextEmail = $nextEmail !== '' ? $nextEmail : $user['email'];
+
+        if ($nextBirthDate !== '') {
+            $birthDateObj = DateTime::createFromFormat('Y-m-d', $nextBirthDate);
+            $today = new DateTime();
+
+            if (!$birthDateObj || $birthDateObj->format('Y-m-d') !== $nextBirthDate) {
+                $statusMessage = 'Введите корректную дату рождения.';
+                $statusType = 'is-error';
+            } elseif ($birthDateObj > $today) {
+                $statusMessage = 'Дата рождения не может быть в будущем.';
+                $statusType = 'is-error';
+            } else {
+                $age = $today->diff($birthDateObj)->y;
+
+                if ($age < 13) {
+                    $statusMessage = 'Пользователю должно быть не меньше 13 лет.';
+                    $statusType = 'is-error';
+                }
+            }
+        }
+
+        if ($statusType !== 'is-error') {
+            try {
+                $newAvatar = $user['avatar'];
+                $newBackground = $user['background_image'];
+
+                $uploadedAvatar = saveUploadedImage($_FILES['avatar'] ?? [], 'avatar');
+                if ($uploadedAvatar !== null) {
+                    $newAvatar = $uploadedAvatar;
+                }
+
+                $uploadedBackground = saveUploadedImage($_FILES['background'] ?? [], 'background');
+                if ($uploadedBackground !== null) {
+                    $newBackground = $uploadedBackground;
+                }
+
+                $update = $pdo->prepare('
+                    UPDATE users 
+                    SET 
+                        login = :login,
+                        email = :email,
+                        bio = :bio,
+                        avatar = :avatar,
+                        background_image = :background,
+                        website = :website,
+                        birth_date = :birth_date,
+                        gender = :gender,
+                        city = :city,
+                        is_private = :is_private
+                    WHERE id = :id
+                ');
+
+                $update->execute([
+                    'login' => $nextLogin,
+                    'email' => $nextEmail,
+                    'bio' => $nextBio,
+                    'avatar' => $newAvatar,
+                    'background' => $newBackground,
+                    'website' => $nextWebsite !== '' ? $nextWebsite : null,
+                    'birth_date' => $nextBirthDate !== '' ? $nextBirthDate : null,
+                    'gender' => $nextGender !== '' ? $nextGender : null,
+                    'city' => $nextCity !== '' ? $nextCity : null,
+                    'is_private' => $nextIsPrivate,
+                    'id' => $user['id'],
+                ]);
+
+                $stmt->execute(['id' => $_SESSION['user_id']]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $statusMessage = 'Профиль обновлён.';
+                $statusType = 'is-success';
+            } catch (PDOException $e) {
+                if (($e->errorInfo[1] ?? null) === 1062) {
+                    $statusMessage = 'Логин или электронная почта уже заняты.';
+                } else {
+                    $statusMessage = 'Не удалось сохранить профиль. Попробуйте позже.';
+                }
+                $statusType = 'is-error';
+            } catch (Throwable $e) {
+                $statusMessage = $e->getMessage();
                 $statusType = 'is-error';
             }
         }
     }
-
-    if ($statusType !== 'is-error') {
-        try {
-            $newAvatar = $user['avatar'];
-            $newBackground = $user['background_image'];
-
-            $uploadedAvatar = saveUploadedImage($_FILES['avatar'] ?? [], 'avatar');
-            if ($uploadedAvatar !== null) {
-                $newAvatar = $uploadedAvatar;
-            }
-
-            $uploadedBackground = saveUploadedImage($_FILES['background'] ?? [], 'background');
-            if ($uploadedBackground !== null) {
-                $newBackground = $uploadedBackground;
-            }
-
-            $update = $pdo->prepare('
-                UPDATE users 
-                SET 
-                    login = :login,
-                    email = :email,
-                    bio = :bio,
-                    avatar = :avatar,
-                    background_image = :background,
-                    website = :website,
-                    birth_date = :birth_date,
-                    gender = :gender,
-                    city = :city,
-                    is_private = :is_private
-                WHERE id = :id
-            ');
-
-            $update->execute([
-                'login' => $nextLogin,
-                'email' => $nextEmail,
-                'bio' => $nextBio,
-                'avatar' => $newAvatar,
-                'background' => $newBackground,
-                'website' => $nextWebsite !== '' ? $nextWebsite : null,
-                'birth_date' => $nextBirthDate !== '' ? $nextBirthDate : null,
-                'gender' => $nextGender !== '' ? $nextGender : null,
-                'city' => $nextCity !== '' ? $nextCity : null,
-                'is_private' => $nextIsPrivate,
-                'id' => $user['id'],
-            ]);
-
-            $stmt->execute(['id' => $_SESSION['user_id']]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            $statusMessage = 'Профиль обновлён.';
-            $statusType = 'is-success';
-        } catch (PDOException $e) {
-            if (($e->errorInfo[1] ?? null) === 1062) {
-                $statusMessage = 'Логин или электронная почта уже заняты.';
-            } else {
-                $statusMessage = 'Не удалось сохранить профиль. Попробуйте позже.';
-            }
-            $statusType = 'is-error';
-        } catch (Throwable $e) {
-            $statusMessage = $e->getMessage();
-            $statusType = 'is-error';
-        }
-    }
 }
+
+$blockedUsersStmt = $pdo->prepare('
+    SELECT users.id, users.login, users.avatar, user_blocks.created_at
+    FROM user_blocks
+    INNER JOIN users ON users.id = user_blocks.blocked_user_id
+    WHERE user_blocks.blocker_user_id = :current_user_id
+    ORDER BY user_blocks.created_at DESC
+');
+$blockedUsersStmt->execute(['current_user_id' => (int) $user['id']]);
+$blockedUsers = $blockedUsersStmt->fetchAll(PDO::FETCH_ASSOC);
 
 $avatarStyle = !empty($user['avatar'])
     ? "background-image: url('" . htmlspecialchars($user['avatar'], ENT_QUOTES) . "');"
@@ -228,6 +266,7 @@ $coverStyle = !empty($user['background_image'])
         </section>
 
         <form id="editProfileForm" class="form-card" action="edit-profile.php" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
             <div class="field-grid">
                 <div class="field">
                     <label for="login">Логин</label>
@@ -291,6 +330,35 @@ $coverStyle = !empty($user['background_image'])
                 <button class="primary-link" type="submit">Сохранить изменения</button>
             </div>
         </form>
+
+        <section class="form-card blocked-users-card" aria-labelledby="blockedUsersTitle">
+            <div class="blocked-users-header">
+                <h2 id="blockedUsersTitle">Чёрный список</h2>
+            </div>
+
+            <?php if ($blockedUsers): ?>
+                <div class="blocked-users-list">
+                    <?php foreach ($blockedUsers as $blockedUser): ?>
+                        <article class="blocked-user-row">
+                            <div class="blocked-user-main">
+                                <span class="blocked-user-avatar"<?php if (!empty($blockedUser['avatar'])): ?> style="background-image: url('<?php echo htmlspecialchars($blockedUser['avatar'], ENT_QUOTES, 'UTF-8'); ?>');"<?php endif; ?>>
+                                    <?php if (empty($blockedUser['avatar'])): ?><?php echo htmlspecialchars(mb_substr((string) $blockedUser['login'], 0, 1)); ?><?php endif; ?>
+                                </span>
+                                <strong><?php echo htmlspecialchars((string) $blockedUser['login']); ?></strong>
+                            </div>
+                            <form method="post" action="edit-profile.php" class="blocked-user-action">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                                <input type="hidden" name="action" value="unblock_user">
+                                <input type="hidden" name="blocked_user_id" value="<?php echo (int) $blockedUser['id']; ?>">
+                                <button type="submit" class="secondary-link">Разблокировать</button>
+                            </form>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p class="blocked-users-empty">Чёрный список пуст</p>
+            <?php endif; ?>
+        </section>
     </main>
 
     <script>
